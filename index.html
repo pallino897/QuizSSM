@@ -1,0 +1,891 @@
+<style>
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-background-tertiary: #ebebeb;
+  --color-background-success: #f0fdf4;
+  --color-background-danger: #fef2f2;
+  --color-background-warning: #fffbeb;
+  --color-text-primary: #111111;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-text-success: #16a34a;
+  --color-text-danger: #dc2626;
+  --color-text-warning: #d97706;
+  --color-border-primary: #111111;
+  --color-border-secondary: #d0d0d0;
+  --color-border-tertiary: #e8e8e8;
+  --color-border-success: #bbf7d0;
+  --color-border-danger: #fecaca;
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #1a1a1a;
+    --color-background-secondary: #262626;
+    --color-background-tertiary: #333333;
+    --color-background-success: #052e16;
+    --color-background-danger: #2d0a0a;
+    --color-background-warning: #1c1400;
+    --color-text-primary: #f0f0f0;
+    --color-text-secondary: #aaaaaa;
+    --color-text-tertiary: #666666;
+    --color-text-success: #4ade80;
+    --color-text-danger: #f87171;
+    --color-text-warning: #fbbf24;
+    --color-border-primary: #f0f0f0;
+    --color-border-secondary: #3a3a3a;
+    --color-border-tertiary: #2e2e2e;
+    --color-border-success: #166534;
+    --color-border-danger: #7f1d1d;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+
+/* IL FIX DELLO SFONDO È QUI: Aggiunto background-color e color al body */
+body{font-family:var(--font-sans); background-color:var(--color-background-primary); color:var(--color-text-primary);}
+
+#app{padding:1rem 0;max-width:480px;margin:0 auto;}
+.screen{display:none;}.screen.active{display:block;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:12px;}
+.btn{display:block;width:100%;padding:12px 16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:15px;font-weight:400;color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.1s;margin-bottom:8px;line-height:1.4;}
+.btn:hover{background:var(--color-background-secondary);}
+.btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);text-align:center;font-weight:500;}
+.btn.primary:hover{opacity:0.88;}
+.btn.correct{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success);pointer-events:none;}
+.btn.wrong{background:var(--color-background-danger);border-color:var(--color-border-danger);color:var(--color-text-danger);pointer-events:none;}
+.btn.reveal{border-color:var(--color-border-success);color:var(--color-text-success);pointer-events:none;}
+.btn.disabled{opacity:0.45;pointer-events:none;}
+.btn.skip{text-align:center;color:var(--color-text-secondary);border-style:dashed;font-size:14px;padding:10px;margin-top:4px;}
+.btn.selected-sim{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+.tag{display:inline-block;font-size:12px;padding:3px 10px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary);}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.stat-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 10px;text-align:center;}
+.stat-num{font-size:22px;font-weight:500;color:var(--color-text-primary);}
+.stat-lbl{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+.progress-bar-bg{background:var(--color-background-secondary);border-radius:99px;height:6px;margin:8px 0;}
+.progress-bar-fill{background:var(--color-text-primary);height:6px;border-radius:99px;transition:width 0.3s;}
+.timer-bar-fill{background:var(--color-text-success);height:6px;border-radius:99px;transition:width 1s linear;}
+.timer-bar-warn{background:#f59e0b;}
+.timer-bar-danger{background:var(--color-text-danger);}
+.section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;margin-top:1.25rem;text-transform:uppercase;letter-spacing:0.04em;}
+.specialita-btn{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;margin-bottom:8px;}
+.specialita-btn:hover{background:var(--color-background-secondary);}
+.nav-row{display:flex;gap:8px;margin-bottom:1rem;}
+.nav-row button{flex:1;padding:9px;font-size:14px;background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-primary);}
+.nav-row button:hover{background:var(--color-background-secondary);}
+.num-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.pill{padding:7px 16px;border:0.5px solid var(--color-border-secondary);border-radius:99px;font-size:14px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-primary);transition:background 0.1s;}
+.pill:hover{background:var(--color-background-secondary);}
+.pill.selected{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+.custom-num-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.custom-num-row input{width:80px;padding:7px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:14px;color:var(--color-text-primary);background:var(--color-background-primary);}
+.custom-num-row label{font-size:14px;color:var(--color-text-secondary);}
+.score-box{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;text-align:center;margin-bottom:12px;}
+.score-big{font-size:42px;font-weight:600;}
+.score-sub{font-size:13px;color:var(--color-text-secondary);margin-top:4px;}
+
+/* Navigazione Grid Simulazione */
+.nav-grid-container{margin-top:1.5rem;padding-top:1.5rem;border-top:0.5px solid var(--color-border-secondary);}
+.nav-grid{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding-bottom:10px;}
+.nav-cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:4px;border:1px solid var(--color-border-secondary);background:var(--color-background-primary);cursor:pointer;color:var(--color-text-primary);position:relative;transition:all 0.1s;}
+.nav-cell:hover{background:var(--color-background-secondary);}
+.nav-cell.answered{background:var(--color-border-secondary);font-weight:500;border-color:var(--color-border-secondary);}
+.nav-cell.active{border:2px solid var(--color-text-primary);font-weight:bold;background:var(--color-background-primary);}
+.nav-cell.bookmarked::after{content:'';position:absolute;top:-4px;right:-4px;width:12px;height:12px;background:#f59e0b;border-radius:50%;border:2px solid var(--color-background-primary);}
+
+/* Recap */
+.recap-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);margin-bottom:10px;overflow:hidden;}
+.recap-header{padding:12px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;background:var(--color-background-primary);transition:background 0.1s;}
+.recap-header:hover{background:var(--color-background-secondary);}
+.recap-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.recap-dot.correct{background:var(--color-text-success);}
+.recap-dot.wrong{background:var(--color-text-danger);}
+.recap-dot.skipped{background:var(--color-text-secondary);}
+.recap-q{font-size:14px;line-height:1.5;color:var(--color-text-primary);flex:1;}
+.recap-chevron{font-size:12px;color:var(--color-text-secondary);flex-shrink:0;margin-top:3px;transition:transform 0.2s;}
+.recap-body{display:none;padding:0 14px 14px;background:var(--color-background-primary);}
+.recap-body.open{display:block;}
+.recap-opt{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:var(--border-radius-md);font-size:13px;line-height:1.5;margin-bottom:4px;color:var(--color-text-secondary);}
+.recap-opt.opt-correct{background:var(--color-background-success);color:var(--color-text-success);}
+.recap-opt.opt-wrong{background:var(--color-background-danger);color:var(--color-text-danger);}
+.recap-opt .opt-letter{font-weight:600;flex-shrink:0;width:16px;}
+.recap-filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.filter-pill{padding:5px 14px;border:0.5px solid var(--color-border-secondary);border-radius:99px;font-size:13px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary);}
+.filter-pill:hover{background:var(--color-background-secondary);}
+.filter-pill.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+
+/* Segnalibro & Pausa */
+.bookmark-btn{background:none;border:none;cursor:pointer;font-size:20px;padding:2px 6px;line-height:1;flex-shrink:0;transition:transform 0.15s;}
+.bookmark-btn:hover{transform:scale(1.2);}
+.pause-btn{background:none;border:none;cursor:pointer;font-size:18px;line-height:1;transition:transform 0.15s;}
+.pause-btn:hover{transform:scale(1.2);}
+/* Ricerca */
+.search-box{display:flex;align-items:center;gap:8px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:12px;}
+.search-box input{flex:1;background:none;border:none;outline:none;font-size:15px;color:var(--color-text-primary);}
+.search-box input::placeholder{color:var(--color-text-secondary);}
+.search-result-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background 0.1s;}
+.search-result-item:hover{background:var(--color-background-secondary);}
+.search-highlight{background:rgba(255,200,0,0.35);border-radius:2px;padding:0 1px;}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--color-text-secondary);font-size:14px;}
+/* Storico */
+.storico-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:10px;}
+.storico-score{font-size:24px;font-weight:600;}
+.storico-meta{font-size:12px;color:var(--color-text-secondary);margin-top:4px;}
+.storico-bar{margin-top:10px;}
+.storico-pills{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.storico-pill{font-size:12px;padding:3px 10px;border-radius:99px;border:0.5px solid;}
+.sp-ok{color:var(--color-text-success);border-color:var(--color-border-success);background:var(--color-background-success);}
+.sp-err{color:var(--color-text-danger);border-color:var(--color-border-danger);background:var(--color-background-danger);}
+.sp-skip{color:var(--color-text-secondary);border-color:var(--color-border-secondary);}
+/* Dettaglio domanda ricerca */
+.detail-opt{display:flex;gap:10px;padding:8px 10px;border-radius:var(--border-radius-md);font-size:14px;line-height:1.5;margin-bottom:4px;}
+.detail-opt.opt-correct{background:var(--color-background-success);color:var(--color-text-success);}
+</style>
+
+<div id="app">
+
+<div id="screen-home" class="screen active">
+  <p style="font-size:22px;font-weight:500;margin-bottom:4px">Quiz medicina</p>
+  <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.5rem">Specializzazioni – Ministero</p>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num" id="h-tot">—</div><div class="stat-lbl">Domande</div></div>
+    <div class="stat-card"><div class="stat-num" id="h-perc" style="color:var(--color-text-success)">—</div><div class="stat-lbl">% corrette</div></div>
+    <div class="stat-card"><div class="stat-num" id="h-spec">—</div><div class="stat-lbl">Specialità</div></div>
+  </div>
+  <div class="section-title">Domande per sessione</div>
+  <div class="num-pills">
+    <div class="pill selected" data-val="10" onclick="selezionaPill(this)">10</div>
+    <div class="pill" data-val="20" onclick="selezionaPill(this)">20</div>
+    <div class="pill" data-val="40" onclick="selezionaPill(this)">40</div>
+    <div class="pill" data-val="tutti" onclick="selezionaPill(this)">Tutte</div>
+  </div>
+  <div class="custom-num-row">
+    <label>Personalizzato:</label>
+    <input type="number" id="custom-num" min="1" max="9999" placeholder="es. 30" oninput="selezionaCustom(this)">
+  </div>
+  <div class="section-title">Modalità</div>
+  <button class="btn" onclick="avviaQuiz('tutte')">🃏 Tutte le specialità</button>
+  <button class="btn" onclick="mostraSceltaSpec()">🔍 Scegli specialità</button>
+  <button class="btn" onclick="avviaQuiz('sbagliate')" id="btn-sbagliate" style="display:none">🔁 Ripassa le domande sbagliate</button>
+  <button class="btn" onclick="avviaQuiz('segnalibri')" id="btn-segnalibri" style="display:none">🔖 Ripassa i segnalibri</button>
+  <button class="btn" onclick="avviaSimulazione()" style="border-color:var(--color-border-success);color:var(--color-text-success)">
+    🎯 Simulazione esame
+    <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">140 domande · 210 minuti · navigazione libera</span>
+  </button>
+  <div class="section-title">Strumenti</div>
+  <button class="btn" onclick="showScreen('search')">🔎 Ricerca libera</button>
+  <button class="btn" onclick="mostraStats()">📊 Statistiche dettagliate</button>
+  <button class="btn" onclick="mostraStorico()">📋 Storico simulazioni</button>
+  <button class="btn" id="btn-import">📂 Importa CSV</button>
+</div>
+
+<div id="screen-spec" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Scegli specialità</p>
+  <div id="spec-list"></div>
+</div>
+
+<div id="screen-quiz" class="screen">
+  
+  <div id="timer-box" style="display:none;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:13px;color:var(--color-text-secondary)">⏱ Tempo rimanente</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="pause-btn" id="btn-pause" onclick="togglePausa()" title="Metti in pausa">⏸️</button>
+        <span style="font-size:20px;font-weight:500;font-variant-numeric:tabular-nums" id="timer-display">3:30:00</span>
+      </div>
+    </div>
+    <div class="progress-bar-bg" style="margin:0"><div id="timer-bar" class="timer-bar-fill" style="width:100%"></div></div>
+  </div>
+
+  <div id="quiz-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0">✕</button>
+      <span class="tag" id="q-spec-tag"></span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="bookmark-btn" id="btn-bookmark" onclick="toggleBookmark()" title="Aggiungi segnalibro">🔖</button>
+        <span style="font-size:13px;color:var(--color-text-secondary)" id="q-counter"></span>
+      </div>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="q-progress" style="width:0%"></div></div>
+    
+    <div class="card" style="margin-top:12px">
+      <p style="font-size:15px;line-height:1.6" id="q-text"></p>
+    </div>
+    <div id="q-options"></div>
+    <button class="btn skip" id="btn-skip" onclick="sautaDomanda()">— Non rispondo (0 punti) —</button>
+    <button class="btn primary" id="btn-next" style="display:none;margin-top:4px" onclick="prossimaDomanda()">Prossima domanda</button>
+
+    <div id="nav-grid-container" class="nav-grid-container" style="display:none">
+      <div class="section-title" style="margin-top:0">Navigazione Domande</div>
+      <div id="nav-grid" class="nav-grid"></div>
+      <button class="btn primary" id="btn-termina-sim" style="margin-top:1rem;background:var(--color-text-danger);border-color:var(--color-text-danger)" onclick="promptTerminaSimulazione()">Consegna e Termina Simulazione</button>
+    </div>
+
+  </div>
+
+  <div id="pause-content" style="display:none;text-align:center;padding:3rem 1rem;">
+    <div style="font-size:48px;margin-bottom:16px">⏸️</div>
+    <h2 style="margin-bottom:8px">Pausa</h2>
+    <p style="color:var(--color-text-secondary);margin-bottom:24px;font-size:14px">Il timer è fermo e le domande sono nascoste per evitare sbirciatine.</p>
+    <button class="btn primary" onclick="togglePausa()">▶️ Riprendi simulazione</button>
+    <button class="btn skip" style="margin-top:8px" onclick="confermaUscita()">✕ Abbandona simulazione</button>
+  </div>
+
+</div>
+
+<div id="screen-risultato" class="screen">
+  <p style="font-size:22px;font-weight:500;margin-bottom:4px" id="ris-titolo"></p>
+  <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.25rem" id="ris-sub"></p>
+  <div class="score-box">
+    <div class="score-big" id="ris-score"></div>
+    <div class="score-sub" id="ris-score-formula"></div>
+  </div>
+  <div class="stat-grid-4">
+    <div class="stat-card"><div class="stat-num" id="ris-corrette" style="color:var(--color-text-success)"></div><div class="stat-lbl">Corrette<br>+1 pt</div></div>
+    <div class="stat-card"><div class="stat-num" id="ris-sbagliate" style="color:var(--color-text-danger)"></div><div class="stat-lbl">Sbagliate<br>−0.25</div></div>
+    <div class="stat-card"><div class="stat-num" id="ris-saltate" style="color:var(--color-text-secondary)"></div><div class="stat-lbl">Saltate<br>0 pt</div></div>
+    <div class="stat-card"><div class="stat-num" id="ris-perc"></div><div class="stat-lbl">%<br>corrette</div></div>
+  </div>
+  <button class="btn primary" onclick="avviaQuiz(ultimaModalita)" style="margin-bottom:8px">Nuovo quiz</button>
+  <button class="btn" onclick="tornaHome()">Torna alla home</button>
+  <div style="margin-top:1.5rem">
+    <div class="section-title">Recap domande</div>
+    <div class="recap-filter-row">
+      <div class="filter-pill active" data-filter="all" onclick="filtraRecap(this)">Tutte</div>
+      <div class="filter-pill" data-filter="wrong" onclick="filtraRecap(this)">❌ Sbagliate</div>
+      <div class="filter-pill" data-filter="skipped" onclick="filtraRecap(this)">— Saltate</div>
+      <div class="filter-pill" data-filter="correct" onclick="filtraRecap(this)">✓ Corrette</div>
+    </div>
+    <div id="recap-list"></div>
+  </div>
+</div>
+
+<div id="screen-search" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Ricerca libera</p>
+  <div class="search-box">
+    <span style="color:var(--color-text-secondary)">🔎</span>
+    <input type="text" id="search-input" placeholder="Cerca nel testo delle domande…" oninput="eseguiRicerca(this.value)" autocomplete="off">
+    <button onclick="document.getElementById('search-input').value='';eseguiRicerca('');" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:16px;padding:0">✕</button>
+  </div>
+  <div id="search-results"></div>
+</div>
+
+<div id="screen-detail" class="screen">
+  <div class="nav-row"><button onclick="showScreen('search')">← Ricerca</button></div>
+  <div id="detail-content"></div>
+</div>
+
+<div id="screen-stats" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Statistiche</p>
+  <div id="stats-content"></div>
+  <button class="btn" onclick="resetStats()" style="margin-top:1rem;color:var(--color-text-danger);border-color:var(--color-border-danger)">Azzera tutti i progressi</button>
+</div>
+
+<div id="screen-storico" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Storico simulazioni</p>
+  <div id="storico-list"></div>
+</div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz_med_v5';
+let DB=[], sessione=[];
+let idx=0, n_corrette=0, n_sbagliate=0, n_saltate=0;
+let logRisposte=[];
+let ultimaModalita='tutte', numDomande=10;
+let isSimulazione=false;
+let timerInterval=null, timerSecondi=0, timerTotale=0;
+let isPausa=false;
+let scelteSimulazione=[]; // Salva le scelte provvisorie in mod. Simulazione
+
+/* ── Storage ── */
+function loadStorage(){
+  try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):{risposte:{},sbagliate:[],segnalibri:[],storico:[]};}
+  catch(e){return{risposte:{},sbagliate:[],segnalibri:[],storico:[]};}
+}
+function saveStorage(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(e){}}
+function getStorage(){
+  const s=loadStorage();
+  if(!s.segnalibri)s.segnalibri=[];
+  if(!s.storico)s.storico=[];
+  return s;
+}
+
+/* ── Nav ── */
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+
+/* ── Util ── */
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function fmt(n){return n%1===0?n.toString():n.toFixed(2);}
+function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return(h>0?h+':':'') +String(m).padStart(h>0?2:1,'0')+':'+String(ss).padStart(2,'0');}
+function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function highlightText(text, query){
+  if(!query.trim())return escHtml(text);
+  const re=new RegExp('('+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  return escHtml(text).replace(re,'<mark class="search-highlight">$1</mark>');
+}
+
+/* ── Pill selezione ── */
+function selezionaPill(el){
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('custom-num').value='';
+  numDomande=el.dataset.val==='tutti'?999999:parseInt(el.dataset.val);
+}
+function selezionaCustom(input){
+  const v=parseInt(input.value);
+  if(v>0){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('selected'));numDomande=v;}
+}
+
+/* ── Home ── */
+function aggiornHome(){
+  const st=getStorage();
+  const r=Object.values(st.risposte),g=r.filter(x=>x===true).length;
+  document.getElementById('h-tot').textContent=DB.length||'—';
+  document.getElementById('h-perc').textContent=r.length>0?Math.round(g/r.length*100)+'%':'—';
+  document.getElementById('h-spec').textContent=[...new Set(DB.map(d=>d.specialita))].length||'—';
+  document.getElementById('btn-sbagliate').style.display=(st.sbagliate&&st.sbagliate.length>0)?'block':'none';
+  document.getElementById('btn-segnalibri').style.display=(st.segnalibri&&st.segnalibri.length>0)?'block':'none';
+}
+
+/* ── Timer & Pausa ── */
+function avviaTimer(sec){
+  timerTotale=sec;timerSecondi=sec;
+  document.getElementById('timer-box').style.display='block';
+  isPausa=false; ripristinaVistePausa();
+  aggiornaTimer();
+  timerInterval=setInterval(()=>{
+    timerSecondi--;
+    aggiornaTimer();
+    if(timerSecondi<=0){
+      clearInterval(timerInterval);
+      if(isSimulazione) terminaSimulazione(true);
+      else mostraRisultato(true);
+    }
+  },1000);
+}
+function fermaTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}}
+function aggiornaTimer(){
+  const p=(timerSecondi/timerTotale)*100;
+  document.getElementById('timer-display').textContent=fmtTime(timerSecondi);
+  const bar=document.getElementById('timer-bar');
+  bar.style.width=p+'%';
+  bar.className='timer-bar-fill'+(p<15?' timer-bar-danger':p<30?' timer-bar-warn':'');
+}
+function togglePausa() {
+  if (isPausa) {
+    isPausa = false; ripristinaVistePausa();
+    timerInterval=setInterval(()=>{
+      timerSecondi--;
+      aggiornaTimer();
+      if(timerSecondi<=0){
+        clearInterval(timerInterval);
+        if(isSimulazione) terminaSimulazione(true);
+        else mostraRisultato(true);
+      }
+    },1000);
+  } else {
+    isPausa = true; fermaTimer();
+    document.getElementById('btn-pause').textContent = '▶️';
+    document.getElementById('quiz-content').style.display = 'none';
+    document.getElementById('pause-content').style.display = 'block';
+  }
+}
+function ripristinaVistePausa() {
+  document.getElementById('btn-pause').textContent = '⏸️';
+  document.getElementById('quiz-content').style.display = 'block';
+  document.getElementById('pause-content').style.display = 'none';
+}
+
+/* ── Segnalibri ── */
+function toggleBookmark(){
+  const d=sessione[idx];const st=getStorage();
+  const i=st.segnalibri.indexOf(d.id);
+  if(i===-1) st.segnalibri.push(d.id); else st.segnalibri.splice(i,1);
+  saveStorage(st);
+  aggiornaIconaSegnalibro();
+  if(isSimulazione) aggiornaNavGrid();
+}
+function aggiornaIconaSegnalibro(){
+  const d=sessione[idx];const st=getStorage();
+  const marked=st.segnalibri.includes(d.id);
+  document.getElementById('btn-bookmark').textContent='🔖';
+  document.getElementById('btn-bookmark').style.opacity=marked?'1':'0.35';
+}
+
+/* ── Avvio quiz ── */
+function avviaSimulazione(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  isSimulazione=true;ultimaModalita='sim';
+  sessione=shuffle([...DB]).slice(0,Math.min(DB.length,140));
+  iniziaSessione();avviaTimer(210*60);
+}
+function avviaQuiz(modalita){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  isSimulazione=false;ultimaModalita=modalita;fermaTimer();
+  const st=getStorage();let pool=[];
+  if(modalita==='tutte')pool=shuffle([...DB]);
+  else if(modalita==='sbagliate'){
+    const ids=new Set(st.sbagliate||[]);
+    pool=shuffle(DB.filter(d=>ids.has(d.id)));
+    if(pool.length===0){alert('Nessuna domanda sbagliata salvata.');return;}
+  } else if(modalita==='segnalibri'){
+    const ids=new Set(st.segnalibri||[]);
+    pool=shuffle(DB.filter(d=>ids.has(d.id)));
+    if(pool.length===0){alert('Nessun segnalibro salvato.');return;}
+  } else {
+    pool=shuffle(DB.filter(d=>d.specialita===modalita));
+  }
+  sessione=pool.slice(0,Math.min(pool.length,numDomande));
+  iniziaSessione();document.getElementById('timer-box').style.display='none';
+}
+function iniziaSessione(){
+  idx=0;n_corrette=0;n_sbagliate=0;n_saltate=0;logRisposte=[];
+  scelteSimulazione = new Array(sessione.length).fill(null);
+  isPausa=false; ripristinaVistePausa();
+  showScreen('quiz');mostraDomanda();
+}
+
+/* ── Navigazione Grid Simulazione ── */
+function aggiornaNavGrid() {
+  const grid = document.getElementById('nav-grid');
+  grid.innerHTML = '';
+  const st = getStorage();
+  sessione.forEach((d, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'nav-cell';
+    if(i === idx) cell.classList.add('active');
+    if(scelteSimulazione[i]) cell.classList.add('answered');
+    if(st.segnalibri.includes(d.id)) cell.classList.add('bookmarked');
+    cell.textContent = i + 1;
+    cell.onclick = () => { idx = i; mostraDomanda(); };
+    grid.appendChild(cell);
+  });
+}
+
+/* ── Domanda ── */
+function mostraDomanda(){
+  const d=sessione[idx];
+  document.getElementById('q-spec-tag').textContent=d.specialita;
+  document.getElementById('q-counter').textContent=(idx+1)+' / '+sessione.length;
+  document.getElementById('q-progress').style.width=Math.round((idx/sessione.length)*100)+'%';
+  document.getElementById('q-text').textContent=d.domanda;
+  aggiornaIconaSegnalibro();
+  
+  const opzDiv=document.getElementById('q-options');opzDiv.innerHTML='';
+  ['A','B','C','D','E'].forEach(l=>{
+    if(!d[l])return;
+    const btn=document.createElement('button');btn.className='btn';
+    btn.innerHTML='<strong style="margin-right:8px">'+l+'</strong>'+d[l];
+    // Se siamo in simulazione e questa è la scelta salvata, evidenziala
+    if(isSimulazione && scelteSimulazione[idx] === l) btn.classList.add('selected-sim');
+    btn.onclick=()=>rispondi(l,d.risposta_corretta,d.id);
+    opzDiv.appendChild(btn);
+  });
+
+  const btnSkip = document.getElementById('btn-skip');
+  const btnNext = document.getElementById('btn-next');
+
+  if (isSimulazione) {
+    btnSkip.textContent = '— Svuota selezione —';
+    btnSkip.style.display = 'block';
+    btnNext.style.display = 'block';
+    btnNext.textContent = idx + 1 < sessione.length ? 'Prossima domanda' : 'Termina Simulazione';
+    document.getElementById('nav-grid-container').style.display = 'block';
+    aggiornaNavGrid();
+  } else {
+    btnSkip.textContent = '— Non rispondo (0 punti) —';
+    btnSkip.style.display = 'block';
+    btnNext.style.display = 'none';
+    document.getElementById('nav-grid-container').style.display = 'none';
+  }
+}
+
+function rispondi(scelta,corretta_let,id){
+  if (isSimulazione) {
+    // Modalità esame: salva scelta ma non mostra risultato
+    scelteSimulazione[idx] = scelta;
+    document.querySelectorAll('#q-options .btn').forEach(btn => {
+      btn.classList.remove('selected-sim');
+      if (btn.querySelector('strong').textContent === scelta) btn.classList.add('selected-sim');
+    });
+    aggiornaNavGrid();
+  } else {
+    // Modalità ripasso: mostra subito risultato
+    const st=getStorage(),giusta=scelta===corretta_let;
+    document.querySelectorAll('#q-options .btn').forEach(btn=>{
+      const l=btn.querySelector('strong').textContent;
+      if(l===corretta_let)btn.classList.add(giusta?'correct':'reveal');
+      else if(l===scelta&&!giusta)btn.classList.add('wrong');
+      else btn.classList.add('disabled');
+    });
+    document.getElementById('btn-skip').style.display='none';
+    if(giusta){n_corrette++;st.risposte[id]=true;st.sbagliate=(st.sbagliate||[]).filter(i=>i!==id);}
+    else{n_sbagliate++;st.risposte[id]=false;if(!st.sbagliate)st.sbagliate=[];if(!st.sbagliate.includes(id))st.sbagliate.push(id);}
+    saveStorage(st);
+    logRisposte.push({domanda:sessione[idx],scelta,esito:giusta?'correct':'wrong'});
+    const bn=document.getElementById('btn-next');
+    bn.style.display='block';
+    bn.textContent=idx+1<sessione.length?'Prossima domanda':'Vedi risultato';
+  }
+}
+
+function sautaDomanda(){
+  if (isSimulazione) {
+    // Svuota la scelta e aggiorna griglia
+    scelteSimulazione[idx] = null;
+    document.querySelectorAll('#q-options .btn').forEach(btn => btn.classList.remove('selected-sim'));
+    aggiornaNavGrid();
+    prossimaDomanda();
+  } else {
+    n_saltate++;
+    document.getElementById('btn-skip').style.display='none';
+    document.querySelectorAll('#q-options .btn').forEach(btn=>{
+      btn.classList.add('disabled');
+      if(btn.querySelector('strong').textContent===sessione[idx].risposta_corretta){btn.classList.remove('disabled');btn.classList.add('reveal');}
+    });
+    logRisposte.push({domanda:sessione[idx],scelta:null,esito:'skipped'});
+    const bn=document.getElementById('btn-next');
+    bn.style.display='block';
+    bn.textContent=idx+1<sessione.length?'Prossima domanda':'Vedi risultato';
+  }
+}
+
+function prossimaDomanda(){
+  if(idx+1<sessione.length){
+    idx++; mostraDomanda();
+  } else {
+    if(isSimulazione) promptTerminaSimulazione();
+    else mostraRisultato(false);
+  }
+}
+
+function promptTerminaSimulazione() {
+  const nonRisposte = scelteSimulazione.filter(x => !x).length;
+  const msg = nonRisposte > 0
+    ? `⚠️ Attenzione! Hai ancora ${nonRisposte} domande lasciate in bianco.\n\nSei sicuro di voler consegnare la simulazione?`
+    : `Sei all'ultima domanda. Vuoi consegnare e terminare la simulazione?`;
+  if(confirm(msg)) terminaSimulazione(false);
+}
+
+function terminaSimulazione(timeout) {
+  // Processa le scelte accumulate a fine simulazione
+  n_corrette = 0; n_sbagliate = 0; n_saltate = 0; logRisposte = [];
+  const st = getStorage();
+
+  sessione.forEach((d, i) => {
+    const scelta = scelteSimulazione[i];
+    const giusta = (scelta === d.risposta_corretta);
+    let esito = '';
+
+    if (!scelta) {
+      n_saltate++; esito = 'skipped';
+    } else if (giusta) {
+      n_corrette++; esito = 'correct';
+      st.risposte[d.id] = true;
+      st.sbagliate = (st.sbagliate || []).filter(id => id !== d.id);
+    } else {
+      n_sbagliate++; esito = 'wrong';
+      st.risposte[d.id] = false;
+      if (!st.sbagliate) st.sbagliate = [];
+      if (!st.sbagliate.includes(d.id)) st.sbagliate.push(d.id);
+    }
+    logRisposte.push({ domanda: d, scelta: scelta, esito: esito });
+  });
+  saveStorage(st);
+  mostraRisultato(timeout);
+}
+
+/* ── Risultato ── */
+function mostraRisultato(timeout){
+  fermaTimer();
+  const score=n_corrette-n_sbagliate*0.25;
+  const perc=sessione.length>0?Math.round(n_corrette/sessione.length*100):0;
+  let titolo='';
+  if(timeout)titolo='⏰ Tempo scaduto!';
+  else if(isSimulazione)titolo=score>=84?'🎉 Ottimo risultato!':score>=56?'👍 Buona simulazione':'📚 Continua ad allenarti';
+  else titolo=perc>=70?'🎉 Ottimo lavoro!':perc>=50?'👍 Buona prova':'📚 Continua ad allenarti';
+  
+  document.getElementById('ris-titolo').textContent=titolo;
+  document.getElementById('ris-sub').textContent=isSimulazione?'Simulazione completata':'Quiz completato';
+  document.getElementById('ris-score').textContent=fmt(score);
+  document.getElementById('ris-score').style.color=score>0?'var(--color-text-success)':score<0?'var(--color-text-danger)':'var(--color-text-primary)';
+  document.getElementById('ris-score-formula').textContent=n_corrette+'×1 − '+n_sbagliate+'×0.25 = '+fmt(score)+' punti';
+  document.getElementById('ris-corrette').textContent=n_corrette;
+  document.getElementById('ris-sbagliate').textContent=n_sbagliate;
+  document.getElementById('ris-saltate').textContent=n_saltate;
+  document.getElementById('ris-perc').textContent=perc+'%';
+  
+  if(isSimulazione){
+    const st=getStorage();
+    if(!st.storico)st.storico=[];
+    st.storico.unshift({ts:Date.now(),score:score,corrette:n_corrette,sbagliate:n_sbagliate,saltate:n_saltate,tot:sessione.length,timeout});
+    if(st.storico.length>50)st.storico=st.storico.slice(0,50);
+    saveStorage(st);
+  }
+  costruisciRecap();
+  showScreen('risultato');
+}
+
+/* ── Recap ── */
+function costruisciRecap(){
+  const list=document.getElementById('recap-list');list.innerHTML='';
+  logRisposte.forEach((entry,i)=>{
+    const d=entry.domanda,esito=entry.esito;
+    const item=document.createElement('div');item.className='recap-item';item.dataset.esito=esito;
+    const header=document.createElement('div');header.className='recap-header';
+    const dot=document.createElement('div');dot.className='recap-dot '+esito;
+    const qText=document.createElement('div');qText.className='recap-q';qText.textContent=(i+1)+'. '+d.domanda;
+    const chev=document.createElement('div');chev.className='recap-chevron';chev.textContent='▼';
+    header.appendChild(dot);header.appendChild(qText);header.appendChild(chev);
+    const body=document.createElement('div');body.className='recap-body';
+    ['A','B','C','D','E'].forEach(l=>{
+      if(!d[l])return;
+      const opt=document.createElement('div');opt.className='recap-opt';
+      const isC=(l===d.risposta_corretta),isS=(l===entry.scelta);
+      if(isC)opt.classList.add('opt-correct');
+      else if(isS&&!isC)opt.classList.add('opt-wrong');
+      const letter=document.createElement('span');letter.className='opt-letter';letter.textContent=l;
+      const testo=document.createElement('span');
+      let nota='';
+      if(isS&&isC)nota=' ✓ (tua risposta)';
+      else if(isC)nota=' ✓ risposta corretta';
+      else if(isS)nota=' ✗ (tua risposta)';
+      testo.textContent=d[l]+nota;
+      opt.appendChild(letter);opt.appendChild(testo);
+      body.appendChild(opt);
+    });
+    if(esito==='skipped'){
+      const nota=document.createElement('div');
+      nota.style.cssText='font-size:12px;color:var(--color-text-secondary);padding:6px 0 0';
+      nota.textContent='Non hai risposto a questa domanda.';
+      body.appendChild(nota);
+    }
+    header.onclick=()=>{const o=body.classList.toggle('open');chev.style.transform=o?'rotate(180deg)':'';}
+    item.appendChild(header);item.appendChild(body);list.appendChild(item);
+  });
+}
+function filtraRecap(el){
+  document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');
+  const f=el.dataset.filter;
+  document.querySelectorAll('.recap-item').forEach(item=>{item.style.display=(f==='all'||item.dataset.esito===f)?'block':'none';});
+}
+
+/* ── Ricerca ── */
+function eseguiRicerca(query){
+  const cont=document.getElementById('search-results');
+  const q=query.trim().toLowerCase();
+  if(q.length<2){cont.innerHTML='<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';return;}
+  if(DB.length===0){cont.innerHTML='<div class="empty-state">Carica prima il CSV con le domande</div>';return;}
+  const risultati=DB.filter(d=>
+    d.domanda.toLowerCase().includes(q)||
+    ['A','B','C','D','E'].some(l=>d[l]&&d[l].toLowerCase().includes(q))
+  ).slice(0,50);
+  if(risultati.length===0){cont.innerHTML='<div class="empty-state">Nessuna domanda trovata per "<strong>'+escHtml(query)+'</strong>"</div>';return;}
+  cont.innerHTML='<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:10px">'+risultati.length+(risultati.length===50?' (primi 50)':'')+' risultati</p>';
+  risultati.forEach(d=>{
+    const div=document.createElement('div');div.className='search-result-item';
+    const tag='<span class="tag" style="font-size:11px;margin-bottom:6px;display:inline-block">'+escHtml(d.specialita)+'</span>';
+    const qHtml=highlightText(d.domanda,query);
+    let opzHtml='';
+    ['A','B','C','D','E'].forEach(l=>{
+      if(d[l]&&d[l].toLowerCase().includes(q)){
+        opzHtml+='<div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px"><strong>'+l+'</strong> '+highlightText(d[l],query)+'</div>';
+      }
+    });
+    div.innerHTML=tag+'<div style="font-size:14px;line-height:1.5">'+qHtml+'</div>'+opzHtml;
+    div.onclick=()=>mostraDettaglioDomanda(d,query);
+    cont.appendChild(div);
+  });
+}
+function mostraDettaglioDomanda(d, query){
+  const cont=document.getElementById('detail-content');
+  let html='<span class="tag" style="margin-bottom:12px;display:inline-block">'+escHtml(d.specialita)+'</span>';
+  html+='<div class="card"><p style="font-size:15px;line-height:1.6">'+highlightText(d.domanda,query||'')+'</p></div>';
+  ['A','B','C','D','E'].forEach(l=>{
+    if(!d[l])return;
+    const isC=(l===d.risposta_corretta);
+    const cls=isC?'detail-opt opt-correct':'detail-opt';
+    html+='<div class="'+cls+'"><span style="font-weight:600;width:16px;flex-shrink:0">'+l+'</span><span>'+highlightText(d[l],query||'')+(isC?' ✓':'')+'</span></div>';
+  });
+  const st=getStorage();
+  const isBm=st.segnalibri.includes(d.id);
+  html+='<button onclick="toggleBookmarkDiretto(\''+d.id+'\')" id="bm-detail-btn" class="btn" style="margin-top:16px">'+(isBm?'🔖 Rimuovi segnalibro':'🔖 Aggiungi segnalibro')+'</button>';
+  cont.innerHTML=html;
+  showScreen('detail');
+  window._detailDomandaId=d.id;
+}
+function toggleBookmarkDiretto(id){
+  const st=getStorage();
+  const i=st.segnalibri.indexOf(id);
+  if(i===-1)st.segnalibri.push(id);else st.segnalibri.splice(i,1);
+  saveStorage(st);
+  const isBm=st.segnalibri.includes(id);
+  document.getElementById('bm-detail-btn').textContent=isBm?'🔖 Rimuovi segnalibro':'🔖 Aggiungi segnalibro';
+}
+
+/* ── Storico ── */
+function mostraStorico(){
+  const st=getStorage();
+  const list=document.getElementById('storico-list');list.innerHTML='';
+  if(!st.storico||st.storico.length===0){
+    list.innerHTML='<div class="empty-state">Nessuna simulazione completata ancora.<br>Fai la tua prima simulazione!</div>';
+    showScreen('storico');return;
+  }
+  const scores=st.storico.map(s=>s.score).reverse();
+  const maxS=Math.max(...scores,1);
+  let trendHtml='<div style="margin-bottom:16px"><div class="section-title" style="margin-top:0">Andamento punteggio</div><div style="display:flex;align-items:flex-end;gap:3px;height:48px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px">';
+  scores.slice(-20).forEach(s=>{
+    const h=Math.max(4,Math.round((s/maxS)*32));
+    const col=s>=84?'var(--color-text-success)':s>=56?'#f59e0b':'var(--color-text-danger)';
+    trendHtml+='<div style="flex:1;height:'+h+'px;background:'+col+';border-radius:2px;min-width:6px" title="'+fmt(s)+'"></div>';
+  });
+  trendHtml+='</div></div>';
+  list.innerHTML=trendHtml;
+
+  st.storico.forEach((sim,i)=>{
+    const score=sim.score,perc=Math.round(sim.corrette/sim.tot*100);
+    const scoreCol=score>=84?'var(--color-text-success)':score>=56?'#f59e0b':'var(--color-text-danger)';
+    const div=document.createElement('div');div.className='storico-item';
+    div.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div>'+
+          '<div class="storico-score" style="color:'+scoreCol+'">'+fmt(score)+'<span style="font-size:16px;font-weight:400;color:var(--color-text-secondary)"> / '+sim.tot+'</span></div>'+
+          '<div class="storico-meta">'+fmtDate(sim.ts)+(sim.timeout?' · ⏰ tempo scaduto':'')+'</div>'+
+        '</div>'+
+        '<div style="font-size:22px;font-weight:500;color:var(--color-text-secondary)">'+perc+'%</div>'+
+      '</div>'+
+      '<div class="progress-bar-bg" style="margin:10px 0 8px"><div class="progress-bar-fill" style="width:'+perc+'%;background:'+scoreCol+'"></div></div>'+
+      '<div class="storico-pills">'+
+        '<span class="storico-pill sp-ok">✓ '+sim.corrette+' corrette</span>'+
+        '<span class="storico-pill sp-err">✗ '+sim.sbagliate+' sbagliate</span>'+
+        '<span class="storico-pill sp-skip">— '+sim.saltate+' saltate</span>'+
+      '</div>';
+    list.appendChild(div);
+  });
+  const btnDel=document.createElement('button');
+  btnDel.className='btn';btnDel.style.cssText='margin-top:1rem;color:var(--color-text-danger);border-color:var(--color-border-danger)';
+  btnDel.textContent='Cancella storico simulazioni';
+  btnDel.onclick=()=>{if(!confirm('Cancellare tutto lo storico?'))return;const st2=getStorage();st2.storico=[];saveStorage(st2);mostraStorico();};
+  list.appendChild(btnDel);
+  showScreen('storico');
+}
+
+/* ── Statistiche ── */
+function mostraStats(){
+  const st=getStorage(),specs=[...new Set(DB.map(d=>d.specialita))].sort();
+  const cont=document.getElementById('stats-content');cont.innerHTML='';
+  const tot=Object.values(st.risposte).length,g=Object.values(st.risposte).filter(r=>r).length;
+  const p=tot>0?Math.round(g/tot*100):0;
+  const bm=(st.segnalibri||[]).length;
+  cont.innerHTML='<div class="card"><p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:8px">Statistiche globali</p><p style="font-size:28px;font-weight:500">'+p+'%</p><p style="font-size:13px;color:var(--color-text-secondary)">'+g+' corrette su '+tot+' risposte · 🔖 '+bm+' segnalibri</p><div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:'+p+'%"></div></div></div><div class="section-title">Per specialità</div>';
+  specs.forEach(s=>{
+    const ids=DB.filter(d=>d.specialita===s).map(d=>d.id);
+    const r=ids.map(id=>st.risposte[id]).filter(x=>x!==undefined);
+    const gg=r.filter(x=>x).length,pp=r.length>0?Math.round(gg/r.length*100):null;
+    const div=document.createElement('div');div.className='card';div.style.marginBottom='8px';
+    div.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:14px">'+s+'</span><span style="font-size:14px;font-weight:500">'+(pp!==null?pp+'%':'—')+'</span></div><div class="progress-bar-bg" style="margin:0"><div class="progress-bar-fill" style="width:'+(pp||0)+'%"></div></div><p style="font-size:12px;color:var(--color-text-secondary);margin-top:6px">'+r.length+' / '+ids.length+' domande affrontate</p>';
+    cont.appendChild(div);
+  });
+  showScreen('stats');
+}
+function resetStats(){if(!confirm('Sei sicuro? Tutti i progressi, segnalibri e storico verranno cancellati.'))return;saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[]});aggiornHome();showScreen('home');}
+
+/* ── Uscita ── */
+function confermaUscita(){
+  if(isSimulazione&&timerSecondi>0){if(!confirm('Vuoi abbandonare? I tuoi progressi di questa simulazione andranno persi.'))return;tornaHome();}
+  else tornaHome();
+}
+function tornaHome(){fermaTimer();aggiornHome();showScreen('home');}
+
+/* ── CSV ── */
+function caricaCSV(testo){
+  const righe=testo.trim().split('\n');if(righe.length<2)return[];
+  const header=righe[0].split(';').map(h=>h.replace(/^"|"$/g,'').trim());
+  const domande=[];
+  for(let i=1;i<righe.length;i++){
+    const cols=righe[i].split(';').map(c=>c.replace(/^"|"$/g,'').trim());
+    if(cols.length<header.length)continue;
+    const obj={};header.forEach((h,j)=>obj[h]=cols[j]||'');
+    if(obj.domanda)domande.push(obj);
+  }
+  return domande;
+}
+
+function initDemoData(){
+  DB=[
+    {id:'1',specialita:'Chirurgia generale',domanda:"La sindrome di Peutz-Jeghers è costituita dall'associazione di:",A:'Poliposi del tenue e pigmentazione melanica del viso',B:'Poliposi dello stomaco ed epiteliomi diffusi',C:'Carcinoma del tenue ed obliterazione dei seni paranasali',D:'Leiomioma del tenue e litiasi della colecisti',E:'Poliposi dello stomaco e litiasi della colecisti',risposta_corretta:'A'},
+    {id:'2',specialita:'Chirurgia generale',domanda:'Cosa significa Xenotrapianto:',A:'Trapianto tra consanguinei',B:'Trapianto tra esseri umani di sesso diverso',C:'Trapianto tra esseri umani di razza diversa',D:'Trapianto tra individui di specie diversa',E:'Trapianto di organo artificiale',risposta_corretta:'D'},
+    {id:'3',specialita:'Chirurgia generale',domanda:"L'ernia inguinale diretta è:",A:"Un'ernia che fuoriesce medialmente ai vasi epigastrici",B:"Un'ernia che fuoriesce lateralmente ai vasi epigastrici",C:"Un'ernia che fuoriesce al di sotto del leg. inguinale",D:"Un'ernia che attraversa il canale otturatorio",E:"Un'ernia che attraversa l'anello inguinale interno",risposta_corretta:'A'},
+    {id:'4',specialita:'Cardiologia',domanda:"Quale farmaco è di prima scelta nell'infarto miocardico acuto?",A:'Warfarin',B:'Digossina',C:'Aspirina',D:'Furosemide',E:'Metoprololo',risposta_corretta:'C'},
+    {id:'5',specialita:'Cardiologia',domanda:'La fibrillazione atriale è caratterizzata da:',A:'Onde P regolari e ritmo ventricolare irregolare',B:'Assenza di onde P e ritmo ventricolare irregolare',C:'Onde P invertite e QRS allargato',D:'Onde delta e PR corto',E:'QT allungato e torsione di punta',risposta_corretta:'B'},
+  ];
+  aggiornHome();
+  document.getElementById('search-results').innerHTML='<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
+}
+
+const fileInput=document.createElement('input');
+fileInput.type='file';fileInput.accept='.csv';fileInput.style.display='none';
+fileInput.onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const d=caricaCSV(ev.target.result);
+    if(d.length===0){alert('Nessuna domanda trovata.');return;}
+    DB=d;aggiornHome();alert('✓ Caricate '+d.length+' domande!');
+  };
+  reader.readAsText(file,'utf-8');
+};
+document.body.appendChild(fileInput);
+document.getElementById('btn-import').onclick=()=>fileInput.click();
+
+/* ── SHORTCUTS TASTIERA (1-5 e 0) ── */
+document.addEventListener('keydown', (e) => {
+  // Esegui solo se la schermata quiz è attiva e non in pausa
+  const quizScreen = document.getElementById('screen-quiz');
+  if (!quizScreen.classList.contains('active') || isPausa) return;
+  
+  // Ignora se l'utente sta scrivendo da qualche parte
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+  const d = sessione[idx];
+  if (!d) return;
+
+  // Mappa dei tasti
+  const keyMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'};
+  const btnNext = document.getElementById('btn-next');
+  const isNextVisible = btnNext.style.display === 'block';
+
+  if (keyMap[e.key]) {
+    const lettera = keyMap[e.key];
+    // Assicuriamoci che l'opzione esista (es. che ci sia davvero l'opzione E per quella domanda)
+    if (d[lettera]) {
+      // In modalità ripasso, blocca la selezione se l'utente ha già risposto (pulsante Next visibile)
+      if (!isSimulazione && isNextVisible) return;
+      rispondi(lettera, d.risposta_corretta, d.id);
+    }
+  } else if (e.key === '0') {
+    // Tasto 0
+    if (isNextVisible) {
+      // Se si può andare avanti, vai alla prossima (o termina simulazione)
+      prossimaDomanda();
+    } else {
+      // Altrimenti salta la domanda
+      sautaDomanda();
+    }
+  }
+});
+
+initDemoData();
+</script>
