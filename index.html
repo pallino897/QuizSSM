@@ -1,3 +1,12 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<title>Quiz Medicina – Specializzazioni</title>
 <style>
 :root {
   --color-background-primary: #ffffff;
@@ -46,12 +55,12 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 
 /* IL FIX DELLO SFONDO È QUI: Aggiunto background-color e color al body */
-body{font-family:var(--font-sans); background-color:var(--color-background-primary); color:var(--color-text-primary);}
+body{font-family:var(--font-sans); background-color:var(--color-background-primary); color:var(--color-text-primary);width:100%;overflow-x:hidden;}
 
-#app{padding:1rem 0;max-width:480px;margin:0 auto;}
+#app{padding:1rem 1rem 4rem;max-width:600px;margin:0 auto;width:100%;}
 .screen{display:none;}.screen.active{display:block;}
 .card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:12px;}
-.btn{display:block;width:100%;padding:12px 16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:15px;font-weight:400;color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.1s;margin-bottom:8px;line-height:1.4;}
+.btn{display:block;width:100%;padding:14px 16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:15px;font-weight:400;color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.1s;margin-bottom:8px;line-height:1.4;}
 .btn:hover{background:var(--color-background-secondary);}
 .btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);text-align:center;font-weight:500;}
 .btn.primary:hover{opacity:0.88;}
@@ -146,6 +155,9 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .detail-opt{display:flex;gap:10px;padding:8px 10px;border-radius:var(--border-radius-md);font-size:14px;line-height:1.5;margin-bottom:4px;}
 .detail-opt.opt-correct{background:var(--color-background-success);color:var(--color-text-success);}
 </style>
+</head>
+<body>
+
 
 <div id="app">
 
@@ -171,23 +183,36 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
   <div class="section-title">Modalità</div>
   <button class="btn" onclick="avviaQuiz('tutte')">🃏 Tutte le specialità</button>
   <button class="btn" onclick="mostraSceltaSpec()">🔍 Scegli specialità</button>
+  <button class="btn" onclick="mostraAnnales()">📅 Annales<span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">Quiz per annata SSM 2014–2025</span></button>
   <button class="btn" onclick="avviaQuiz('sbagliate')" id="btn-sbagliate" style="display:none">🔁 Ripassa le domande sbagliate</button>
   <button class="btn" onclick="avviaQuiz('segnalibri')" id="btn-segnalibri" style="display:none">🔖 Ripassa i segnalibri</button>
-  <button class="btn" onclick="avviaSimulazione()" style="border-color:var(--color-border-success);color:var(--color-text-success)">
+  <button class="btn" onclick="avviaSimulazione(false)" style="border-color:var(--color-border-success);color:var(--color-text-success)">
     🎯 Simulazione esame
     <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">140 domande · 210 minuti · navigazione libera</span>
+  </button>
+  <button class="btn" onclick="avviaSimulazione(true)" style="border-color:var(--color-border-success);color:var(--color-text-success)">
+    🎯 Simulazione proporzionale
+    <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">140 domande · ripartizione per materia come al Ministero</span>
   </button>
   <div class="section-title">Strumenti</div>
   <button class="btn" onclick="showScreen('search')">🔎 Ricerca libera</button>
   <button class="btn" onclick="mostraStats()">📊 Statistiche dettagliate</button>
   <button class="btn" onclick="mostraStorico()">📋 Storico simulazioni</button>
   <button class="btn" id="btn-import">📂 Importa CSV</button>
+  <button class="btn" id="btn-remove-db" onclick="resetDB()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi database domande</button>
 </div>
 
 <div id="screen-spec" class="screen">
   <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
   <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Scegli specialità</p>
   <div id="spec-list"></div>
+</div>
+
+<div id="screen-annales" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:4px">📅 Annales</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">Scegli un'annata per fare un quiz con le domande reali di quell'anno</p>
+  <div id="annales-list"></div>
 </div>
 
 <div id="screen-quiz" class="screen">
@@ -205,7 +230,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 
   <div id="quiz-content">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0">✕</button>
+      <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0" title="Esci / Consegna">✕</button>
       <span class="tag" id="q-spec-tag"></span>
       <div style="display:flex;align-items:center;gap:10px">
         <button class="bookmark-btn" id="btn-bookmark" onclick="toggleBookmark()" title="Aggiungi segnalibro">🔖</button>
@@ -215,7 +240,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     <div class="progress-bar-bg"><div class="progress-bar-fill" id="q-progress" style="width:0%"></div></div>
     
     <div class="card" style="margin-top:12px">
-      <p style="font-size:15px;line-height:1.6" id="q-text"></p>
+      <p style="font-size:17px;line-height:1.7" id="q-text"></p>
     </div>
     <div id="q-options"></div>
     <button class="btn skip" id="btn-skip" onclick="sautaDomanda()">— Non rispondo (0 punti) —</button>
@@ -234,7 +259,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     <h2 style="margin-bottom:8px">Pausa</h2>
     <p style="color:var(--color-text-secondary);margin-bottom:24px;font-size:14px">Il timer è fermo e le domande sono nascoste per evitare sbirciatine.</p>
     <button class="btn primary" onclick="togglePausa()">▶️ Riprendi simulazione</button>
-    <button class="btn skip" style="margin-top:8px" onclick="confermaUscita()">✕ Abbandona simulazione</button>
+    <button class="btn skip" style="margin-top:8px" onclick="abbandonaSim()">✕ Abbandona simulazione</button>
   </div>
 
 </div>
@@ -357,6 +382,8 @@ function aggiornHome(){
   document.getElementById('h-spec').textContent=[...new Set(DB.map(d=>d.specialita))].length||'—';
   document.getElementById('btn-sbagliate').style.display=(st.sbagliate&&st.sbagliate.length>0)?'block':'none';
   document.getElementById('btn-segnalibri').style.display=(st.segnalibri&&st.segnalibri.length>0)?'block':'none';
+  const rmBtn=document.getElementById('btn-remove-db');
+  if(rmBtn) rmBtn.style.display=(st.db&&st.db.length>0)?'block':'none';
 }
 
 /* ── Timer & Pausa ── */
@@ -424,18 +451,253 @@ function aggiornaIconaSegnalibro(){
   document.getElementById('btn-bookmark').style.opacity=marked?'1':'0.35';
 }
 
+/* ── Distribuzione ministeriale ── */
+
+// Categorie ministeriali con percentuali ufficiali
+const CATEGORIE_MINISTERIALI = [
+  { cat: 'Cardiologia, cardiochirurgia e chirurgia vascolare', perc: 18.67 },
+  { cat: 'Chirurgia generale e gastroenterologia',            perc: 17.33 },
+  { cat: 'Neurologia e neurochirurgia',                       perc: 10.56 },
+  { cat: 'Pneumologia e chirurgia toracica',                  perc:  8.67 },
+  { cat: 'Ginecologia e ostetricia',                          perc:  8.56 },
+  { cat: 'Urologia e nefrologia',                             perc:  7.78 },
+  { cat: 'Pediatria e genetica',                              perc:  7.44 },
+  { cat: 'Ortopedia',                                         perc:  7.22 },
+  { cat: 'Endocrinologia',                                    perc:  7.11 },
+  { cat: 'Ematologia',                                        perc:  6.00 },
+  { cat: 'Anestesia, rianimazione e medicina del dolore',     perc:  4.67 },
+  { cat: 'Immunologia clinica e reumatologia',                perc:  4.22 },
+  { cat: 'Malattie infettive',                                perc:  4.22 },
+  { cat: 'Dermatologia e venereologia',                       perc:  3.78 },
+  { cat: 'Igiene, epidemiologia e statistica',                perc:  3.67 },
+  { cat: 'Otorinolaringoiatria',                              perc:  3.00 },
+  { cat: 'Oftalmologia',                                      perc:  2.78 },
+  { cat: 'Psichiatria',                                       perc:  2.67 },
+  { cat: 'Medicina del lavoro',                               perc:  2.22 },
+  { cat: 'Medicina legale',                                   perc:  2.11 },
+  { cat: 'Radiodiagnostica e medicina nucleare',              perc:  2.00 },
+  { cat: 'Medicina interna e geriatria',                      perc:  2.00 },
+  { cat: 'Oncologia',                                         perc:  1.44 },
+  { cat: 'Nutrizione clinica',                                perc:  1.00 },
+  { cat: 'Farmacologia e tossicologia',                       perc:  0.44 },
+  { cat: 'Chirurgia plastica',                                perc:  0.33 },
+  { cat: 'Anatomia patologica',                               perc:  0.11 },
+];
+
+/*
+  Mapping ESATTO specialità CSV → categoria ministeriale.
+  Le chiavi sono i valori esatti del campo "specialita" nel CSV (trim, case-insensitive).
+  Le specialità "Abilitazione" vengono distribuite tra le categorie di appartenenza.
+  Le categorie generiche (Generale, SSM *anni*, Medicina Specialistica, ecc.)
+  vengono marcate come __pool_generico__ e usate come riserva proporzionale.
+*/
+const MAPPING_SPECIALITA = {
+  // ── CARDIOLOGIA, CARDIOCHIRURGIA E CHIRURGIA VASCOLARE ──
+  'malattie dellapparato cardiovascolare': 'Cardiologia, cardiochirurgia e chirurgia vascolare',
+  'cardiochirurgia':                        'Cardiologia, cardiochirurgia e chirurgia vascolare',
+  'chirurgia vascolare':                    'Cardiologia, cardiochirurgia e chirurgia vascolare',
+
+  // ── CHIRURGIA GENERALE E GASTROENTEROLOGIA ──
+  'chirurgia generale':                     'Chirurgia generale e gastroenterologia',
+  'chirurgia generale - abilitazione':      'Chirurgia generale e gastroenterologia',
+  'gastroenterologia':                      'Chirurgia generale e gastroenterologia',
+  'chirurgia maxillo facciale':             'Chirurgia generale e gastroenterologia',
+  'chirurgia specialistica - abilitazione': 'Chirurgia generale e gastroenterologia',
+
+  // ── NEUROLOGIA E NEUROCHIRURGIA ──
+  'neurologia':                             'Neurologia e neurochirurgia',
+  'neurochirurgia':                         'Neurologia e neurochirurgia',
+  'neuropsichiatria infantile':             'Neurologia e neurochirurgia',
+
+  // ── PNEUMOLOGIA E CHIRURGIA TORACICA ──
+  'malattie dellapparato respiratorio':     'Pneumologia e chirurgia toracica',
+  'chirurgia toracica':                     'Pneumologia e chirurgia toracica',
+
+  // ── GINECOLOGIA E OSTETRICIA ──
+  'ginecologia e ostetricia':               'Ginecologia e ostetricia',
+  'ostetricia e ginecologia - abilitazione':'Ginecologia e ostetricia',
+
+  // ── UROLOGIA E NEFROLOGIA ──
+  'urologia':                               'Urologia e nefrologia',
+  'nefrologia':                             'Urologia e nefrologia',
+
+  // ── PEDIATRIA E GENETICA ──
+  'pediatria':                              'Pediatria e genetica',
+  'pediatria - abilitazione':               'Pediatria e genetica',
+  'chirurgia pediatrica':                   'Pediatria e genetica',
+  'genetica medica':                        'Pediatria e genetica',
+
+  // ── ORTOPEDIA ──
+  'ortopedia e traumatologia':              'Ortopedia',
+
+  // ── ENDOCRINOLOGIA ──
+  'endocrinologia e malattie del metabolismo': 'Endocrinologia',
+  'medicina dello sport':                   'Endocrinologia',
+  'scienza dellalimentazione':              'Endocrinologia',  // nutrizione → mappata qui + nutrizione clinica
+  'medicina termale':                       'Endocrinologia',
+
+  // ── EMATOLOGIA ──
+  'ematologia':                             'Ematologia',
+  'patologia clinica':                      'Ematologia',
+  'microbiologia e virologia':              'Ematologia',
+
+  // ── ANESTESIA, RIANIMAZIONE E MEDICINA DEL DOLORE ──
+  'anestesia e rianimazione e terapia intensiva': 'Anestesia, rianimazione e medicina del dolore',
+  'medicina demergenza urgenza':            'Anestesia, rianimazione e medicina del dolore',
+
+  // ── IMMUNOLOGIA CLINICA E REUMATOLOGIA ──
+  'allergologia e immunologia clinica':     'Immunologia clinica e reumatologia',
+  'reumatologia':                           'Immunologia clinica e reumatologia',
+
+  // ── MALATTIE INFETTIVE ──
+  'malattie infettive':                     'Malattie infettive',
+
+  // ── DERMATOLOGIA E VENEREOLOGIA ──
+  'dermatologia e venereologia':            'Dermatologia e venereologia',
+
+  // ── IGIENE, EPIDEMIOLOGIA E STATISTICA ──
+  'igiene e medicina preventiva':           'Igiene, epidemiologia e statistica',
+  'statistica sanitaria e biometria':       'Igiene, epidemiologia e statistica',
+
+  // ── OTORINOLARINGOIATRIA ──
+  'otorinolaringoiatria':                   'Otorinolaringoiatria',
+  'audiologia e foniatria':                 'Otorinolaringoiatria',
+  'organi di senso - abilitazione':         'Otorinolaringoiatria',  // comprende ORL + oftalmo: si split 50/50 in campionamento
+
+  // ── OFTALMOLOGIA ──
+  'oftalmologia':                           'Oftalmologia',
+
+  // ── PSICHIATRIA ──
+  'psichiatria':                            'Psichiatria',
+
+  // ── MEDICINA DEL LAVORO ──
+  'medicina del lavoro':                    'Medicina del lavoro',
+
+  // ── MEDICINA LEGALE ──
+  'medicina legale':                        'Medicina legale',
+  'medicina legale e sanità pubblica - abilitaizone': 'Medicina legale',
+
+  // ── RADIODIAGNOSTICA E MEDICINA NUCLEARE ──
+  'radiodiagnostica':                       'Radiodiagnostica e medicina nucleare',
+  'medicina nucleare':                      'Radiodiagnostica e medicina nucleare',
+  'radioterapia':                           'Radiodiagnostica e medicina nucleare',
+  'radiologia e diagnostica - abilitazione':'Radiodiagnostica e medicina nucleare',
+
+  // ── MEDICINA INTERNA E GERIATRIA ──
+  'medicina interna':                       'Medicina interna e geriatria',
+  'medicina interna - abilitazione':        'Medicina interna e geriatria',
+  'geriatria':                              'Medicina interna e geriatria',
+  'medicina fisica e riabilitativa':        'Medicina interna e geriatria',
+
+  // ── ONCOLOGIA ──
+  'oncologia':                              'Oncologia',
+
+  // ── NUTRIZIONE CLINICA ──
+  // 'scienza dellalimentazione' già in Endocrinologia; qui non duplicato
+
+  // ── FARMACOLOGIA E TOSSICOLOGIA ──
+  'farmacologia':                           'Farmacologia e tossicologia',
+  'tossicologia medica':                    'Farmacologia e tossicologia',
+
+  // ── CHIRURGIA PLASTICA ──
+  'chirurgia plastica ricostruttiva ed estetica': 'Chirurgia plastica',
+
+  // ── ANATOMIA PATOLOGICA ──
+  'anatomia patologica':                    'Anatomia patologica',
+
+  // ── POOL GENERICO (usato come riserva) ──
+  'generale':                               '__pool_generico__',
+  'ssm 2014':                              '__pool_generico__',
+  'ssm 2015':                              '__pool_generico__',
+  'ssm 2016':                              '__pool_generico__',
+  'ssm 2019':                              '__pool_generico__',
+  'ssm 2020':                              '__pool_generico__',
+  'ssm 2021':                              '__pool_generico__',
+  'ssm 2022':                              '__pool_generico__',
+  'ssm 2023':                              '__pool_generico__',
+  'ssm 2024':                              '__pool_generico__',
+  'ssm 2025':                              '__pool_generico__',
+  'medicina specialistica - abilitazione': '__pool_generico__',
+};
+
+function categorizzaSpecialita(specialita) {
+  const s = (specialita || '').trim().toLowerCase();
+  return MAPPING_SPECIALITA[s] || '__pool_generico__';
+}
+
+function campionaProportionale(tot) {
+  // 1. Raggruppa DB per categoria ministeriale
+  const gruppi = {};
+  for (const d of DB) {
+    const cat = categorizzaSpecialita(d.specialita);
+    if (!gruppi[cat]) gruppi[cat] = [];
+    gruppi[cat].push(d);
+  }
+
+  // 2. Calcola le quote con arrotondamento "Largest Remainder"
+  const quote = CATEGORIE_MINISTERIALI.map(e => ({
+    cat: e.cat,
+    intero: Math.floor(tot * e.perc / 100),
+    residuo: (tot * e.perc / 100) % 1,
+  }));
+  let assegnate = quote.reduce((s, q) => s + q.intero, 0);
+  const mancanti = tot - assegnate;
+  quote.sort((a, b) => b.residuo - a.residuo);
+  for (let i = 0; i < mancanti; i++) quote[i].intero++;
+  // Ripristina ordine originale
+  quote.sort((a, b) =>
+    CATEGORIE_MINISTERIALI.findIndex(e => e.cat === a.cat) -
+    CATEGORIE_MINISTERIALI.findIndex(e => e.cat === b.cat)
+  );
+
+  // 3. Campiona da ogni gruppo; i posti scoperti vengono raccolti
+  const risultato = [];
+  const usati = new Set();
+  let postiScoperti = 0;
+
+  for (const q of quote) {
+    if (q.intero === 0) continue;
+    const pool = shuffle((gruppi[q.cat] || []).filter(d => !usati.has(d.id)));
+    const presi = pool.slice(0, q.intero);
+    presi.forEach(d => { risultato.push(d); usati.add(d.id); });
+    postiScoperti += (q.intero - presi.length);
+  }
+
+  // 4. Fallback: riempi i posti scoperti attingendo al pool generico,
+  //    poi (se ancora mancano) da qualsiasi domanda non ancora usata.
+  if (postiScoperti > 0) {
+    const fonti = [
+      ...(gruppi['__pool_generico__'] || []),
+      ...DB,
+    ];
+    const extra = shuffle(fonti.filter(d => !usati.has(d.id)));
+    extra.slice(0, postiScoperti).forEach(d => { risultato.push(d); usati.add(d.id); });
+  }
+
+  return shuffle(risultato.slice(0, tot));
+}
+
 /* ── Avvio quiz ── */
-function avviaSimulazione(){
+function avviaSimulazione(proporzionale){
   if(DB.length===0){alert('Carica prima il CSV.');return;}
   isSimulazione=true;ultimaModalita='sim';
-  sessione=shuffle([...DB]).slice(0,Math.min(DB.length,140));
+  if(proporzionale){
+    sessione=campionaProportionale(Math.min(DB.length,140));
+  } else {
+    sessione=shuffle([...DB]).slice(0,Math.min(DB.length,140));
+  }
   iniziaSessione();avviaTimer(210*60);
 }
 function avviaQuiz(modalita){
   if(DB.length===0){alert('Carica prima il CSV.');return;}
   isSimulazione=false;ultimaModalita=modalita;fermaTimer();
   const st=getStorage();let pool=[];
-  if(modalita==='tutte')pool=shuffle([...DB]);
+  if(modalita.startsWith('annales_')){
+    const annate=modalita.replace('annales_','').split(',');
+    const nomiLower=annate.map(a=>a.toLowerCase());
+    pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
+    if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
+  } else if(modalita==='tutte')pool=shuffle([...DB]);
   else if(modalita==='sbagliate'){
     const ids=new Set(st.sbagliate||[]);
     pool=shuffle(DB.filter(d=>ids.has(d.id)));
@@ -736,6 +998,109 @@ function toggleBookmarkDiretto(id){
 }
 
 /* ── Storico ── */
+function mostraSceltaSpec(){
+  const specs=[...new Set(DB.map(d=>d.specialita))].sort();
+  const list=document.getElementById('spec-list'); list.innerHTML='';
+  if(!specs.length){alert('Nessuna specialità disponibile. Carica prima il CSV.');return;}
+  specs.forEach(s=>{
+    const count=DB.filter(d=>d.specialita===s).length;
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:8px;transition:background 0.1s;';
+    div.innerHTML='<span style="font-size:15px">'+s+'</span><span style="font-size:13px;color:var(--color-text-secondary)">'+count+' domande</span>';
+    div.onmouseover=()=>div.style.background='var(--color-background-secondary)';
+    div.onmouseout=()=>div.style.background='var(--color-background-primary)';
+    div.onclick=()=>avviaQuiz(s);
+    list.appendChild(div);
+  });
+  showScreen('spec');
+}
+
+/* ── Annales ── */
+// Tutte le annate SSM riconosciute (ordine cronologico inverso = più recenti prima)
+const ANNATE_SSM = [
+  'SSM 2025','SSM 2024','SSM 2023','SSM 2022','SSM 2021',
+  'SSM 2020','SSM 2019','SSM 2016','SSM 2015','SSM 2014',
+];
+
+function mostraAnnales(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+
+  // Calcola quante domande ci sono per ogni annata nel DB caricato
+  const conteggioPerAnnata = {};
+  for(const d of DB){
+    const s = (d.specialita||'').trim();
+    if(ANNATE_SSM.map(a=>a.toLowerCase()).includes(s.toLowerCase())){
+      const chiave = s.toUpperCase().replace('SSM ','SSM '); // normalizza
+      // Trova l'annata canonica
+      const canonica = ANNATE_SSM.find(a=>a.toLowerCase()===s.toLowerCase());
+      if(canonica) conteggioPerAnnata[canonica]=(conteggioPerAnnata[canonica]||0)+1;
+    }
+  }
+
+  const list=document.getElementById('annales-list');
+  list.innerHTML='';
+
+  // Anni presenti nel DB
+  const annatePresenti = ANNATE_SSM.filter(a => (conteggioPerAnnata[a]||0)>0);
+
+  if(annatePresenti.length===0){
+    list.innerHTML='<div class="empty-state">Nessuna annata SSM trovata nel database.<br>Importa un CSV che contenga specialità come "SSM 2024".</div>';
+    showScreen('annales');
+    return;
+  }
+
+  // Bottone "Tutte le annate"
+  const totSSM = annatePresenti.reduce((s,a)=>s+(conteggioPerAnnata[a]||0),0);
+  const divTutte=document.createElement('div');
+  divTutte.className='section-title';divTutte.style.marginTop='0';
+  divTutte.textContent='Tutte le annate';
+  list.appendChild(divTutte);
+
+  const btnTutte=document.createElement('div');
+  btnTutte.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:16px;transition:background 0.1s;';
+  btnTutte.innerHTML='<div><span style="font-size:15px">📅 Annales completo</span><span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">Tutte le annate mescolate</span></div><span style="font-size:13px;color:var(--color-text-secondary)">'+totSSM+' domande</span>';
+  btnTutte.onmouseover=()=>btnTutte.style.background='var(--color-background-secondary)';
+  btnTutte.onmouseout=()=>btnTutte.style.background='var(--color-background-primary)';
+  btnTutte.onclick=()=>avviaQuizAnnales(annatePresenti);
+  list.appendChild(btnTutte);
+
+  // Una riga per ogni annata
+  const divPerAnno=document.createElement('div');
+  divPerAnno.className='section-title';
+  divPerAnno.textContent='Per annata';
+  list.appendChild(divPerAnno);
+
+  // Mappa anno → emoji stagionale (puramente estetico)
+  const emoji={'2025':'🆕','2024':'⭐','2023':'📗','2022':'📘','2021':'📙','2020':'📕','2019':'📓','2016':'📒','2015':'📔','2014':'📃'};
+
+  annatePresenti.forEach(annata=>{
+    const count=conteggioPerAnnata[annata]||0;
+    const anno=annata.replace('SSM ','');
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:8px;transition:background 0.1s;';
+    div.innerHTML='<div><span style="font-size:15px">'+(emoji[anno]||'📄')+' SSM '+anno+'</span></div><span style="font-size:13px;color:var(--color-text-secondary)">'+count+' domande</span>';
+    div.onmouseover=()=>div.style.background='var(--color-background-secondary)';
+    div.onmouseout=()=>div.style.background='var(--color-background-primary)';
+    div.onclick=()=>avviaQuizAnnales([annata]);
+    list.appendChild(div);
+  });
+
+  showScreen('annales');
+}
+
+function avviaQuizAnnales(annate){
+  if(DB.length===0)return;
+  isSimulazione=false;
+  ultimaModalita='annales_'+annate.join(',');
+  fermaTimer();
+  const nomiLower=annate.map(a=>a.toLowerCase());
+  const pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
+  if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
+  sessione=pool.slice(0,Math.min(pool.length,numDomande));
+  iniziaSessione();
+  document.getElementById('timer-box').style.display='none';
+}
+
 function mostraStorico(){
   const st=getStorage();
   const list=document.getElementById('storico-list');list.innerHTML='';
@@ -800,14 +1165,40 @@ function mostraStats(){
   });
   showScreen('stats');
 }
-function resetStats(){if(!confirm('Sei sicuro? Tutti i progressi, segnalibri e storico verranno cancellati.'))return;saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[]});aggiornHome();showScreen('home');}
+function resetStats(){
+  const msg = 'Sei sicuro?\n\n- Tutti i progressi, segnalibri e storico verranno cancellati.\n- Il database domande rimarrà salvato.\n\nSe vuoi cancellare anche le domande, usa "Rimuovi database domande".'
+  if(!confirm(msg))return;
+  const st=loadStorage();
+  const db=st.db; // conserva il DB
+  saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[],db:db});
+  aggiornHome();showScreen('home');
+}
+function resetDB(){
+  if(!confirm('Rimuovere il database delle domande? Dovrai reimportare il CSV.'))return;
+  const st=loadStorage();
+  st.db=null; DB=[];
+  saveStorage(st);
+  initDemoData();
+  showScreen('home');
+}
 
 /* ── Uscita ── */
 function confermaUscita(){
-  if(isSimulazione&&timerSecondi>0){if(!confirm('Vuoi abbandonare? I tuoi progressi di questa simulazione andranno persi.'))return;tornaHome();}
-  else tornaHome();
+  if(isSimulazione){
+    const scelta = confirm('Vuoi CONSEGNARE la simulazione e vedere il risultato?\n\nOK = Consegna e vedi risultato\nAnnulla = Torna alla home abbandonando la simulazione');
+    if(scelta){
+      terminaSimulazione(false);
+    } else {
+      if(confirm('Sei sicuro di voler abbandonare? Il risultato NON verrà salvato.'))tornaHome();
+    }
+  } else {
+    tornaHome();
+  }
 }
 function tornaHome(){fermaTimer();aggiornHome();showScreen('home');}
+function abbandonaSim(){
+  if(confirm('Sei sicuro di voler abbandonare la simulazione?\nIl risultato NON verrà salvato.'))tornaHome();
+}
 
 /* ── CSV ── */
 function caricaCSV(testo){
@@ -843,7 +1234,13 @@ fileInput.onchange=e=>{
   reader.onload=ev=>{
     const d=caricaCSV(ev.target.result);
     if(d.length===0){alert('Nessuna domanda trovata.');return;}
-    DB=d;aggiornHome();alert('✓ Caricate '+d.length+' domande!');
+    DB=d;
+    // Salva il DB nel localStorage per non doverlo ricaricare ogni volta
+    const st=loadStorage();
+    st.db=d;
+    saveStorage(st);
+    aggiornHome();
+    alert('✓ Caricate '+d.length+' domande! Saranno ricordate anche al prossimo accesso.');
   };
   reader.readAsText(file,'utf-8');
 };
@@ -887,5 +1284,19 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-initDemoData();
+// All'avvio: carica il DB dal localStorage se esiste, altrimenti usa i dati demo
+(function init() {
+  const st = loadStorage();
+  if (st.db && st.db.length > 0) {
+    DB = st.db;
+    aggiornHome();
+    const srchEl = document.getElementById('search-results');
+    if (srchEl) srchEl.innerHTML = '<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
+    console.log('✓ DB caricato dal localStorage: ' + DB.length + ' domande');
+  } else {
+    initDemoData();
+  }
+})();
 </script>
+</body>
+</html>
