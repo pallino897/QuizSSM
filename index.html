@@ -66,7 +66,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .btn.primary:hover{opacity:0.88;}
 .btn.correct{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success);pointer-events:none;}
 .btn.wrong{background:var(--color-background-danger);border-color:var(--color-border-danger);color:var(--color-text-danger);pointer-events:none;}
-.btn.reveal{border-color:var(--color-border-success);color:var(--color-text-success);pointer-events:none;}
+.btn.reveal{background:var(--color-background-warning);border-color:var(--color-text-warning);color:var(--color-text-warning);pointer-events:none;}
 .btn.disabled{opacity:0.45;pointer-events:none;}
 .btn.skip{text-align:center;color:var(--color-text-secondary);border-style:dashed;font-size:14px;padding:10px;margin-top:4px;}
 .btn.selected-sim{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
@@ -180,6 +180,15 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     <label>Personalizzato:</label>
     <input type="number" id="custom-num" min="1" max="9999" placeholder="es. 30" oninput="selezionaCustom(this)">
   </div>
+  <div onclick="toggleCountdown()" id="countdown-toggle-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:11px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+    <div>
+      <span style="font-size:14px;font-weight:500">⏱ Modalità Countdown</span>
+      <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">90 secondi per domanda · pausa disponibile</span>
+    </div>
+    <div id="countdown-toggle-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+      <div id="countdown-knob-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+    </div>
+  </div>
   <div class="section-title">Modalità</div>
   <button class="btn" onclick="avviaQuiz('tutte')">🃏 Tutte le specialità</button>
   <button class="btn" onclick="mostraSceltaSpec()">🔍 Scegli specialità</button>
@@ -211,7 +220,16 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 <div id="screen-annales" class="screen">
   <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
   <p style="font-size:18px;font-weight:500;margin-bottom:4px">📅 Annales</p>
-  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">Scegli un'annata per fare un quiz con le domande reali di quell'anno</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Scegli un'annata per fare un quiz con le domande reali di quell'anno</p>
+  <div onclick="toggleAnnalesEsame()" id="annales-esame-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding:11px 14px;border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+    <div>
+      <span style="font-size:14px;font-weight:500;color:var(--color-text-success)">🎯 Modalità Esame</span>
+      <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">140 domande · 210 min · navigazione libera · punteggio ufficiale</span>
+    </div>
+    <div id="annales-esame-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+      <div id="annales-esame-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+    </div>
+  </div>
   <div id="annales-list"></div>
 </div>
 
@@ -329,21 +347,122 @@ let idx=0, n_corrette=0, n_sbagliate=0, n_saltate=0;
 let logRisposte=[];
 let ultimaModalita='tutte', numDomande=10;
 let isSimulazione=false;
+let isCountdown=false;
+let isAnnalesEsame=false;
+const COUNTDOWN_SEC_PER_DOMANDA=90;
 let timerInterval=null, timerSecondi=0, timerTotale=0;
 let isPausa=false;
 let scelteSimulazione=[]; // Salva le scelte provvisorie in mod. Simulazione
 
 /* ── Storage ── */
 function loadStorage(){
-  try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):{risposte:{},sbagliate:[],segnalibri:[],storico:[]};}
-  catch(e){return{risposte:{},sbagliate:[],segnalibri:[],storico:[]};}
+  try{
+    const r=localStorage.getItem(STORAGE_KEY);
+    const parsed=r?JSON.parse(r):{risposte:{},sbagliate:[],segnalibri:[],storico:[]};
+    // Migrazione: rimuovi db da localStorage se ancora presente (ora è in IndexedDB)
+    if(parsed.db){delete parsed.db;localStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));}
+    return parsed;
+  }catch(e){return{risposte:{},sbagliate:[],segnalibri:[],storico:[]};}
 }
-function saveStorage(d){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(d));}catch(e){}}
+function saveStorage(d){
+  const toSave={...d};delete toSave.db; // non salvare mai il DB in localStorage
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(toSave));}catch(e){}
+}
 function getStorage(){
   const s=loadStorage();
   if(!s.segnalibri)s.segnalibri=[];
   if(!s.storico)s.storico=[];
   return s;
+}
+
+/* ── IndexedDB per il database domande ── */
+const IDB_NAME='quiz_med_db', IDB_STORE='domande', IDB_KEY='csv_db', IDB_SESSION_KEY='sessione_interrotta';
+function openIDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(IDB_NAME,1);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE))
+        db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess=e=>res(e.target.result);
+    req.onerror=e=>rej(e.target.error);
+  });
+}
+async function saveDBToIDB(data){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(data,IDB_KEY);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.error('IDB save error:',e);return false;}
+}
+async function loadDBFromIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readonly');
+      const req=tx.objectStore(IDB_STORE).get(IDB_KEY);
+      req.onsuccess=e=>res(e.target.result||null);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.error('IDB load error:',e);return null;}
+}
+async function clearDBFromIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_KEY);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return false;}
+}
+
+/* ── Sessione interrotta: salva/carica/cancella ── */
+async function salvaSessioneInterrotta(){
+  if(!sessione||sessione.length===0)return;
+  const stato={
+    sessione, idx, n_corrette, n_sbagliate, n_saltate,
+    logRisposte, ultimaModalita, isSimulazione, isCountdown,
+    scelteSimulazione,
+    timerSecondiRimanenti: isSimulazione||isCountdown ? timerSecondi : null,
+    timerTotaleOrig: timerTotale,
+    ts: Date.now()
+  };
+  try{
+    const db=await openIDB();
+    await new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(stato, IDB_SESSION_KEY);
+      tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.warn('Salvataggio sessione fallito:',e);}
+}
+async function caricaSessioneInterrotta(){
+  try{
+    const db=await openIDB();
+    return await new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readonly');
+      const req=tx.objectStore(IDB_STORE).get(IDB_SESSION_KEY);
+      req.onsuccess=e=>res(e.target.result||null);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return null;}
+}
+async function cancellaSessioneInterrotta(){
+  try{
+    const db=await openIDB();
+    await new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_SESSION_KEY);
+      tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){}
 }
 
 /* ── Nav ── */
@@ -383,11 +502,12 @@ function aggiornHome(){
   document.getElementById('btn-sbagliate').style.display=(st.sbagliate&&st.sbagliate.length>0)?'block':'none';
   document.getElementById('btn-segnalibri').style.display=(st.segnalibri&&st.segnalibri.length>0)?'block':'none';
   const rmBtn=document.getElementById('btn-remove-db');
-  if(rmBtn) rmBtn.style.display=(st.db&&st.db.length>0)?'block':'none';
+  if(rmBtn) rmBtn.style.display=(DB.length>0)?'block':'none';
 }
 
 /* ── Timer & Pausa ── */
 function avviaTimer(sec){
+  fermaTimer(); // evita interval sovrapposti
   timerTotale=sec;timerSecondi=sec;
   document.getElementById('timer-box').style.display='block';
   isPausa=false; ripristinaVistePausa();
@@ -398,7 +518,8 @@ function avviaTimer(sec){
     if(timerSecondi<=0){
       clearInterval(timerInterval);
       if(isSimulazione) terminaSimulazione(true);
-      else mostraRisultato(true);
+      else if(isCountdown) saltaDopoCountdown();
+      // se !isCountdown e !isSimulazione il timer non dovrebbe girare: ignora
     }
   },1000);
 }
@@ -419,7 +540,8 @@ function togglePausa() {
       if(timerSecondi<=0){
         clearInterval(timerInterval);
         if(isSimulazione) terminaSimulazione(true);
-        else mostraRisultato(true);
+        else if(isCountdown) saltaDopoCountdown();
+        // se !isCountdown e !isSimulazione il timer non dovrebbe girare: ignora
       }
     },1000);
   } else {
@@ -433,6 +555,34 @@ function ripristinaVistePausa() {
   document.getElementById('btn-pause').textContent = '⏸️';
   document.getElementById('quiz-content').style.display = 'block';
   document.getElementById('pause-content').style.display = 'none';
+}
+
+/* ── Countdown: auto-skip quando il tempo per una domanda scade ── */
+function saltaDopoCountdown(){
+  // Se la domanda non ha ancora ricevuto risposta, la salta automaticamente
+  const btnNext = document.getElementById('btn-next');
+  if(btnNext.style.display === 'block'){
+    // Utente aveva già risposto, vai avanti
+    prossimaDomanda();
+    return;
+  }
+  n_saltate++;
+  document.getElementById('btn-skip').style.display='none';
+  document.querySelectorAll('#q-options .btn').forEach(btn=>{
+    btn.classList.add('disabled');
+    if(btn.querySelector('strong').textContent===sessione[idx].risposta_corretta){
+      btn.classList.remove('disabled');btn.classList.add('reveal');
+    }
+  });
+  logRisposte.push({domanda:sessione[idx],scelta:null,esito:'skipped'});
+  if(idx+1<sessione.length){
+    btnNext.style.display='block';
+    btnNext.textContent='Prossima domanda ▶';
+    // Breve pausa visiva (1.5s) poi avanza automaticamente
+    setTimeout(()=>{prossimaDomanda();},1500);
+  } else {
+    mostraRisultato(false);
+  }
 }
 
 /* ── Segnalibri ── */
@@ -625,10 +775,11 @@ function categorizzaSpecialita(specialita) {
   return MAPPING_SPECIALITA[s] || '__pool_generico__';
 }
 
-function campionaProportionale(tot) {
-  // 1. Raggruppa DB per categoria ministeriale
+function campionaProportionale(tot, dbSorgente) {
+  const fonte = dbSorgente || DB;
+  // 1. Raggruppa per categoria ministeriale
   const gruppi = {};
-  for (const d of DB) {
+  for (const d of fonte) {
     const cat = categorizzaSpecialita(d.specialita);
     if (!gruppi[cat]) gruppi[cat] = [];
     gruppi[cat].push(d);
@@ -668,7 +819,7 @@ function campionaProportionale(tot) {
   if (postiScoperti > 0) {
     const fonti = [
       ...(gruppi['__pool_generico__'] || []),
-      ...DB,
+      ...fonte,
     ];
     const extra = shuffle(fonti.filter(d => !usati.has(d.id)));
     extra.slice(0, postiScoperti).forEach(d => { risultato.push(d); usati.add(d.id); });
@@ -677,17 +828,53 @@ function campionaProportionale(tot) {
   return shuffle(risultato.slice(0, tot));
 }
 
+/* ── Toggle Countdown ── */
+function toggleCountdown(){
+  isCountdown=!isCountdown;
+  const knob=document.getElementById('countdown-toggle-knob');
+  const dot=document.getElementById('countdown-knob-dot');
+  if(isCountdown){
+    knob.style.background='var(--color-text-primary)';
+    dot.style.left='22px';
+  } else {
+    // Se si disattiva mentre un quiz countdown è in corso, ferma e nasconde il timer
+    fermaTimer();
+    const timerBox=document.getElementById('timer-box');
+    if(timerBox && !isSimulazione) timerBox.style.display='none';
+    knob.style.background='var(--color-background-tertiary)';
+    dot.style.left='2px';
+  }
+}
+
+/* ── Countdown per domanda: riparte ad ogni nuova domanda ── */
+function avviaTimerDomanda(){
+  fermaTimer();
+  avviaTimer(COUNTDOWN_SEC_PER_DOMANDA);
+}
+
 /* ── Avvio quiz ── */
 function avviaSimulazione(proporzionale){
   if(DB.length===0){alert('Carica prima il CSV.');return;}
   isSimulazione=true;ultimaModalita='sim';
+  const DBfiltrato=DB.filter(d=>!isEsclusa(d));
   if(proporzionale){
-    sessione=campionaProportionale(Math.min(DB.length,140));
+    sessione=campionaProportionale(Math.min(DBfiltrato.length,140), DBfiltrato);
   } else {
-    sessione=shuffle([...DB]).slice(0,Math.min(DB.length,140));
+    sessione=shuffle([...DBfiltrato]).slice(0,Math.min(DBfiltrato.length,140));
   }
   iniziaSessione();avviaTimer(210*60);
 }
+/*
+  Specialità che compaiono SOLO se scelte esplicitamente da "Scegli specialità".
+  Escluse da: tutte le specialità, sbagliate, segnalibri, simulazioni (normale e proporzionale).
+*/
+const SPECIALITA_ESCLUSE_DA_RANDOM = [
+  'area pre clinica - abilitazione',
+];
+function isEsclusa(d){
+  return SPECIALITA_ESCLUSE_DA_RANDOM.includes((d.specialita||'').trim().toLowerCase());
+}
+
 function avviaQuiz(modalita){
   if(DB.length===0){alert('Carica prima il CSV.');return;}
   isSimulazione=false;ultimaModalita=modalita;fermaTimer();
@@ -697,25 +884,33 @@ function avviaQuiz(modalita){
     const nomiLower=annate.map(a=>a.toLowerCase());
     pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
     if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
-  } else if(modalita==='tutte')pool=shuffle([...DB]);
-  else if(modalita==='sbagliate'){
+  } else if(modalita==='tutte'){
+    pool=shuffle(DB.filter(d=>!isEsclusa(d)));
+  } else if(modalita==='sbagliate'){
     const ids=new Set(st.sbagliate||[]);
-    pool=shuffle(DB.filter(d=>ids.has(d.id)));
+    pool=shuffle(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)));
     if(pool.length===0){alert('Nessuna domanda sbagliata salvata.');return;}
   } else if(modalita==='segnalibri'){
     const ids=new Set(st.segnalibri||[]);
-    pool=shuffle(DB.filter(d=>ids.has(d.id)));
+    pool=shuffle(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)));
     if(pool.length===0){alert('Nessun segnalibro salvato.');return;}
   } else {
+    // Selezione specifica per specialità: nessun filtro, l'utente ha scelto esplicitamente
     pool=shuffle(DB.filter(d=>d.specialita===modalita));
   }
   sessione=pool.slice(0,Math.min(pool.length,numDomande));
-  iniziaSessione();document.getElementById('timer-box').style.display='none';
+  iniziaSessione();
+  if(isCountdown){
+    avviaTimer(COUNTDOWN_SEC_PER_DOMANDA);
+  } else {
+    document.getElementById('timer-box').style.display='none';
+  }
 }
 function iniziaSessione(){
   idx=0;n_corrette=0;n_sbagliate=0;n_saltate=0;logRisposte=[];
   scelteSimulazione = new Array(sessione.length).fill(null);
   isPausa=false; ripristinaVistePausa();
+  cancellaSessioneInterrotta(); // nuova sessione → pulisce la vecchia
   showScreen('quiz');mostraDomanda();
 }
 
@@ -736,14 +931,53 @@ function aggiornaNavGrid() {
   });
 }
 
+/* ── Formattazione testo domanda (caso clinico) ── */
+function formattaDomanda(testo) {
+  // Cerca [CASO CLINICO: ...] oppure [CASO CLINICO ...] (con o senza i due punti)
+  const re = /\[CASO CLINICO[:\s]*(.*?)\]/gis;
+  let risultato = testo;
+  let match;
+  // Raccogliamo tutti i casi clinici e li sostituiamo
+  const parti = [];
+  let ultimo = 0;
+  re.lastIndex = 0;
+  while ((match = re.exec(testo)) !== null) {
+    // Testo prima del caso clinico
+    if (match.index > ultimo) {
+      parti.push({ tipo: 'testo', val: testo.slice(ultimo, match.index).trim() });
+    }
+    parti.push({ tipo: 'caso', val: match[1].trim() });
+    ultimo = match.index + match[0].length;
+  }
+  // Testo dopo l'ultimo caso clinico
+  if (ultimo < testo.length) {
+    const resto = testo.slice(ultimo).trim();
+    if (resto) parti.push({ tipo: 'testo', val: resto });
+  }
+  // Se non c'è nessun caso clinico, ritorna il testo escaped normalmente
+  if (parti.length === 0 || !parti.some(p => p.tipo === 'caso')) {
+    return escHtml(testo);
+  }
+  // Costruisci HTML: caso clinico in corsivo + testo normale su riga separata
+  return parti.map(p => {
+    if (p.tipo === 'caso') {
+      return '<em style="color:var(--color-text-secondary);font-size:15px;line-height:1.7;display:block;margin-bottom:0.75rem">' + escHtml(p.val) + '</em>';
+    } else {
+      return '<span style="display:block;margin-top:0.5rem">' + escHtml(p.val) + '</span>';
+    }
+  }).join('');
+}
+
 /* ── Domanda ── */
 function mostraDomanda(){
   const d=sessione[idx];
   document.getElementById('q-spec-tag').textContent=d.specialita;
   document.getElementById('q-counter').textContent=(idx+1)+' / '+sessione.length;
   document.getElementById('q-progress').style.width=Math.round((idx/sessione.length)*100)+'%';
-  document.getElementById('q-text').textContent=d.domanda;
+  document.getElementById('q-text').innerHTML = formattaDomanda(d.domanda);
   aggiornaIconaSegnalibro();
+  // Riavvia il countdown ad ogni nuova domanda (non in simulazione)
+  if(isCountdown && !isSimulazione){ avviaTimerDomanda(); }
   
   const opzDiv=document.getElementById('q-options');opzDiv.innerHTML='';
   ['A','B','C','D','E'].forEach(l=>{
@@ -785,6 +1019,7 @@ function rispondi(scelta,corretta_let,id){
     aggiornaNavGrid();
   } else {
     // Modalità ripasso: mostra subito risultato
+    fermaTimer(); // Countdown: ferma il timer quando si risponde
     const st=getStorage(),giusta=scelta===corretta_let;
     document.querySelectorAll('#q-options .btn').forEach(btn=>{
       const l=btn.querySelector('strong').textContent;
@@ -811,6 +1046,7 @@ function sautaDomanda(){
     aggiornaNavGrid();
     prossimaDomanda();
   } else {
+    fermaTimer(); // Countdown: ferma il timer allo skip manuale
     n_saltate++;
     document.getElementById('btn-skip').style.display='none';
     document.querySelectorAll('#q-options .btn').forEach(btn=>{
@@ -872,6 +1108,7 @@ function terminaSimulazione(timeout) {
 /* ── Risultato ── */
 function mostraRisultato(timeout){
   fermaTimer();
+  cancellaSessioneInterrotta(); // sessione completata, non serve più
   const score=n_corrette-n_sbagliate*0.25;
   const perc=sessione.length>0?Math.round(n_corrette/sessione.length*100):0;
   let titolo='';
@@ -908,7 +1145,7 @@ function costruisciRecap(){
     const item=document.createElement('div');item.className='recap-item';item.dataset.esito=esito;
     const header=document.createElement('div');header.className='recap-header';
     const dot=document.createElement('div');dot.className='recap-dot '+esito;
-    const qText=document.createElement('div');qText.className='recap-q';qText.textContent=(i+1)+'. '+d.domanda;
+    const qText=document.createElement('div');qText.className='recap-q';qText.innerHTML=escHtml((i+1)+'. ')+formattaDomanda(d.domanda);
     const chev=document.createElement('div');chev.className='recap-chevron';chev.textContent='▼';
     header.appendChild(dot);header.appendChild(qText);header.appendChild(chev);
     const body=document.createElement('div');body.className='recap-body';
@@ -959,7 +1196,8 @@ function eseguiRicerca(query){
   risultati.forEach(d=>{
     const div=document.createElement('div');div.className='search-result-item';
     const tag='<span class="tag" style="font-size:11px;margin-bottom:6px;display:inline-block">'+escHtml(d.specialita)+'</span>';
-    const qHtml=highlightText(d.domanda,query);
+    const testoRicerca=d.domanda.replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
+    const qHtml=highlightText(testoRicerca,query);
     let opzHtml='';
     ['A','B','C','D','E'].forEach(l=>{
       if(d[l]&&d[l].toLowerCase().includes(q)){
@@ -974,7 +1212,7 @@ function eseguiRicerca(query){
 function mostraDettaglioDomanda(d, query){
   const cont=document.getElementById('detail-content');
   let html='<span class="tag" style="margin-bottom:12px;display:inline-block">'+escHtml(d.specialita)+'</span>';
-  html+='<div class="card"><p style="font-size:15px;line-height:1.6">'+highlightText(d.domanda,query||'')+'</p></div>';
+  html+='<div class="card"><p style="font-size:15px;line-height:1.6">'+formattaDomanda(d.domanda)+'</p></div>';
   ['A','B','C','D','E'].forEach(l=>{
     if(!d[l])return;
     const isC=(l===d.risposta_corretta);
@@ -999,7 +1237,8 @@ function toggleBookmarkDiretto(id){
 
 /* ── Storico ── */
 function mostraSceltaSpec(){
-  const specs=[...new Set(DB.map(d=>d.specialita))].sort();
+  const annateLower=ANNATE_SSM.map(a=>a.toLowerCase());
+  const specs=[...new Set(DB.map(d=>d.specialita))].filter(s=>!annateLower.includes(s.trim().toLowerCase())).sort();
   const list=document.getElementById('spec-list'); list.innerHTML='';
   if(!specs.length){alert('Nessuna specialità disponibile. Carica prima il CSV.');return;}
   specs.forEach(s=>{
@@ -1090,6 +1329,10 @@ function mostraAnnales(){
 
 function avviaQuizAnnales(annate){
   if(DB.length===0)return;
+  if(isAnnalesEsame){
+    avviaSimulazioneAnnales(annate);
+    return;
+  }
   isSimulazione=false;
   ultimaModalita='annales_'+annate.join(',');
   fermaTimer();
@@ -1098,7 +1341,37 @@ function avviaQuizAnnales(annate){
   if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
   sessione=pool.slice(0,Math.min(pool.length,numDomande));
   iniziaSessione();
-  document.getElementById('timer-box').style.display='none';
+  if(isCountdown){
+    avviaTimer(COUNTDOWN_SEC_PER_DOMANDA);
+  } else {
+    document.getElementById('timer-box').style.display='none';
+  }
+}
+
+function toggleAnnalesEsame(){
+  isAnnalesEsame=!isAnnalesEsame;
+  const knob=document.getElementById('annales-esame-knob');
+  const dot=document.getElementById('annales-esame-dot');
+  if(isAnnalesEsame){
+    knob.style.background='var(--color-text-success)';
+    dot.style.left='22px';
+  } else {
+    knob.style.background='var(--color-background-tertiary)';
+    dot.style.left='2px';
+  }
+}
+
+function avviaSimulazioneAnnales(annate){
+  if(DB.length===0)return;
+  const nomiLower=annate.map(a=>a.toLowerCase());
+  const pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
+  if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
+  isSimulazione=true;
+  ultimaModalita='annales_'+annate.join(',');
+  // Usa tutte le domande disponibili fino a 140
+  sessione=pool.slice(0,Math.min(pool.length,140));
+  iniziaSessione();
+  avviaTimer(210*60);
 }
 
 function mostraStorico(){
@@ -1168,16 +1441,13 @@ function mostraStats(){
 function resetStats(){
   const msg = 'Sei sicuro?\n\n- Tutti i progressi, segnalibri e storico verranno cancellati.\n- Il database domande rimarrà salvato.\n\nSe vuoi cancellare anche le domande, usa "Rimuovi database domande".'
   if(!confirm(msg))return;
-  const st=loadStorage();
-  const db=st.db; // conserva il DB
-  saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[],db:db});
+  saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[]});
   aggiornHome();showScreen('home');
 }
 function resetDB(){
   if(!confirm('Rimuovere il database delle domande? Dovrai reimportare il CSV.'))return;
-  const st=loadStorage();
-  st.db=null; DB=[];
-  saveStorage(st);
+  clearDBFromIDB();
+  DB=[];
   initDemoData();
   showScreen('home');
 }
@@ -1195,9 +1465,17 @@ function confermaUscita(){
     tornaHome();
   }
 }
-function tornaHome(){fermaTimer();aggiornHome();showScreen('home');}
+function tornaHome(){
+  fermaTimer();
+  // Salva sessione interrotta se era in corso e non è finita
+  if(sessione&&sessione.length>0&&idx<sessione.length){
+    salvaSessioneInterrotta();
+  }
+  aggiornHome();showScreen('home');
+}
 function abbandonaSim(){
   if(confirm('Sei sicuro di voler abbandonare la simulazione?\nIl risultato NON verrà salvato.'))tornaHome();
+  // tornaHome() si occupa già di salvare la sessione interrotta
 }
 
 /* ── CSV ── */
@@ -1235,17 +1513,26 @@ fileInput.onchange=e=>{
     const d=caricaCSV(ev.target.result);
     if(d.length===0){alert('Nessuna domanda trovata.');return;}
     DB=d;
-    // Salva il DB nel localStorage per non doverlo ricaricare ogni volta
-    const st=loadStorage();
-    st.db=d;
-    saveStorage(st);
-    aggiornHome();
-    alert('✓ Caricate '+d.length+' domande! Saranno ricordate anche al prossimo accesso.');
+    // Salva il DB in IndexedDB (nessun limite di dimensione)
+    saveDBToIDB(d).then(ok=>{
+      aggiornHome();
+      alert('✓ Caricate '+d.length+' domande! Saranno ricordate anche al prossimo accesso.');
+    }).catch(()=>{
+      aggiornHome();
+      alert('✓ Caricate '+d.length+' domande! (Attenzione: salvataggio permanente non riuscito, potrebbe essere necessario ricaricare il CSV al prossimo accesso.)');
+    });
   };
   reader.readAsText(file,'utf-8');
 };
 document.body.appendChild(fileInput);
 document.getElementById('btn-import').onclick=()=>fileInput.click();
+
+/* ── Salva sessione su chiusura/refresh pagina ── */
+window.addEventListener('beforeunload', ()=>{
+  if(sessione && sessione.length>0 && idx<sessione.length){
+    salvaSessioneInterrotta();
+  }
+});
 
 /* ── SHORTCUTS TASTIERA (1-5 e 0) ── */
 document.addEventListener('keydown', (e) => {
@@ -1284,16 +1571,74 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// All'avvio: carica il DB dal localStorage se esiste, altrimenti usa i dati demo
-(function init() {
-  const st = loadStorage();
-  if (st.db && st.db.length > 0) {
-    DB = st.db;
-    aggiornHome();
-    const srchEl = document.getElementById('search-results');
-    if (srchEl) srchEl.innerHTML = '<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
-    console.log('✓ DB caricato dal localStorage: ' + DB.length + ' domande');
-  } else {
+/* ── Ripristina sessione interrotta ── */
+function ripristinaSessione(stato){
+  sessione       = stato.sessione;
+  idx            = stato.idx;
+  n_corrette     = stato.n_corrette;
+  n_sbagliate    = stato.n_sbagliate;
+  n_saltate      = stato.n_saltate;
+  logRisposte    = stato.logRisposte;
+  ultimaModalita = stato.ultimaModalita;
+  isSimulazione  = stato.isSimulazione;
+  isCountdown    = stato.isCountdown;
+  scelteSimulazione = stato.scelteSimulazione || new Array(sessione.length).fill(null);
+  // Ripristina toggle countdown visivo
+  const knob=document.getElementById('countdown-toggle-knob');
+  const dot=document.getElementById('countdown-knob-dot');
+  if(knob&&dot){
+    knob.style.background=isCountdown?'var(--color-text-primary)':'var(--color-background-tertiary)';
+    dot.style.left=isCountdown?'22px':'2px';
+  }
+  isPausa=false; ripristinaVistePausa();
+  showScreen('quiz');
+  mostraDomanda();
+  // Riavvia timer se serviva
+  if(stato.timerSecondiRimanenti!==null && stato.timerSecondiRimanenti>0){
+    timerTotale=stato.timerTotaleOrig;
+    timerSecondi=stato.timerSecondiRimanenti;
+    document.getElementById('timer-box').style.display='block';
+    aggiornaTimer();
+    timerInterval=setInterval(()=>{
+      timerSecondi--;
+      aggiornaTimer();
+      if(timerSecondi<=0){
+        clearInterval(timerInterval);
+        if(isSimulazione) terminaSimulazione(true);
+        else if(isCountdown) saltaDopoCountdown();
+      }
+    },1000);
+  }
+}
+
+// All'avvio: carica il DB da IndexedDB (asincrono)
+(async function init() {
+  try{
+    const saved = await loadDBFromIDB();
+    if(saved && saved.length > 0){
+      DB = saved;
+      aggiornHome();
+      const srchEl = document.getElementById('search-results');
+      if(srchEl) srchEl.innerHTML = '<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
+      console.log('✓ DB caricato da IndexedDB: ' + DB.length + ' domande');
+      // Controlla sessione interrotta
+      const sess = await caricaSessioneInterrotta();
+      if(sess && sess.sessione && sess.sessione.length > 0){
+        const minFa = Math.round((Date.now()-sess.ts)/60000);
+        const label = minFa<2?'poco fa':minFa<60?minFa+' minuti fa':Math.round(minFa/60)+' ore fa';
+        const tipo = sess.isSimulazione?'Simulazione':'Quiz';
+        if(confirm('📂 Hai una sessione interrotta ('+tipo+', '+label+').\n\nDomanda '+(sess.idx+1)+' di '+sess.sessione.length+'.\n\nVuoi riprendere da dove avevi lasciato?')){
+          ripristinaSessione(sess);
+          return;
+        } else {
+          cancellaSessioneInterrotta();
+        }
+      }
+    } else {
+      initDemoData();
+    }
+  }catch(e){
+    console.warn('IDB non disponibile, uso dati demo:', e);
     initDemoData();
   }
 })();
