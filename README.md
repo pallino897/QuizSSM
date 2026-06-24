@@ -5,15 +5,12 @@ Una web-app leggera e performante, progettata per massimizzare la produttività 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Status: Active](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
 
-<p align="center">
-  <img src="(https://github.com/pallino897/QuizSSM/blob/main/logo.png)" alt="Quiz Medicina App Logo" width="200">
-</p>
 
 ## 🚀 Caratteristiche Principali
 
 * **Simulazioni d'Esame:** Navigazione libera, timer dedicato e calcolo del punteggio basato sui criteri ministeriali.
 * **Modalità Ripasso:** Focus mirato sulle domande sbagliate o salvate nei segnalibri.
-* **Interfaccia Pro:** Design responsive, supporto nativo al *Dark Mode* e scorciatoie da tastiera avanzate (tasti 1-5 per le risposte, 0 per avanzare).
+* **Interfaccia:** Design responsive, supporto nativo al *Dark Mode* e scorciatoie da tastiera avanzate (tasti 1-5 per le risposte A-E, 0 per avanzare).
 * **Strumenti di Analisi:** Statistiche dettagliate divise per specialità e storico completo delle tue sessioni di studio.
 
 ## 📋 Guida all'Utilizzo
