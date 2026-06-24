@@ -1,29 +1,36 @@
-Quiz Medicina App
+# 🩺 Quiz Medicina App
 
-Una web-app leggera e veloce per esercitarsi con i quiz di specializzazione medica. Progettata per massimizzare la produttività durante lo studio, include simulazioni d'esame, modalità di ripasso mirato e navigazione rapida tramite tastiera.
-Caratteristiche
+Una web-app leggera e performante, progettata per massimizzare la produttività durante la preparazione ai concorsi di specializzazione medica e all'esame di abilitazione.
 
-    Simulazioni d'esame: Navigazione libera, timer dedicato e calcolo punteggio ministeriale.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Status: Active](https://img.shields.io/badge/Status-Active-brightgreen.svg)]()
 
-    Modalità Ripasso: Focus su domande sbagliate o salvate nei segnalibri.
+<p align="center">
+  <img src="(https://github.com/pallino897/QuizSSM/blob/main/logo.png)" alt="Quiz Medicina App Logo" width="200">
+</p>
 
-    Interfaccia ottimizzata: Responsive, supporto automatico al Dark Mode e scorciatoie da tastiera (tasti 1-5 per le risposte, 0 per procedere/saltare).
+## 🚀 Caratteristiche Principali
 
-    Strumenti di analisi: Statistiche dettagliate per specialità e storico delle simulazioni.
+* **Simulazioni d'Esame:** Navigazione libera, timer dedicato e calcolo del punteggio basato sui criteri ministeriali.
+* **Modalità Ripasso:** Focus mirato sulle domande sbagliate o salvate nei segnalibri.
+* **Interfaccia Pro:** Design responsive, supporto nativo al *Dark Mode* e scorciatoie da tastiera avanzate (tasti 1-5 per le risposte, 0 per avanzare).
+* **Strumenti di Analisi:** Statistiche dettagliate divise per specialità e storico completo delle tue sessioni di studio.
 
-Utilizzo
+## 📋 Guida all'Utilizzo
 
-L'applicazione non include database di domande precaricati. Per utilizzarla:
+L'applicazione non include database di domande precaricati.
 
-    Assicurati di avere un file in formato .csv con la seguente struttura (separatore ;):
-    domanda;A;B;C;D;E;risposta_corretta;specialita
+1. **Preparazione del file:** Prepara un file `.csv` (separatore `;`) con la seguente struttura:
+   `specialita;id_domanda;domanda;A;B;C;D;E;risposta_corretta`
+2. **Importazione:** Apri l'app nel browser, clicca sul pulsante **"Importa CSV"** e carica il tuo file.
+3. **Studio:** Inizia la simulazione!
 
-    Apri l'applicazione nel browser.
+> **Nota sul Copyright:** Questo repository contiene esclusivamente il codice sorgente dell'applicazione. È responsabilità dell'utente assicurarsi di utilizzare database di domande per i quali possiede i diritti o che siano di pubblico dominio.
 
-    Clicca sul pulsante "Importa CSV" e carica il tuo file.
+## 🛠 Sviluppo
 
-    Nota sul Copyright: Questo repository contiene esclusivamente il codice sorgente dell'applicazione. È responsabilità dell'utente assicurarsi di utilizzare database di domande per i quali possiede i diritti o che siano di pubblico dominio.
+Il codice di questa applicazione è stato interamente generato e ottimizzato con il supporto dell'**Intelligenza Artificiale**, puntando a massimizzare l'efficienza e la pulizia del codice.
 
-Sviluppo
+## 🤝 Contribuire
 
-Il codice di questa applicazione è stato interamente generato e ottimizzato con il supporto dell'Intelligenza Artificiale.
+Se hai suggerimenti, miglioramenti o hai trovato dei bug, sentiti libero di aprire una **Issue** o inviare una **Pull Request**.
