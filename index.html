@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#ffffff">
 <title>Quiz Medicina – Specializzazioni</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root {
   --color-background-primary: #ffffff;
@@ -95,6 +96,9 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .custom-num-row input{width:80px;padding:7px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:14px;color:var(--color-text-primary);background:var(--color-background-primary);}
 .custom-num-row label{font-size:14px;color:var(--color-text-secondary);}
 .score-box{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;text-align:center;margin-bottom:12px;}
+.obiettivo-card{border-radius:var(--border-radius-lg);padding:12px 14px;margin-bottom:12px;border:0.5px solid var(--color-border-tertiary);}
+.obiettivo-bar-bg{background:var(--color-background-tertiary);border-radius:99px;height:8px;margin:8px 0 4px;}
+.obiettivo-bar-fill{height:8px;border-radius:99px;transition:width 0.6s ease;}
 .score-big{font-size:42px;font-weight:600;}
 .score-sub{font-size:13px;color:var(--color-text-secondary);margin-top:4px;}
 
@@ -169,6 +173,16 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     <div class="stat-card"><div class="stat-num" id="h-perc" style="color:var(--color-text-success)">—</div><div class="stat-lbl">% corrette</div></div>
     <div class="stat-card"><div class="stat-num" id="h-spec">—</div><div class="stat-lbl">Specialità</div></div>
   </div>
+  <div class="obiettivo-card" id="obiettivo-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:500" id="ob-label">🎯 Obiettivo oggi</span>
+      <span style="font-size:13px;color:var(--color-text-secondary)" id="ob-counter">0 / 15</span>
+    </div>
+    <div class="obiettivo-bar-bg">
+      <div class="obiettivo-bar-fill" id="ob-bar" style="width:0%;background:var(--color-text-success)"></div>
+    </div>
+    <div style="font-size:12px;color:var(--color-text-secondary)" id="ob-sub">Rispondi a 15 domande per completare l'obiettivo</div>
+  </div>
   <div class="section-title">Domande per sessione</div>
   <div class="num-pills">
     <div class="pill selected" data-val="10" onclick="selezionaPill(this)">10</div>
@@ -195,26 +209,80 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
   <button class="btn" onclick="mostraAnnales()">📅 Annales<span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">Quiz per annata SSM 2014–2025</span></button>
   <button class="btn" onclick="avviaQuiz('sbagliate')" id="btn-sbagliate" style="display:none">🔁 Ripassa le domande sbagliate</button>
   <button class="btn" onclick="avviaQuiz('segnalibri')" id="btn-segnalibri" style="display:none">🔖 Ripassa i segnalibri</button>
-  <button class="btn" onclick="avviaSimulazione(false)" style="border-color:var(--color-border-success);color:var(--color-text-success)">
+  <button class="btn" onclick="mostraConfigSim()" style="border-color:var(--color-border-success);color:var(--color-text-success)">
     🎯 Simulazione esame
     <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">140 domande · 210 minuti · navigazione libera</span>
-  </button>
-  <button class="btn" onclick="avviaSimulazione(true)" style="border-color:var(--color-border-success);color:var(--color-text-success)">
-    🎯 Simulazione proporzionale
-    <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">140 domande · ripartizione per materia come al Ministero</span>
   </button>
   <div class="section-title">Strumenti</div>
   <button class="btn" onclick="showScreen('search')">🔎 Ricerca libera</button>
   <button class="btn" onclick="mostraStats()">📊 Statistiche dettagliate</button>
   <button class="btn" onclick="mostraStorico()">📋 Storico simulazioni</button>
   <button class="btn" id="btn-import">📂 Importa CSV</button>
+  <button class="btn" id="btn-import-img">🖼 Importa immagini (ZIP)</button>
+  <div id="img-count-label" style="font-size:12px;color:var(--color-text-secondary);margin:-4px 0 8px;padding-left:2px;display:none"></div>
   <button class="btn" id="btn-remove-db" onclick="resetDB()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi database domande</button>
+  <button class="btn" id="btn-remove-img" onclick="resetImmagini()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi immagini</button>
 </div>
 
 <div id="screen-spec" class="screen">
   <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
   <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Scegli specialità</p>
   <div id="spec-list"></div>
+</div>
+
+<div id="screen-sim-config" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:4px">🎯 Configura simulazione</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">140 domande · 210 minuti · navigazione libera</p>
+
+  <!-- Selezione modalità -->
+  <div style="display:flex;gap:8px;margin-bottom:1.25rem">
+    <div id="sim-tab-random" onclick="simSelTab('random')"
+      style="flex:1;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-text-primary);background:var(--color-text-primary);color:var(--color-background-primary);text-align:center;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.15s">
+      🎲 Casuale
+    </div>
+    <div id="sim-tab-prop" onclick="simSelTab('prop')"
+      style="flex:1;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);text-align:center;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.15s">
+      ⚖️ Proporzionale
+    </div>
+    <div id="sim-tab-custom" onclick="simSelTab('custom')"
+      style="flex:1;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);text-align:center;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.15s">
+      ✏️ Manuale
+    </div>
+  </div>
+
+  <!-- Descrizione modalità -->
+  <div id="sim-desc-random" style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+    140 domande estratte casualmente da tutte le specialità.
+  </div>
+  <div id="sim-desc-prop" style="display:none;font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+    Le domande vengono ripartite tra le 27 categorie ministeriali nelle percentuali ufficiali del concorso.
+  </div>
+  <div id="sim-desc-custom" style="display:none;font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+    Assegna un peso (0–99) a ogni specialità. Il numero di domande estratte sarà proporzionale al peso. Lascia 0 per escludere una specialità.
+  </div>
+
+  <!-- Pannello pesi manuale -->
+  <div id="sim-panel-custom" style="display:none;margin-bottom:1.25rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="section-title" style="margin:0">Pesi per specialità</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="simResetPesi()" style="font-size:12px;padding:4px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);background:none;color:var(--color-text-secondary);cursor:pointer">Reset</button>
+        <span id="sim-tot-label" style="font-size:12px;color:var(--color-text-secondary);padding:4px 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-sm)">Tot. peso: 0</span>
+      </div>
+    </div>
+    <div id="sim-pesi-list"></div>
+  </div>
+
+  <!-- Anteprima distribuzione -->
+  <div id="sim-preview" style="display:none;margin-bottom:1.25rem">
+    <div class="section-title" style="margin-top:0">Anteprima distribuzione (140 domande)</div>
+    <div id="sim-preview-list"></div>
+  </div>
+
+  <button class="btn primary" id="btn-avvia-sim" onclick="avviaSimDaConfig()" style="background:var(--color-text-success);border-color:var(--color-text-success)">
+    Avvia simulazione
+  </button>
 </div>
 
 <div id="screen-annales" class="screen">
@@ -251,6 +319,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
       <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0" title="Esci / Consegna">✕</button>
       <span class="tag" id="q-spec-tag"></span>
       <div style="display:flex;align-items:center;gap:10px">
+        <span id="gamepad-indicator" style="display:none;font-size:15px" title="Controller collegato">🎮</span>
         <button class="bookmark-btn" id="btn-bookmark" onclick="toggleBookmark()" title="Aggiungi segnalibro">🔖</button>
         <span style="font-size:13px;color:var(--color-text-secondary)" id="q-counter"></span>
       </div>
@@ -260,7 +329,9 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     <div class="card" style="margin-top:12px">
       <p style="font-size:17px;line-height:1.7" id="q-text"></p>
     </div>
+    <div id="q-image-container" style="margin-bottom:12px"></div>
     <div id="q-options"></div>
+    <div id="q-spiegazione-container" style="display:none;margin-top:8px"></div>
     <button class="btn skip" id="btn-skip" onclick="sautaDomanda()">— Non rispondo (0 punti) —</button>
     <button class="btn primary" id="btn-next" style="display:none;margin-top:4px" onclick="prossimaDomanda()">Prossima domanda</button>
 
@@ -297,6 +368,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
   </div>
   <button class="btn primary" onclick="avviaQuiz(ultimaModalita)" style="margin-bottom:8px">Nuovo quiz</button>
   <button class="btn" onclick="tornaHome()">Torna alla home</button>
+  <button class="btn" id="btn-esporta-sessione" onclick="esportaDomandeSessioneCorrente()" style="display:none;margin-top:8px;border-color:var(--color-border-success);color:var(--color-text-success)">📤 Esporta sbagliate/saltate di questa sessione</button>
   <div style="margin-top:1.5rem">
     <div class="section-title">Recap domande</div>
     <div class="recap-filter-row">
@@ -329,7 +401,8 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
   <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
   <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Statistiche</p>
   <div id="stats-content"></div>
-  <button class="btn" onclick="resetStats()" style="margin-top:1rem;color:var(--color-text-danger);border-color:var(--color-border-danger)">Azzera tutti i progressi</button>
+  <button class="btn" onclick="esportaDomandeDaStudiare()" style="margin-top:1rem;border-color:var(--color-border-success);color:var(--color-text-success)">📤 Esporta domande sbagliate/saltate</button>
+  <button class="btn" onclick="resetStats()" style="margin-top:8px;color:var(--color-text-danger);border-color:var(--color-border-danger)">Azzera tutti i progressi</button>
 </div>
 
 <div id="screen-storico" class="screen">
@@ -372,22 +445,125 @@ function getStorage(){
   const s=loadStorage();
   if(!s.segnalibri)s.segnalibri=[];
   if(!s.storico)s.storico=[];
+  if(!s.saltate)s.saltate=[];
   return s;
 }
 
 /* ── IndexedDB per il database domande ── */
 const IDB_NAME='quiz_med_db', IDB_STORE='domande', IDB_KEY='csv_db', IDB_SESSION_KEY='sessione_interrotta';
+const IDB_STORE_IMG='immagini';
 function openIDB(){
   return new Promise((res,rej)=>{
-    const req=indexedDB.open(IDB_NAME,1);
+    const req=indexedDB.open(IDB_NAME,2);
     req.onupgradeneeded=e=>{
       const db=e.target.result;
       if(!db.objectStoreNames.contains(IDB_STORE))
         db.createObjectStore(IDB_STORE);
+      if(!db.objectStoreNames.contains(IDB_STORE_IMG))
+        db.createObjectStore(IDB_STORE_IMG);
     };
     req.onsuccess=e=>res(e.target.result);
     req.onerror=e=>rej(e.target.error);
   });
+}
+
+/* ── Gestione immagini (IndexedDB, caricate una sola volta dallo ZIP) ── */
+async function saveImageToIDB(nomeFile, blob){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readwrite');
+      tx.objectStore(IDB_STORE_IMG).put(blob, nomeFile);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.error('Errore salvataggio immagine:',e);return false;}
+}
+async function getImageBlobFromIDB(nomeFile){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readonly');
+      const req=tx.objectStore(IDB_STORE_IMG).get(nomeFile);
+      req.onsuccess=e=>res(e.target.result||null);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return null;}
+}
+async function contaImmaginiIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readonly');
+      const req=tx.objectStore(IDB_STORE_IMG).count();
+      req.onsuccess=e=>res(e.target.result||0);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return 0;}
+}
+async function clearImmaginiIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readwrite');
+      tx.objectStore(IDB_STORE_IMG).clear();
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return false;}
+}
+
+/*
+  Cache in-memory delle object URL già create in questa sessione di navigazione,
+  così se la stessa immagine ricompare (es. tornando indietro nella nav-grid della
+  simulazione) non viene riletta da IndexedDB una seconda volta.
+*/
+const cacheImmaginiURL = {}; // nomeFile → object URL
+
+async function ottieniImmagineURL(nomeFile){
+  if(cacheImmaginiURL[nomeFile]) return cacheImmaginiURL[nomeFile];
+  const blob = await getImageBlobFromIDB(nomeFile);
+  if(!blob) return null;
+  const url = URL.createObjectURL(blob);
+  cacheImmaginiURL[nomeFile] = url;
+  return url;
+}
+
+/*
+  Renderizza le immagini di una domanda in un container dato.
+  d.immagini può contenere più nomi file separati da virgola.
+*/
+async function renderizzaImmaginiDomanda(d, containerEl){
+  containerEl.innerHTML = '';
+  if(!d.immagini || !d.immagini.trim()) return;
+  const nomi = d.immagini.split(',').map(s=>s.trim()).filter(Boolean);
+  for(const nome of nomi){
+    const url = await ottieniImmagineURL(nome);
+    if(url){
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Immagine domanda';
+      img.style.cssText = 'max-width:100%;border-radius:var(--border-radius-md);margin-bottom:8px;display:block;cursor:zoom-in;';
+      img.onclick = () => apriImmagineFullscreen(url);
+      containerEl.appendChild(img);
+    } else {
+      const missing = document.createElement('div');
+      missing.style.cssText = 'font-size:12px;color:var(--color-text-secondary);padding:8px;border:1px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);margin-bottom:8px;';
+      missing.textContent = '🖼 Immagine non trovata: ' + nome + ' (importa lo ZIP immagini)';
+      containerEl.appendChild(missing);
+    }
+  }
+}
+
+function apriImmagineFullscreen(url){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;';
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'max-width:100%;max-height:100%;border-radius:8px;';
+  overlay.appendChild(img);
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
 }
 async function saveDBToIDB(data){
   try{
@@ -470,6 +646,81 @@ function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classLi
 
 /* ── Util ── */
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/*
+  shufflePesato: ordina le domande dando priorità a quelle mai viste o sbagliate.
+  Pesi (più alto = più probabile di apparire prima):
+    mai vista      → 6
+    sbagliata      → 4
+    corretta       → 1
+  Algoritmo: ogni domanda viene assegnato un "score" = peso * random(),
+  poi si ordina per score decrescente (simile a weighted shuffle).
+*/
+function shufflePesato(arr){
+  const st=getStorage();
+  const risposte=st.risposte||{};
+  const sbagliate=new Set(st.sbagliate||[]);
+  return arr.map(d=>{
+    let peso;
+    if(risposte[d.id]===undefined)       peso=6; // mai vista
+    else if(sbagliate.has(d.id))         peso=4; // sbagliata
+    else                                 peso=1; // corretta
+    return {d, score: peso * Math.random()};
+  }).sort((a,b)=>b.score-a.score).map(x=>x.d);
+}
+
+/*
+  Estrae il testo del caso clinico da una domanda (se presente).
+  Normalizza spazi/punteggiatura per confronti robusti.
+*/
+function estraiCasoClinco(domanda){
+  const m = domanda.match(/\[CASO CLINICO[:\s]*(.*?)\]/is);
+  if(!m) return null;
+  // Normalizza: lowercase, collassa spazi multipli, rimuove punteggiatura finale
+  return m[1].trim().toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]+$/,'');
+}
+
+/*
+  Dato un array di domande, le raggruppa in "blocchi":
+  - Domande con stesso caso clinico formano un blocco (ordinate per numero_domanda)
+  - Le altre sono blocchi da 1
+  Poi mescola i BLOCCHI (con shuffleFn), e appiattisce.
+  Così le domande dello stesso caso clinico rimangono consecutive ma
+  l'ordine dei blocchi è casuale.
+*/
+function raggruppaEMescola(arr, shuffleFn){
+  // Raggruppa per chiave caso clinico
+  const blocchi = [];
+  const mapCaso = {}; // chiave → indice in blocchi
+
+  for(const d of arr){
+    const cc = estraiCasoClinco(d.domanda);
+    if(cc){
+      if(mapCaso[cc] === undefined){
+        mapCaso[cc] = blocchi.length;
+        blocchi.push([d]);
+      } else {
+        blocchi[mapCaso[cc]].push(d);
+      }
+    } else {
+      blocchi.push([d]); // blocco singolo
+    }
+  }
+
+  // Ordina internamente ogni blocco per numero_domanda (mantiene sequenza originale)
+  for(const b of blocchi){
+    if(b.length > 1){
+      b.sort((a,b)=> (parseInt(a.numero_domanda)||0) - (parseInt(b.numero_domanda)||0));
+    }
+  }
+
+  // Mescola i blocchi col shuffleFn scelto
+  // shuffleFn lavora su array flat, quindi estraiamo un rappresentante per blocco,
+  // mescoliamo, poi riespandiamo
+  const rappresentanti = blocchi.map((b,i) => ({...b[0], __bloqIdx: i}));
+  const mescolati = shuffleFn(rappresentanti);
+  return mescolati.flatMap(r => blocchi[r.__bloqIdx]);
+}
 function fmt(n){return n%1===0?n.toString():n.toFixed(2);}
 function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return(h>0?h+':':'') +String(m).padStart(h>0?2:1,'0')+':'+String(ss).padStart(2,'0');}
 function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
@@ -493,6 +744,65 @@ function selezionaCustom(input){
 }
 
 /* ── Home ── */
+/* ── Obiettivo giornaliero ── */
+const OBIETTIVO_GIORNALIERO = 15;
+
+function oggiKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function getObiettivo(){
+  const st=getStorage();
+  if(!st.obiettivo) st.obiettivo={};
+  return st.obiettivo;
+}
+
+function aggiornaObiettivoDomande(n){
+  // Aggiunge n domande svolte oggi (corrette+sbagliate+saltate)
+  const st=getStorage();
+  if(!st.obiettivo) st.obiettivo={};
+  const k=oggiKey();
+  st.obiettivo[k]=(st.obiettivo[k]||0)+n;
+  // Tieni solo ultimi 30 giorni
+  const keys=Object.keys(st.obiettivo).sort();
+  if(keys.length>30) keys.slice(0,keys.length-30).forEach(k=>delete st.obiettivo[k]);
+  saveStorage(st);
+}
+
+function aggiornaWidgetObiettivo(){
+  const st=getStorage();
+  const oggi=(st.obiettivo||{})[oggiKey()]||0;
+  const perc=Math.min(100,Math.round(oggi/OBIETTIVO_GIORNALIERO*100));
+  const completo=oggi>=OBIETTIVO_GIORNALIERO;
+  const card=document.getElementById('obiettivo-card');
+  const label=document.getElementById('ob-label');
+  const counter=document.getElementById('ob-counter');
+  const bar=document.getElementById('ob-bar');
+  const sub=document.getElementById('ob-sub');
+  if(!card) return;
+  counter.textContent=oggi+' / '+OBIETTIVO_GIORNALIERO;
+  bar.style.width=perc+'%';
+  if(completo){
+    card.style.borderColor='var(--color-border-success)';
+    card.style.background='var(--color-background-success)';
+    label.textContent='🎉 Obiettivo completato!';
+    label.style.color='var(--color-text-success)';
+    bar.style.background='var(--color-text-success)';
+    sub.textContent='Ottimo lavoro! Hai risposto a '+oggi+' domande oggi.';
+    sub.style.color='var(--color-text-success)';
+  } else {
+    card.style.borderColor='var(--color-border-tertiary)';
+    card.style.background='';
+    label.textContent='🎯 Obiettivo oggi';
+    label.style.color='';
+    const mancanti=OBIETTIVO_GIORNALIERO-oggi;
+    bar.style.background=perc>=60?'#f59e0b':'var(--color-text-primary)';
+    sub.textContent='Ancora '+mancanti+' domande per completare l\'obiettivo di oggi.';
+    sub.style.color='';
+  }
+}
+
 function aggiornHome(){
   const st=getStorage();
   const r=Object.values(st.risposte),g=r.filter(x=>x===true).length;
@@ -503,6 +813,7 @@ function aggiornHome(){
   document.getElementById('btn-segnalibri').style.display=(st.segnalibri&&st.segnalibri.length>0)?'block':'none';
   const rmBtn=document.getElementById('btn-remove-db');
   if(rmBtn) rmBtn.style.display=(DB.length>0)?'block':'none';
+  aggiornaWidgetObiettivo();
 }
 
 /* ── Timer & Pausa ── */
@@ -567,6 +878,10 @@ function saltaDopoCountdown(){
     return;
   }
   n_saltate++;
+  const st=getStorage();
+  if(!st.saltate)st.saltate=[];
+  if(!st.saltate.includes(sessione[idx].id))st.saltate.push(sessione[idx].id);
+  saveStorage(st);
   document.getElementById('btn-skip').style.display='none';
   document.querySelectorAll('#q-options .btn').forEach(btn=>{
     btn.classList.add('disabled');
@@ -808,7 +1123,7 @@ function campionaProportionale(tot, dbSorgente) {
 
   for (const q of quote) {
     if (q.intero === 0) continue;
-    const pool = shuffle((gruppi[q.cat] || []).filter(d => !usati.has(d.id)));
+    const pool = shufflePesato((gruppi[q.cat] || []).filter(d => !usati.has(d.id)));
     const presi = pool.slice(0, q.intero);
     presi.forEach(d => { risultato.push(d); usati.add(d.id); });
     postiScoperti += (q.intero - presi.length);
@@ -825,7 +1140,8 @@ function campionaProportionale(tot, dbSorgente) {
     extra.slice(0, postiScoperti).forEach(d => { risultato.push(d); usati.add(d.id); });
   }
 
-  return shuffle(risultato.slice(0, tot));
+  // Raggruppa i casi clinici consecutivi prima di restituire
+  return raggruppaEMescola(risultato.slice(0, tot), shuffle);
 }
 
 /* ── Toggle Countdown ── */
@@ -853,6 +1169,169 @@ function avviaTimerDomanda(){
 }
 
 /* ── Avvio quiz ── */
+/* ── Configurazione Simulazione ── */
+let simTab = 'random'; // 'random' | 'prop' | 'custom'
+let simPesi = {}; // specialita → peso (intero)
+
+function mostraConfigSim(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  simTab='random';
+  simSelTab('random');
+  costruisciPesiList();
+  aggiornaPreview();
+  showScreen('sim-config');
+}
+
+function simSelTab(tab){
+  simTab=tab;
+  ['random','prop','custom'].forEach(t=>{
+    const el=document.getElementById('sim-tab-'+t);
+    const desc=document.getElementById('sim-desc-'+t);
+    const isActive=(t===tab);
+    el.style.background=isActive?'var(--color-text-primary)':'transparent';
+    el.style.color=isActive?'var(--color-background-primary)':'var(--color-text-primary)';
+    el.style.borderColor=isActive?'var(--color-text-primary)':'var(--color-border-secondary)';
+    desc.style.display=isActive?'block':'none';
+  });
+  document.getElementById('sim-panel-custom').style.display=(tab==='custom')?'block':'none';
+  document.getElementById('sim-preview').style.display=(tab==='custom')?'block':'none';
+}
+
+function costruisciPesiList(){
+  // Ottieni specialità disponibili (escluse SSM e escluse da random)
+  const annateLower=ANNATE_SSM.map(a=>a.toLowerCase());
+  const specs=[...new Set(DB.map(d=>d.specialita))]
+    .filter(s=>!annateLower.includes(s.trim().toLowerCase()) && !isEsclusa({specialita:s}))
+    .sort();
+  // Inizializza pesi a 0 se non esistono
+  specs.forEach(s=>{ if(simPesi[s]===undefined) simPesi[s]=0; });
+
+  const list=document.getElementById('sim-pesi-list');
+  list.innerHTML='';
+  specs.forEach(s=>{
+    const count=DB.filter(d=>d.specialita===s).length;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:6px;background:var(--color-background-primary)';
+    row.innerHTML=`
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s)}</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)">${count} domande disponibili</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <button onclick="simCambiaPeso('${escHtml(s)}',-1)" style="width:28px;height:28px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);background:none;color:var(--color-text-primary);cursor:pointer;font-size:16px;line-height:1">−</button>
+        <input type="number" min="0" max="99" value="${simPesi[s]||0}"
+          style="width:46px;text-align:center;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);padding:4px;font-size:14px;color:var(--color-text-primary);background:var(--color-background-primary)"
+          oninput="simSetPeso('${escHtml(s)}',this.value)"
+          id="peso-input-${escHtml(s).replace(/[^a-zA-Z0-9]/g,'_')}">
+        <button onclick="simCambiaPeso('${escHtml(s)}',1)" style="width:28px;height:28px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);background:none;color:var(--color-text-primary);cursor:pointer;font-size:16px;line-height:1">+</button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function simCambiaPeso(spec, delta){
+  simPesi[spec]=Math.max(0, Math.min(99,(simPesi[spec]||0)+delta));
+  const id='peso-input-'+spec.replace(/[^a-zA-Z0-9]/g,'_');
+  const el=document.getElementById(id);
+  if(el) el.value=simPesi[spec];
+  aggiornaPreview();
+}
+
+function simSetPeso(spec, val){
+  simPesi[spec]=Math.max(0,Math.min(99,parseInt(val)||0));
+  aggiornaPreview();
+}
+
+function simResetPesi(){
+  Object.keys(simPesi).forEach(k=>simPesi[k]=0);
+  costruisciPesiList();
+  aggiornaPreview();
+}
+
+function aggiornaPreview(){
+  const tot=140;
+  const totPeso=Object.values(simPesi).reduce((s,v)=>s+(v||0),0);
+  document.getElementById('sim-tot-label').textContent='Tot. peso: '+totPeso;
+  const list=document.getElementById('sim-preview-list');
+  list.innerHTML='';
+  if(totPeso===0){
+    list.innerHTML='<div style="font-size:13px;color:var(--color-text-secondary);padding:8px 0">Assegna almeno un peso per vedere l\'anteprima.</div>';
+    return;
+  }
+  // Calcola quote con Largest Remainder
+  const voci=Object.entries(simPesi).filter(([,v])=>v>0).map(([s,p])=>({
+    s, p,
+    esatte: tot*p/totPeso,
+    intero: Math.floor(tot*p/totPeso),
+    residuo: (tot*p/totPeso)%1,
+  }));
+  let assegnate=voci.reduce((s,v)=>s+v.intero,0);
+  voci.sort((a,b)=>b.residuo-a.residuo);
+  for(let i=0;i<tot-assegnate;i++) voci[i].intero++;
+  voci.sort((a,b)=>b.intero-a.intero);
+  voci.forEach(v=>{
+    if(v.intero===0) return;
+    const disp=DB.filter(d=>d.specialita===v.s).length;
+    const warn=v.intero>disp;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    row.innerHTML=`
+      <div style="flex:1;font-size:13px;${warn?'color:var(--color-text-warning)':''}">${escHtml(v.s)}</div>
+      <div style="font-size:13px;font-weight:500;flex-shrink:0;${warn?'color:var(--color-text-warning)':''}">${v.intero} dom.${warn?' ⚠':''}
+        ${warn?'<span style="font-size:11px;font-weight:400"> (max '+disp+')</span>':''}
+      </div>
+      <div style="width:80px;background:var(--color-background-secondary);border-radius:99px;height:5px;flex-shrink:0">
+        <div style="height:5px;border-radius:99px;background:${warn?'var(--color-text-warning)':'var(--color-text-primary)'};width:${Math.min(100,Math.round(v.intero/disp*100))}%"></div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function avviaSimDaConfig(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  if(simTab==='random'){
+    avviaSimulazione(false); return;
+  }
+  if(simTab==='prop'){
+    avviaSimulazione(true); return;
+  }
+  // Custom
+  const totPeso=Object.values(simPesi).reduce((s,v)=>s+(v||0),0);
+  if(totPeso===0){alert('Assegna almeno un peso a una specialità.');return;}
+  const tot=140;
+  const voci=Object.entries(simPesi).filter(([,v])=>v>0).map(([s,p])=>({
+    s, p,
+    intero: Math.floor(tot*p/totPeso),
+    residuo: (tot*p/totPeso)%1,
+  }));
+  let assegnate=voci.reduce((s,v)=>s+v.intero,0);
+  voci.sort((a,b)=>b.residuo-a.residuo);
+  for(let i=0;i<tot-assegnate;i++) voci[i].intero++;
+
+  // Campiona
+  const usati=new Set();
+  const risultato=[];
+  const nonSoddisfatte=[];
+  for(const v of voci){
+    if(v.intero===0) continue;
+    const pool=shufflePesato(DB.filter(d=>d.specialita===v.s&&!usati.has(d.id)));
+    const presi=pool.slice(0,v.intero);
+    presi.forEach(d=>{risultato.push(d);usati.add(d.id);});
+    if(presi.length<v.intero) nonSoddisfatte.push({s:v.s, mancanti:v.intero-presi.length});
+  }
+  // Fallback
+  if(nonSoddisfatte.length>0){
+    const extra=shufflePesato(DB.filter(d=>!isEsclusa(d)&&!usati.has(d.id)));
+    let ei=0;
+    for(const ns of nonSoddisfatte){
+      for(let i=0;i<ns.mancanti&&ei<extra.length;i++,ei++) risultato.push(extra[ei]);
+    }
+  }
+  isSimulazione=true; ultimaModalita='sim';
+  sessione=raggruppaEMescola(risultato.slice(0,tot), shuffle);
+  iniziaSessione(); avviaTimer(210*60);
+}
+
 function avviaSimulazione(proporzionale){
   if(DB.length===0){alert('Carica prima il CSV.');return;}
   isSimulazione=true;ultimaModalita='sim';
@@ -860,7 +1339,7 @@ function avviaSimulazione(proporzionale){
   if(proporzionale){
     sessione=campionaProportionale(Math.min(DBfiltrato.length,140), DBfiltrato);
   } else {
-    sessione=shuffle([...DBfiltrato]).slice(0,Math.min(DBfiltrato.length,140));
+    sessione=raggruppaEMescola([...DBfiltrato], shuffle).slice(0,Math.min(DBfiltrato.length,140));
   }
   iniziaSessione();avviaTimer(210*60);
 }
@@ -885,18 +1364,18 @@ function avviaQuiz(modalita){
     pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
     if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
   } else if(modalita==='tutte'){
-    pool=shuffle(DB.filter(d=>!isEsclusa(d)));
+    pool=raggruppaEMescola(DB.filter(d=>!isEsclusa(d)), shufflePesato);
   } else if(modalita==='sbagliate'){
     const ids=new Set(st.sbagliate||[]);
-    pool=shuffle(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)));
+    pool=raggruppaEMescola(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)), shufflePesato);
     if(pool.length===0){alert('Nessuna domanda sbagliata salvata.');return;}
   } else if(modalita==='segnalibri'){
     const ids=new Set(st.segnalibri||[]);
-    pool=shuffle(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)));
+    pool=raggruppaEMescola(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)), shufflePesato);
     if(pool.length===0){alert('Nessun segnalibro salvato.');return;}
   } else {
     // Selezione specifica per specialità: nessun filtro, l'utente ha scelto esplicitamente
-    pool=shuffle(DB.filter(d=>d.specialita===modalita));
+    pool=raggruppaEMescola(DB.filter(d=>d.specialita===modalita), shufflePesato);
   }
   sessione=pool.slice(0,Math.min(pool.length,numDomande));
   iniziaSessione();
@@ -975,6 +1454,7 @@ function mostraDomanda(){
   document.getElementById('q-counter').textContent=(idx+1)+' / '+sessione.length;
   document.getElementById('q-progress').style.width=Math.round((idx/sessione.length)*100)+'%';
   document.getElementById('q-text').innerHTML = formattaDomanda(d.domanda);
+  renderizzaImmaginiDomanda(d, document.getElementById('q-image-container'));
   aggiornaIconaSegnalibro();
   // Riavvia il countdown ad ogni nuova domanda (non in simulazione)
   if(isCountdown && !isSimulazione){ avviaTimerDomanda(); }
@@ -1028,8 +1508,8 @@ function rispondi(scelta,corretta_let,id){
       else btn.classList.add('disabled');
     });
     document.getElementById('btn-skip').style.display='none';
-    if(giusta){n_corrette++;st.risposte[id]=true;st.sbagliate=(st.sbagliate||[]).filter(i=>i!==id);}
-    else{n_sbagliate++;st.risposte[id]=false;if(!st.sbagliate)st.sbagliate=[];if(!st.sbagliate.includes(id))st.sbagliate.push(id);}
+    if(giusta){n_corrette++;st.risposte[id]=true;st.sbagliate=(st.sbagliate||[]).filter(i=>i!==id);st.saltate=(st.saltate||[]).filter(i=>i!==id);}
+    else{n_sbagliate++;st.risposte[id]=false;if(!st.sbagliate)st.sbagliate=[];if(!st.sbagliate.includes(id))st.sbagliate.push(id);st.saltate=(st.saltate||[]).filter(i=>i!==id);}
     saveStorage(st);
     logRisposte.push({domanda:sessione[idx],scelta,esito:giusta?'correct':'wrong'});
     const bn=document.getElementById('btn-next');
@@ -1048,6 +1528,10 @@ function sautaDomanda(){
   } else {
     fermaTimer(); // Countdown: ferma il timer allo skip manuale
     n_saltate++;
+    const st=getStorage();
+    if(!st.saltate)st.saltate=[];
+    if(!st.saltate.includes(sessione[idx].id))st.saltate.push(sessione[idx].id);
+    saveStorage(st);
     document.getElementById('btn-skip').style.display='none';
     document.querySelectorAll('#q-options .btn').forEach(btn=>{
       btn.classList.add('disabled');
@@ -1089,15 +1573,19 @@ function terminaSimulazione(timeout) {
 
     if (!scelta) {
       n_saltate++; esito = 'skipped';
+      if (!st.saltate) st.saltate = [];
+      if (!st.saltate.includes(d.id)) st.saltate.push(d.id);
     } else if (giusta) {
       n_corrette++; esito = 'correct';
       st.risposte[d.id] = true;
       st.sbagliate = (st.sbagliate || []).filter(id => id !== d.id);
+      st.saltate = (st.saltate || []).filter(id => id !== d.id);
     } else {
       n_sbagliate++; esito = 'wrong';
       st.risposte[d.id] = false;
       if (!st.sbagliate) st.sbagliate = [];
       if (!st.sbagliate.includes(d.id)) st.sbagliate.push(d.id);
+      st.saltate = (st.saltate || []).filter(id => id !== d.id);
     }
     logRisposte.push({ domanda: d, scelta: scelta, esito: esito });
   });
@@ -1109,6 +1597,8 @@ function terminaSimulazione(timeout) {
 function mostraRisultato(timeout){
   fermaTimer();
   cancellaSessioneInterrotta(); // sessione completata, non serve più
+  // Registra domande svolte per obiettivo giornaliero
+  aggiornaObiettivoDomande(n_corrette+n_sbagliate+n_saltate);
   const score=n_corrette-n_sbagliate*0.25;
   const perc=sessione.length>0?Math.round(n_corrette/sessione.length*100):0;
   let titolo='';
@@ -1134,6 +1624,10 @@ function mostraRisultato(timeout){
     saveStorage(st);
   }
   costruisciRecap();
+  const btnEsportaSess = document.getElementById('btn-esporta-sessione');
+  const nDaSpiegare = logRisposte.filter(e=>e.esito==='wrong'||e.esito==='skipped').length;
+  btnEsportaSess.style.display = nDaSpiegare>0 ? 'block' : 'none';
+  btnEsportaSess.textContent = '📤 Esporta sbagliate/saltate di questa sessione ('+nDaSpiegare+')';
   showScreen('risultato');
 }
 
@@ -1213,6 +1707,7 @@ function mostraDettaglioDomanda(d, query){
   const cont=document.getElementById('detail-content');
   let html='<span class="tag" style="margin-bottom:12px;display:inline-block">'+escHtml(d.specialita)+'</span>';
   html+='<div class="card"><p style="font-size:15px;line-height:1.6">'+formattaDomanda(d.domanda)+'</p></div>';
+  html+='<div id="detail-image-container" style="margin-bottom:12px"></div>';
   ['A','B','C','D','E'].forEach(l=>{
     if(!d[l])return;
     const isC=(l===d.risposta_corretta);
@@ -1223,6 +1718,7 @@ function mostraDettaglioDomanda(d, query){
   const isBm=st.segnalibri.includes(d.id);
   html+='<button onclick="toggleBookmarkDiretto(\''+d.id+'\')" id="bm-detail-btn" class="btn" style="margin-top:16px">'+(isBm?'🔖 Rimuovi segnalibro':'🔖 Aggiungi segnalibro')+'</button>';
   cont.innerHTML=html;
+  renderizzaImmaginiDomanda(d, document.getElementById('detail-image-container'));
   showScreen('detail');
   window._detailDomandaId=d.id;
 }
@@ -1337,7 +1833,7 @@ function avviaQuizAnnales(annate){
   ultimaModalita='annales_'+annate.join(',');
   fermaTimer();
   const nomiLower=annate.map(a=>a.toLowerCase());
-  const pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
+  const pool=raggruppaEMescola(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())), shuffle);
   if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
   sessione=pool.slice(0,Math.min(pool.length,numDomande));
   iniziaSessione();
@@ -1364,7 +1860,7 @@ function toggleAnnalesEsame(){
 function avviaSimulazioneAnnales(annate){
   if(DB.length===0)return;
   const nomiLower=annate.map(a=>a.toLowerCase());
-  const pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())));
+  const pool=raggruppaEMescola(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())), shuffle);
   if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate.');return;}
   isSimulazione=true;
   ultimaModalita='annales_'+annate.join(',');
@@ -1421,13 +1917,127 @@ function mostraStorico(){
 }
 
 /* ── Statistiche ── */
+/* ── Esporta domande sbagliate/saltate per generare spiegazioni con un'AI ── */
+function csvEscape(v){
+  const s = (v===undefined||v===null) ? '' : String(v);
+  return '"' + s.replace(/"/g,'""') + '"';
+}
+
+function esportaDomandeDaStudiare(){
+  const st = getStorage();
+  const idSbagliate = new Set(st.sbagliate || []);
+  const idSaltate = new Set(st.saltate || []);
+  const idUnione = new Set([...idSbagliate, ...idSaltate]);
+
+  if(idUnione.size === 0){
+    alert('Nessuna domanda sbagliata o saltata da esportare.\n\nFai qualche quiz o simulazione, poi torna qui.');
+    return;
+  }
+
+  const righe = [];
+  righe.push(['id','specialita','domanda','A','B','C','D','E','risposta_corretta','esito'].map(csvEscape).join(';'));
+
+  let trovate = 0;
+  idUnione.forEach(id=>{
+    const d = DB.find(x=>x.id===id);
+    if(!d) return; // domanda non più presente nel DB corrente
+    trovate++;
+    let esito;
+    if(idSbagliate.has(id) && idSaltate.has(id)) esito='sbagliata_e_saltata';
+    else if(idSbagliate.has(id)) esito='sbagliata';
+    else esito='saltata';
+    righe.push([
+      d.id, d.specialita, d.domanda, d.A, d.B, d.C, d.D, d.E, d.risposta_corretta, esito
+    ].map(csvEscape).join(';'));
+  });
+
+  if(trovate === 0){
+    alert('Le domande sbagliate/saltate salvate non corrispondono più al database domande attualmente caricato.\n\nSe hai cambiato CSV, i vecchi progressi potrebbero riferirsi a id diversi.');
+    return;
+  }
+
+  const csvText = righe.join('\n');
+  const blob = new Blob([csvText], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const data = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = 'domande_da_studiare_'+data+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+
+  alert('✓ Esportate '+trovate+' domande (sbagliate: '+idSbagliate.size+', saltate: '+idSaltate.size+').\n\n'+
+    'Come procedere:\n'+
+    '1. Carica questo file su un\'AI (es. Claude) e chiedi di aggiungere una spiegazione per ogni domanda\n'+
+    '2. Fatti restituire un file con colonne "id" e "spiegazione" (stesso delimitatore ";")\n'+
+    '3. Usa lo script Python "unisci_spiegazioni.py" per integrare le spiegazioni nel CSV principale');
+}
+
+/*
+  Esporta le domande sbagliate/saltate della SIMULAZIONE/QUIZ APPENA CONCLUSO
+  (non l'intero storico), con TUTTE le colonne disponibili nel CSV per ogni
+  domanda (id, specialita, numero_domanda, domanda, immagini, A-E,
+  risposta_corretta, spiegazione se già presente, ed eventuali colonne extra),
+  più la scelta data dall'utente e l'esito. Pronto per essere caricato su un'AI.
+*/
+function esportaDomandeSessioneCorrente(){
+  const daEsportare = logRisposte.filter(e=>e.esito==='wrong'||e.esito==='skipped');
+  if(daEsportare.length===0){
+    alert('Nessuna domanda sbagliata o saltata in questa sessione.');
+    return;
+  }
+
+  // Ordine preferito delle colonne note; eventuali colonne extra nel CSV
+  // (es. "spiegazione" già presente, o altre) vengono aggiunte in coda.
+  const ordinePreferito = ['id','specialita','numero_domanda','domanda','immagini','A','B','C','D','E','risposta_corretta','spiegazione'];
+  const colonneViste = new Set();
+  daEsportare.forEach(e=>{
+    Object.keys(e.domanda).forEach(k=>{
+      if(!k.startsWith('__')) colonneViste.add(k);
+    });
+  });
+  const colonneOrdinate = ordinePreferito.filter(c=>colonneViste.has(c));
+  const colonneExtra = [...colonneViste].filter(c=>!ordinePreferito.includes(c)).sort();
+  const colonneFinali = [...colonneOrdinate, ...colonneExtra, 'scelta_utente', 'esito'];
+
+  const righe = [];
+  righe.push(colonneFinali.map(csvEscape).join(';'));
+  daEsportare.forEach(e=>{
+    const riga = colonneFinali.map(c=>{
+      if(c==='scelta_utente') return csvEscape(e.scelta || '(nessuna risposta)');
+      if(c==='esito') return csvEscape(e.esito==='wrong'?'sbagliata':'saltata');
+      return csvEscape(e.domanda[c]);
+    });
+    righe.push(riga.join(';'));
+  });
+
+  const csvText = righe.join('\n');
+  const blob = new Blob([csvText], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const data = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href = url;
+  a.download = 'sessione_da_studiare_'+data+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+
+  alert('✓ Esportate '+daEsportare.length+' domande di questa sessione (con tutte le colonne del CSV).\n\n'+
+    'Carica il file su un\'AI chiedendo una spiegazione per ogni domanda (colonne "id" + "spiegazione"), '+
+    'poi usa lo script Python "unisci_spiegazioni.py" per integrarle nel CSV principale.');
+}
+
 function mostraStats(){
   const st=getStorage(),specs=[...new Set(DB.map(d=>d.specialita))].sort();
   const cont=document.getElementById('stats-content');cont.innerHTML='';
   const tot=Object.values(st.risposte).length,g=Object.values(st.risposte).filter(r=>r).length;
   const p=tot>0?Math.round(g/tot*100):0;
   const bm=(st.segnalibri||[]).length;
-  cont.innerHTML='<div class="card"><p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:8px">Statistiche globali</p><p style="font-size:28px;font-weight:500">'+p+'%</p><p style="font-size:13px;color:var(--color-text-secondary)">'+g+' corrette su '+tot+' risposte · 🔖 '+bm+' segnalibri</p><div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:'+p+'%"></div></div></div><div class="section-title">Per specialità</div>';
+  const nSbagliate=(st.sbagliate||[]).length, nSaltate=(st.saltate||[]).length;
+  cont.innerHTML='<div class="card"><p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:8px">Statistiche globali</p><p style="font-size:28px;font-weight:500">'+p+'%</p><p style="font-size:13px;color:var(--color-text-secondary)">'+g+' corrette su '+tot+' risposte · 🔖 '+bm+' segnalibri · ❌ '+nSbagliate+' sbagliate · — '+nSaltate+' saltate</p><div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:'+p+'%"></div></div></div><div class="section-title">Per specialità</div>';
   specs.forEach(s=>{
     const ids=DB.filter(d=>d.specialita===s).map(d=>d.id);
     const r=ids.map(id=>st.risposte[id]).filter(x=>x!==undefined);
@@ -1441,7 +2051,7 @@ function mostraStats(){
 function resetStats(){
   const msg = 'Sei sicuro?\n\n- Tutti i progressi, segnalibri e storico verranno cancellati.\n- Il database domande rimarrà salvato.\n\nSe vuoi cancellare anche le domande, usa "Rimuovi database domande".'
   if(!confirm(msg))return;
-  saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[]});
+  saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[],saltate:[]});
   aggiornHome();showScreen('home');
 }
 function resetDB(){
@@ -1450,6 +2060,30 @@ function resetDB(){
   DB=[];
   initDemoData();
   showScreen('home');
+}
+
+function resetImmagini(){
+  if(!confirm('Rimuovere tutte le immagini importate? Dovrai reimportare lo ZIP.'))return;
+  clearImmaginiIDB().then(()=>{
+    // Svuota anche la cache in memoria
+    Object.values(cacheImmaginiURL).forEach(url=>URL.revokeObjectURL(url));
+    Object.keys(cacheImmaginiURL).forEach(k=>delete cacheImmaginiURL[k]);
+    aggiornaLabelImmagini();
+  });
+}
+
+async function aggiornaLabelImmagini(){
+  const n = await contaImmaginiIDB();
+  const lbl = document.getElementById('img-count-label');
+  const rmBtn = document.getElementById('btn-remove-img');
+  if(n>0){
+    lbl.textContent = '🖼 ' + n + ' immagini caricate';
+    lbl.style.display = 'block';
+    rmBtn.style.display = 'block';
+  } else {
+    lbl.style.display = 'none';
+    rmBtn.style.display = 'none';
+  }
 }
 
 /* ── Uscita ── */
@@ -1489,7 +2123,38 @@ function caricaCSV(testo){
     const obj={};header.forEach((h,j)=>obj[h]=cols[j]||'');
     if(obj.domanda)domande.push(obj);
   }
+  window._idGeneratiUltimoImport = ripristinaIdMancanti(domande);
   return domande;
+}
+
+/*
+  Garantisce che ogni domanda abbia un id univoco e stabile.
+  Se il CSV ha righe con id vuoto o duplicato (es. domande annales
+  aggiunte senza passare dallo script Python che assegna gli id
+  sequenziali), un id condiviso da più domande rompe segnalibri e
+  progressi: toccarne una sembra toccarle tutte contemporaneamente.
+  Qui si genera un id deterministico basato su specialità + numero
+  domanda, così resta stabile anche re-importando lo stesso CSV in
+  futuro (segnalibri e progressi salvati restano coerenti).
+*/
+function ripristinaIdMancanti(domande){
+  const idVisti = new Set();
+  let generati = 0;
+  domande.forEach(d=>{
+    if(d.id && d.id.trim() !== '' && !idVisti.has(d.id)){
+      idVisti.add(d.id);
+      return;
+    }
+    const base = 'gen_' + (d.specialita||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_')
+               + '_' + (d.numero_domanda||'').toString().trim();
+    let candidato = base, n = 2;
+    while(idVisti.has(candidato)){ candidato = base+'_'+n; n++; }
+    d.id = candidato;
+    idVisti.add(candidato);
+    generati++;
+  });
+  if(generati>0) console.warn('⚠ '+generati+' domande avevano id mancante o duplicato: generato id automatico stabile.');
+  return generati;
 }
 
 function initDemoData(){
@@ -1513,19 +2178,74 @@ fileInput.onchange=e=>{
     const d=caricaCSV(ev.target.result);
     if(d.length===0){alert('Nessuna domanda trovata.');return;}
     DB=d;
+    const nGenerati = window._idGeneratiUltimoImport || 0;
+    const suffissoAvviso = nGenerati>0
+      ? '\n\n⚠ '+nGenerati+' domande avevano un id mancante o duplicato nel CSV: è stato generato automaticamente un id stabile per ciascuna (basato su specialità + numero domanda), così segnalibri e progressi funzionano correttamente.'
+      : '';
     // Salva il DB in IndexedDB (nessun limite di dimensione)
     saveDBToIDB(d).then(ok=>{
       aggiornHome();
-      alert('✓ Caricate '+d.length+' domande! Saranno ricordate anche al prossimo accesso.');
+      alert('✓ Caricate '+d.length+' domande! Saranno ricordate anche al prossimo accesso.'+suffissoAvviso);
     }).catch(()=>{
       aggiornHome();
-      alert('✓ Caricate '+d.length+' domande! (Attenzione: salvataggio permanente non riuscito, potrebbe essere necessario ricaricare il CSV al prossimo accesso.)');
+      alert('✓ Caricate '+d.length+' domande! (Attenzione: salvataggio permanente non riuscito, potrebbe essere necessario ricaricare il CSV al prossimo accesso.)'+suffissoAvviso);
     });
   };
   reader.readAsText(file,'utf-8');
 };
 document.body.appendChild(fileInput);
 document.getElementById('btn-import').onclick=()=>fileInput.click();
+
+/* ── Import ZIP immagini ── */
+const fileInputImg=document.createElement('input');
+fileInputImg.type='file';fileInputImg.accept='.zip';fileInputImg.style.display='none';
+fileInputImg.onchange=async e=>{
+  const file=e.target.files[0];if(!file)return;
+  if(typeof JSZip==='undefined'){
+    alert('Errore: libreria ZIP non caricata. Verifica la connessione a internet e riprova.');
+    return;
+  }
+  const btnImg=document.getElementById('btn-import-img');
+  const testoOriginale=btnImg.textContent;
+  btnImg.textContent='⏳ Importazione in corso…';
+  btnImg.style.pointerEvents='none';
+  try{
+    const zip = await JSZip.loadAsync(file);
+    const estensioniValide = ['.png','.jpg','.jpeg','.gif','.webp','.svg'];
+    const entries = Object.values(zip.files).filter(f=>{
+      if(f.dir) return false;
+      const nomeLower = f.name.toLowerCase();
+      return estensioniValide.some(ext=>nomeLower.endsWith(ext));
+    });
+    if(entries.length===0){
+      alert('Nessuna immagine trovata nello ZIP (formati supportati: png, jpg, jpeg, gif, webp, svg).');
+      btnImg.textContent=testoOriginale;
+      btnImg.style.pointerEvents='';
+      return;
+    }
+    let salvate=0;
+    for(const entry of entries){
+      // Usa solo il nome file (senza percorso cartelle) come chiave,
+      // così corrisponde a quanto scritto nella colonna "immagini" del CSV
+      const nomeFile = entry.name.split('/').pop();
+      const blob = await entry.async('blob');
+      const ok = await saveImageToIDB(nomeFile, blob);
+      if(ok) salvate++;
+      btnImg.textContent='⏳ '+salvate+' / '+entries.length+'…';
+    }
+    btnImg.textContent=testoOriginale;
+    btnImg.style.pointerEvents='';
+    await aggiornaLabelImmagini();
+    alert('✓ Importate '+salvate+' immagini su '+entries.length+' trovate nello ZIP.\n\nSaranno ricordate anche al prossimo accesso, non serve reimportarle.');
+  }catch(err){
+    console.error('Errore import ZIP:', err);
+    btnImg.textContent=testoOriginale;
+    btnImg.style.pointerEvents='';
+    alert('Errore durante l\'importazione dello ZIP: '+err.message);
+  }
+};
+document.body.appendChild(fileInputImg);
+document.getElementById('btn-import-img').onclick=()=>fileInputImg.click();
 
 /* ── Salva sessione su chiusura/refresh pagina ── */
 window.addEventListener('beforeunload', ()=>{
@@ -1534,40 +2254,138 @@ window.addEventListener('beforeunload', ()=>{
   }
 });
 
-/* ── SHORTCUTS TASTIERA (1-5 e 0) ── */
-document.addEventListener('keydown', (e) => {
+/* ── Azioni quiz condivise (tastiera + gamepad) ── */
+function eseguiAzioneQuiz(azione){
   // Esegui solo se la schermata quiz è attiva e non in pausa
   const quizScreen = document.getElementById('screen-quiz');
   if (!quizScreen.classList.contains('active') || isPausa) return;
-  
-  // Ignora se l'utente sta scrivendo da qualche parte
-  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
   const d = sessione[idx];
   if (!d) return;
 
-  // Mappa dei tasti
-  const keyMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'};
   const btnNext = document.getElementById('btn-next');
   const isNextVisible = btnNext.style.display === 'block';
 
-  if (keyMap[e.key]) {
-    const lettera = keyMap[e.key];
-    // Assicuriamoci che l'opzione esista (es. che ci sia davvero l'opzione E per quella domanda)
-    if (d[lettera]) {
-      // In modalità ripasso, blocca la selezione se l'utente ha già risposto (pulsante Next visibile)
+  if (['A','B','C','D','E'].includes(azione)) {
+    if (d[azione]) {
+      // In modalità ripasso, blocca la selezione se l'utente ha già risposto
       if (!isSimulazione && isNextVisible) return;
-      rispondi(lettera, d.risposta_corretta, d.id);
+      rispondi(azione, d.risposta_corretta, d.id);
     }
-  } else if (e.key === '0') {
-    // Tasto 0
-    if (isNextVisible) {
-      // Se si può andare avanti, vai alla prossima (o termina simulazione)
-      prossimaDomanda();
-    } else {
-      // Altrimenti salta la domanda
+  } else if (azione === 'skip') {
+    // Salta domanda: funziona sia in simulazione sia in modalità ripasso normale.
+    // Se la domanda è già stata risposta/saltata (btn-next visibile), il tasto
+    // skip non fa nulla — per avanzare in quel caso si usa il tasto 'next'.
+    const btnSkipEl = document.getElementById('btn-skip');
+    const isSkipVisible = btnSkipEl.style.display !== 'none';
+    if (isSkipVisible) {
       sautaDomanda();
     }
+  } else if (azione === 'next') {
+    if (isNextVisible) prossimaDomanda();
+  } else if (azione === 'skipOrNext') {
+    // Usato dalla tastiera (tasto 0): salta se non risposto, altrimenti avanza
+    if (isNextVisible) {
+      prossimaDomanda();
+    } else {
+      sautaDomanda();
+    }
+  } else if (azione === 'pausa') {
+    // Pausa disponibile solo se il timer-box è visibile (simulazione o countdown)
+    if (document.getElementById('timer-box').style.display !== 'none') togglePausa();
+  } else if (azione === 'bookmark') {
+    toggleBookmark();
+  }
+}
+
+/* ── SHORTCUTS TASTIERA (1-5 e 0) ── */
+document.addEventListener('keydown', (e) => {
+  // Ignora se l'utente sta scrivendo da qualche parte
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+  const keyMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'};
+  if (keyMap[e.key]) {
+    eseguiAzioneQuiz(keyMap[e.key]);
+  } else if (e.key === '0') {
+    eseguiAzioneQuiz('skipOrNext');
+  }
+});
+
+/* ── SUPPORTO JOY-CON / GAMEPAD (Bluetooth) ──
+   Mappatura pulsanti standard (W3C Gamepad API):
+     0,1,2,3  → Risposte A, B, C, D  (i quattro pulsanti frontali)
+     10 o 11  → Risposta E            (pressione stick sinistro/destro, L3/R3)
+     5 o 7    → Prossima domanda      (R / ZR)
+     4 o 6    → Salta domanda         (L / ZL)
+     9        → Pausa                 (+)
+     8        → Segnalibro            (−)
+*/
+let gamepadPollAttivo = false;
+let gamepadPrevState = {}; // indice gamepad → array booleani pulsanti premuti al frame precedente
+
+const GAMEPAD_MAPPA = {
+  0: 'A', 1: 'B', 2: 'C', 3: 'D',
+  10: 'E', 11: 'E',   // L3 / R3
+  5: 'next', 7: 'next',   // R / ZR
+  4: 'skip', 6: 'skip',   // L / ZL
+  9: 'pausa',   // +
+  8: 'bookmark' // −
+};
+
+function pollGamepads(){
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for(let i=0;i<pads.length;i++){
+    const pad = pads[i];
+    if(!pad) continue;
+    const prev = gamepadPrevState[i] || [];
+    pad.buttons.forEach((btn, idxBtn) => {
+      const premuto = btn.pressed || btn.value > 0.5;
+      const eraPremuto = prev[idxBtn] || false;
+      if(premuto && !eraPremuto){
+        // Fronte di salita: pulsante appena premuto
+        const azione = GAMEPAD_MAPPA[idxBtn];
+        if(azione) eseguiAzioneQuiz(azione);
+      }
+    });
+    gamepadPrevState[i] = pad.buttons.map(b => b.pressed || b.value > 0.5);
+  }
+  if(gamepadPollAttivo) requestAnimationFrame(pollGamepads);
+}
+
+function mostraToastGamepad(msg){
+  let toast = document.getElementById('gamepad-toast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'gamepad-toast';
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--color-text-primary);color:var(--color-background-primary);padding:10px 18px;border-radius:99px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);opacity:0;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  requestAnimationFrame(()=>{ toast.style.opacity='1'; });
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(()=>{ toast.style.opacity='0'; }, 2500);
+}
+
+window.addEventListener('gamepadconnected', (e) => {
+  console.log('🎮 Controller connesso: ' + e.gamepad.id);
+  mostraToastGamepad('🎮 Controller collegato');
+  const ind=document.getElementById('gamepad-indicator');
+  if(ind) ind.style.display='inline';
+  if(!gamepadPollAttivo){
+    gamepadPollAttivo = true;
+    requestAnimationFrame(pollGamepads);
+  }
+});
+window.addEventListener('gamepaddisconnected', (e) => {
+  console.log('🎮 Controller disconnesso: ' + e.gamepad.id);
+  mostraToastGamepad('🎮 Controller scollegato');
+  delete gamepadPrevState[e.gamepad.index];
+  // Ferma il polling se non ci sono più controller collegati
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  if(![...pads].some(p=>p)){
+    gamepadPollAttivo = false;
+    const ind=document.getElementById('gamepad-indicator');
+    if(ind) ind.style.display='none';
   }
 });
 
@@ -1613,6 +2431,7 @@ function ripristinaSessione(stato){
 
 // All'avvio: carica il DB da IndexedDB (asincrono)
 (async function init() {
+  aggiornaLabelImmagini(); // mostra subito quante immagini sono già salvate
   try{
     const saved = await loadDBFromIDB();
     if(saved && saved.length > 0){
