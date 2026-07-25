@@ -7,7 +7,18 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#ffffff">
 <title>Quiz Medicina – Specializzazioni</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* Applica il tema salvato PRIMA del rendering, per evitare il flash del tema sbagliato.
+   Se l'utente non ha mai scelto manualmente, segue il sistema (comportamento invariato). */
+(function(){
+  try{
+    var salvato = localStorage.getItem('quiz_med_tema');
+    if(salvato === 'light' || salvato === 'dark'){
+      document.documentElement.setAttribute('data-theme', salvato);
+    }
+  }catch(e){}
+})();
+</script>
 <style>
 :root {
   --color-background-primary: #ffffff;
@@ -32,8 +43,9 @@
   --border-radius-lg: 12px;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+/* Automatico (segue il sistema): si applica SOLO se l'utente non ha forzato "light" a mano */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-background-primary: #1a1a1a;
     --color-background-secondary: #262626;
     --color-background-tertiary: #333333;
@@ -53,6 +65,26 @@
     --color-border-danger: #7f1d1d;
   }
 }
+/* Forzato manualmente su "scuro" tramite il toggle, indipendentemente dal sistema */
+:root[data-theme="dark"] {
+  --color-background-primary: #1a1a1a;
+  --color-background-secondary: #262626;
+  --color-background-tertiary: #333333;
+  --color-background-success: #052e16;
+  --color-background-danger: #2d0a0a;
+  --color-background-warning: #1c1400;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #aaaaaa;
+  --color-text-tertiary: #666666;
+  --color-text-success: #4ade80;
+  --color-text-danger: #f87171;
+  --color-text-warning: #fbbf24;
+  --color-border-primary: #f0f0f0;
+  --color-border-secondary: #3a3a3a;
+  --color-border-tertiary: #2e2e2e;
+  --color-border-success: #166534;
+  --color-border-danger: #7f1d1d;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 
 /* IL FIX DELLO SFONDO È QUI: Aggiunto background-color e color al body */
@@ -60,6 +92,103 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 
 #app{padding:1rem 1rem 4rem;max-width:600px;margin:0 auto;width:100%;}
 .screen{display:none;}.screen.active{display:block;}
+
+/* ── Modalità orizzontale (landscape) durante il quiz/simulazione ──
+   Sposta la griglia di navigazione in una colonna a destra, sfruttando
+   la larghezza extra dello schermo ruotato invece di impilare tutto
+   verticalmente come su mobile in verticale. */
+@media (orientation: landscape) and (min-width: 700px){
+  #app.is-quiz-screen{
+    max-width: 1000px;
+  }
+  #app.is-quiz-screen .quiz-content-layout{
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+  }
+  #app.is-quiz-screen .quiz-main-col{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #app.is-quiz-screen #nav-grid-container{
+    flex: 0 0 240px;
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: 24px;
+    border-top: none;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  #app.is-quiz-screen #nav-grid-container .nav-grid{
+    max-height: none;
+    overflow-y: visible;
+  }
+  #app.is-risultato-screen{
+    max-width: 1000px;
+  }
+  #app.is-risultato-screen .ris-content-layout{
+    display: flex;
+    flex-direction: row-reverse; /* il DOM ha ris-side-col prima di ris-main-col:
+                                     row-reverse la mostra a destra senza spostare i nodi */
+    align-items: flex-start;
+    gap: 28px;
+  }
+  #app.is-risultato-screen .ris-main-col{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #app.is-risultato-screen .ris-side-col{
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-left: 24px;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  /* Dentro la colonna laterale unificata, il riquadro quadratini non ha più
+     bisogno del proprio bordo/scroll separato: li gestisce ris-side-col. */
+  #app.is-risultato-screen #ris-nav-grid-container{
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: 0;
+    border-top: none;
+    border-left: none;
+    max-height: none;
+    overflow-y: visible;
+  }
+  #app.is-risultato-screen #ris-nav-grid-container .nav-grid{
+    max-height: none;
+    overflow-y: visible;
+  }
+  #app.is-risultato-screen .ris-summary-block .score-box{
+    margin-bottom: 8px;
+  }
+  /* Nella sidebar stretta la griglia a 4 colonne fa sbordare l'ultimo box (%):
+     lo nascondiamo e riflowiamo su 3 colonne, solo in questa vista. */
+  #app.is-risultato-screen .stat-grid-4{
+    grid-template-columns: repeat(3, 1fr);
+  }
+  #app.is-risultato-screen .stat-grid-4 .stat-card:last-child{
+    display: none;
+  }
+  #app.is-risultato-screen #btn-esporta-sessione{
+    margin-bottom: 0;
+  }
+}
+.ris-nav-legend{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--color-text-secondary);margin-bottom:10px;}
+.ris-legend-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
+.nav-cell.esito-correct{background:var(--color-text-success);border-color:var(--color-text-success);color:#fff;}
+.nav-cell.esito-wrong{background:var(--color-text-danger);border-color:var(--color-text-danger);color:#fff;}
+.nav-cell.esito-skipped{background:var(--color-text-warning);border-color:var(--color-text-warning);color:#fff;}
 .card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:12px;}
 .btn{display:block;width:100%;padding:14px 16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:15px;font-weight:400;color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.1s;margin-bottom:8px;line-height:1.4;}
 .btn:hover{background:var(--color-background-secondary);}
@@ -96,9 +225,6 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .custom-num-row input{width:80px;padding:7px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:14px;color:var(--color-text-primary);background:var(--color-background-primary);}
 .custom-num-row label{font-size:14px;color:var(--color-text-secondary);}
 .score-box{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;text-align:center;margin-bottom:12px;}
-.obiettivo-card{border-radius:var(--border-radius-lg);padding:12px 14px;margin-bottom:12px;border:0.5px solid var(--color-border-tertiary);}
-.obiettivo-bar-bg{background:var(--color-background-tertiary);border-radius:99px;height:8px;margin:8px 0 4px;}
-.obiettivo-bar-fill{height:8px;border-radius:99px;transition:width 0.6s ease;}
 .score-big{font-size:42px;font-weight:600;}
 .score-sub{font-size:13px;color:var(--color-text-secondary);margin-top:4px;}
 
@@ -166,22 +292,21 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 <div id="app">
 
 <div id="screen-home" class="screen active">
-  <p style="font-size:22px;font-weight:500;margin-bottom:4px">Quiz medicina</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <p style="font-size:22px;font-weight:500">Quiz medicina</p>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="tag" style="font-size:11px;color:var(--color-text-secondary)" title="Versione dell'app">v2026.07.25</span>
+      <button id="btn-toggle-fullscreen" onclick="toggleFullscreen()" title="Schermo intero"
+        style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);">⛶</button>
+      <button id="btn-toggle-tema" onclick="toggleTema()" title="Cambia tema chiaro/scuro"
+        style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);">🌙</button>
+    </div>
+  </div>
   <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.5rem">Specializzazioni – Ministero</p>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-num" id="h-tot">—</div><div class="stat-lbl">Domande</div></div>
     <div class="stat-card"><div class="stat-num" id="h-perc" style="color:var(--color-text-success)">—</div><div class="stat-lbl">% corrette</div></div>
     <div class="stat-card"><div class="stat-num" id="h-spec">—</div><div class="stat-lbl">Specialità</div></div>
-  </div>
-  <div class="obiettivo-card" id="obiettivo-card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;font-weight:500" id="ob-label">🎯 Obiettivo oggi</span>
-      <span style="font-size:13px;color:var(--color-text-secondary)" id="ob-counter">0 / 15</span>
-    </div>
-    <div class="obiettivo-bar-bg">
-      <div class="obiettivo-bar-fill" id="ob-bar" style="width:0%;background:var(--color-text-success)"></div>
-    </div>
-    <div style="font-size:12px;color:var(--color-text-secondary)" id="ob-sub">Rispondi a 15 domande per completare l'obiettivo</div>
   </div>
   <div class="section-title">Domande per sessione</div>
   <div class="num-pills">
@@ -220,6 +345,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
   <button class="btn" id="btn-import">📂 Importa CSV</button>
   <button class="btn" id="btn-import-img">🖼 Importa immagini (ZIP)</button>
   <div id="img-count-label" style="font-size:12px;color:var(--color-text-secondary);margin:-4px 0 8px;padding-left:2px;display:none"></div>
+  <button class="btn" onclick="apriImportaSessione()" style="border-color:var(--color-border-success);color:var(--color-text-success)">📥 Importa sessione condivisa</button>
   <button class="btn" id="btn-remove-db" onclick="resetDB()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi database domande</button>
   <button class="btn" id="btn-remove-img" onclick="resetImmagini()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi immagini</button>
 </div>
@@ -314,33 +440,36 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     <div class="progress-bar-bg" style="margin:0"><div id="timer-bar" class="timer-bar-fill" style="width:100%"></div></div>
   </div>
 
-  <div id="quiz-content">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0" title="Esci / Consegna">✕</button>
-      <span class="tag" id="q-spec-tag"></span>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span id="gamepad-indicator" style="display:none;font-size:15px" title="Controller collegato">🎮</span>
-        <button class="bookmark-btn" id="btn-bookmark" onclick="toggleBookmark()" title="Aggiungi segnalibro">🔖</button>
-        <span style="font-size:13px;color:var(--color-text-secondary)" id="q-counter"></span>
+  <div id="quiz-content" class="quiz-content-layout">
+    <div class="quiz-main-col">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0" title="Esci / Consegna">✕</button>
+        <span class="tag" id="q-spec-tag"></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="gamepad-indicator" style="display:none;font-size:15px" title="Controller collegato">🎮</span>
+          <button class="bookmark-btn" id="btn-fullscreen-quiz" onclick="toggleFullscreen()" title="Schermo intero" style="font-size:16px">⛶</button>
+          <button class="bookmark-btn" id="btn-export-sessione" onclick="apriEsportaSessione()" title="Esporta/Condividi questa sessione" style="opacity:1">📤</button>
+          <button class="bookmark-btn" id="btn-bookmark" onclick="toggleBookmark()" title="Aggiungi segnalibro">🔖</button>
+          <span style="font-size:13px;color:var(--color-text-secondary)" id="q-counter"></span>
+        </div>
       </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="q-progress" style="width:0%"></div></div>
+
+      <div class="card" style="margin-top:12px">
+        <p style="font-size:17px;line-height:1.7" id="q-text"></p>
+      </div>
+      <div id="q-image-container" style="margin-bottom:12px"></div>
+      <div id="q-options"></div>
+      <div id="q-spiegazione-container" style="display:none;margin-top:8px"></div>
+      <button class="btn skip" id="btn-skip" onclick="sautaDomanda()">— Non rispondo (0 punti) —</button>
+      <button class="btn primary" id="btn-next" style="display:none;margin-top:4px" onclick="prossimaDomanda()">Prossima domanda</button>
     </div>
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="q-progress" style="width:0%"></div></div>
-    
-    <div class="card" style="margin-top:12px">
-      <p style="font-size:17px;line-height:1.7" id="q-text"></p>
-    </div>
-    <div id="q-image-container" style="margin-bottom:12px"></div>
-    <div id="q-options"></div>
-    <div id="q-spiegazione-container" style="display:none;margin-top:8px"></div>
-    <button class="btn skip" id="btn-skip" onclick="sautaDomanda()">— Non rispondo (0 punti) —</button>
-    <button class="btn primary" id="btn-next" style="display:none;margin-top:4px" onclick="prossimaDomanda()">Prossima domanda</button>
 
     <div id="nav-grid-container" class="nav-grid-container" style="display:none">
       <div class="section-title" style="margin-top:0">Navigazione Domande</div>
       <div id="nav-grid" class="nav-grid"></div>
       <button class="btn primary" id="btn-termina-sim" style="margin-top:1rem;background:var(--color-text-danger);border-color:var(--color-text-danger)" onclick="promptTerminaSimulazione()">Consegna e Termina Simulazione</button>
     </div>
-
   </div>
 
   <div id="pause-content" style="display:none;text-align:center;padding:3rem 1rem;">
@@ -354,30 +483,49 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 </div>
 
 <div id="screen-risultato" class="screen">
-  <p style="font-size:22px;font-weight:500;margin-bottom:4px" id="ris-titolo"></p>
-  <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.25rem" id="ris-sub"></p>
-  <div class="score-box">
-    <div class="score-big" id="ris-score"></div>
-    <div class="score-sub" id="ris-score-formula"></div>
-  </div>
-  <div class="stat-grid-4">
-    <div class="stat-card"><div class="stat-num" id="ris-corrette" style="color:var(--color-text-success)"></div><div class="stat-lbl">Corrette<br>+1 pt</div></div>
-    <div class="stat-card"><div class="stat-num" id="ris-sbagliate" style="color:var(--color-text-danger)"></div><div class="stat-lbl">Sbagliate<br>−0.25</div></div>
-    <div class="stat-card"><div class="stat-num" id="ris-saltate" style="color:var(--color-text-secondary)"></div><div class="stat-lbl">Saltate<br>0 pt</div></div>
-    <div class="stat-card"><div class="stat-num" id="ris-perc"></div><div class="stat-lbl">%<br>corrette</div></div>
-  </div>
-  <button class="btn primary" onclick="avviaQuiz(ultimaModalita)" style="margin-bottom:8px">Nuovo quiz</button>
-  <button class="btn" onclick="tornaHome()">Torna alla home</button>
-  <button class="btn" id="btn-esporta-sessione" onclick="esportaDomandeSessioneCorrente()" style="display:none;margin-top:8px;border-color:var(--color-border-success);color:var(--color-text-success)">📤 Esporta sbagliate/saltate di questa sessione</button>
-  <div style="margin-top:1.5rem">
-    <div class="section-title">Recap domande</div>
-    <div class="recap-filter-row">
-      <div class="filter-pill active" data-filter="all" onclick="filtraRecap(this)">Tutte</div>
-      <div class="filter-pill" data-filter="wrong" onclick="filtraRecap(this)">❌ Sbagliate</div>
-      <div class="filter-pill" data-filter="skipped" onclick="filtraRecap(this)">— Saltate</div>
-      <div class="filter-pill" data-filter="correct" onclick="filtraRecap(this)">✓ Corrette</div>
+  <div class="ris-content-layout">
+    <div class="ris-side-col">
+      <div class="ris-summary-block">
+        <p style="font-size:22px;font-weight:500;margin-bottom:4px" id="ris-titolo"></p>
+        <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.25rem" id="ris-sub"></p>
+        <div class="score-box">
+          <div class="score-big" id="ris-score"></div>
+          <div class="score-sub" id="ris-score-formula"></div>
+        </div>
+        <div class="stat-grid-4">
+          <div class="stat-card"><div class="stat-num" id="ris-corrette" style="color:var(--color-text-success)"></div><div class="stat-lbl">Corrette<br>+1 pt</div></div>
+          <div class="stat-card"><div class="stat-num" id="ris-sbagliate" style="color:var(--color-text-danger)"></div><div class="stat-lbl">Sbagliate<br>−0.25</div></div>
+          <div class="stat-card"><div class="stat-num" id="ris-saltate" style="color:var(--color-text-secondary)"></div><div class="stat-lbl">Saltate<br>0 pt</div></div>
+          <div class="stat-card"><div class="stat-num" id="ris-perc"></div><div class="stat-lbl">%<br>corrette</div></div>
+        </div>
+        <button class="btn primary" onclick="avviaQuiz(ultimaModalita)" style="margin-bottom:8px">Nuovo quiz</button>
+        <button class="btn" onclick="tornaHome()">Torna alla home</button>
+      </div>
+
+      <div id="ris-nav-grid-container" class="nav-grid-container" style="display:none">
+        <div class="section-title" style="margin-top:0">Riepilogo domande</div>
+        <div class="ris-nav-legend">
+          <span><i class="ris-legend-dot" style="background:var(--color-text-success)"></i>Corretta</span>
+          <span><i class="ris-legend-dot" style="background:var(--color-text-danger)"></i>Sbagliata</span>
+          <span><i class="ris-legend-dot" style="background:var(--color-text-warning)"></i>Non data</span>
+        </div>
+        <div id="ris-nav-grid" class="nav-grid"></div>
+      </div>
+
+      <button class="btn" id="btn-esporta-sessione" onclick="esportaDomandeSessioneCorrente()" style="display:none;border-color:var(--color-border-success);color:var(--color-text-success)">📤 Esporta sbagliate/saltate di questa sessione</button>
     </div>
-    <div id="recap-list"></div>
+
+    <div class="ris-main-col">
+      <div class="section-title" style="margin-top:0">Recap domande</div>
+      <div class="recap-filter-row">
+        <div class="filter-pill active" data-filter="all" onclick="filtraRecap(this)">Tutte</div>
+        <div class="filter-pill" data-filter="wrong" onclick="filtraRecap(this)">❌ Sbagliate</div>
+        <div class="filter-pill" data-filter="skipped" onclick="filtraRecap(this)">— Saltate</div>
+        <div class="filter-pill" data-filter="correct" onclick="filtraRecap(this)">✓ Corrette</div>
+        <div class="filter-pill" data-filter="bookmarked" onclick="filtraRecap(this)">🔖 Segnalibri</div>
+      </div>
+      <div id="recap-list"></div>
+    </div>
   </div>
 </div>
 
@@ -415,6 +563,91 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 
 <script>
 const STORAGE_KEY = 'quiz_med_v5';
+
+/*
+  Caricatore di script esterni "lazy": scarica una libreria da CDN solo
+  quando serve davvero (es. al primo utilizzo dell'import ZIP), invece che
+  ad ogni apertura dell'app. Così l'app resta utilizzabile offline finché
+  non si usa una funzione che richiede davvero internet. Il risultato è
+  cachato: chiamate successive con lo stesso src non ricaricano lo script.
+*/
+const _scriptCache = {};
+function caricaScriptEsterno(src){
+  if(_scriptCache[src]) return _scriptCache[src];
+  _scriptCache[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => { delete _scriptCache[src]; reject(new Error('Impossibile caricare la libreria da '+src)); };
+    document.head.appendChild(s);
+  });
+  return _scriptCache[src];
+}
+
+/*
+  ── Tema chiaro/scuro ──
+  Di default segue il sistema (comportamento invariato). Se l'utente usa il
+  toggle, la scelta viene fissata e ricordata (localStorage), sovrascrivendo
+  la preferenza di sistema finché non viene cambiata di nuovo manualmente.
+*/
+function temaRisolto(){
+  // Il tema "effettivo" visibile in questo momento: preferenza salvata,
+  // altrimenti quella di sistema.
+  const salvato = localStorage.getItem('quiz_med_tema');
+  if(salvato === 'light' || salvato === 'dark') return salvato;
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+function aggiornaIconaTema(){
+  const btn = document.getElementById('btn-toggle-tema');
+  if(!btn) return;
+  btn.textContent = temaRisolto() === 'dark' ? '☀️' : '🌙';
+}
+function toggleTema(){
+  const nuovo = temaRisolto() === 'dark' ? 'light' : 'dark';
+  try{ localStorage.setItem('quiz_med_tema', nuovo); }catch(e){}
+  document.documentElement.setAttribute('data-theme', nuovo);
+  aggiornaIconaTema();
+}
+
+/*
+  ── Schermo intero ──
+  Usa la Fullscreen API standard, con i prefissi vendor per Safari/iOS
+  (supporto parziale: su iPhone Safari non permette il fullscreen di un
+  elemento arbitrario, solo su iPad/desktop; in quel caso il bottone
+  semplicemente non avrà effetto, senza generare errori).
+*/
+function elementoFullscreenAttivo(){
+  return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+}
+function toggleFullscreen(){
+  if(!elementoFullscreenAttivo()){
+    const el = document.documentElement;
+    const richiedi = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if(!richiedi){
+      alert('Il tuo browser non supporta lo schermo intero su questo dispositivo.');
+      return;
+    }
+    richiedi.call(el).catch(()=>{
+      alert('Impossibile attivare lo schermo intero su questo dispositivo/browser.');
+    });
+  } else {
+    const esci = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(esci) esci.call(document);
+  }
+}
+function aggiornaIconaFullscreen(){
+  const attivo = !!elementoFullscreenAttivo();
+  const icona = attivo ? '⛝' : '⛶';
+  const titolo = attivo ? 'Esci da schermo intero' : 'Schermo intero';
+  ['btn-toggle-fullscreen','btn-fullscreen-quiz'].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(btn){ btn.textContent = icona; btn.title = titolo; }
+  });
+}
+['fullscreenchange','webkitfullscreenchange','MSFullscreenChange'].forEach(ev=>{
+  document.addEventListener(ev, aggiornaIconaFullscreen);
+});
+
 let DB=[], sessione=[];
 let idx=0, n_corrette=0, n_sbagliate=0, n_saltate=0;
 let logRisposte=[];
@@ -600,6 +833,317 @@ async function clearDBFromIDB(){
 }
 
 /* ── Sessione interrotta: salva/carica/cancella ── */
+/*
+  ── Esportazione/condivisione sessione ──
+  Genera un "codice" testuale portabile (base64) che rappresenta la sessione
+  di quiz/simulazione ATTUALMENTE IN CORSO: gli id delle domande selezionate
+  (non le domande intere, per restare leggero: chi importa deve avere lo
+  stesso CSV), la posizione corrente, le risposte già date, ed il tempo
+  residuo/totale del timer se presente. Pensato per essere copiato o
+  scaricato e poi importato da un'altra persona (o sullo stesso account,
+  su un altro dispositivo) per continuare/ripetere esattamente lo stesso set.
+
+  NOTA: la funzione di IMPORT non è ancora implementata (verrà aggiunta
+  in seguito): questo è solo il lato "esporta".
+*/
+const CODICE_SESSIONE_PREFISSO = 'QUIZMED1:';
+
+function costruisciEsportazioneSessione(){
+  if(!sessione || sessione.length===0) return null;
+  const payload = {
+    v: 1,
+    ids: sessione.map(d=>d.id),
+    idx,
+    isSimulazione,
+    isCountdown,
+    ultimaModalita,
+    // In simulazione le risposte sono parallele all'array di id (una per posizione).
+    scelteSimulazione: isSimulazione ? scelteSimulazione : undefined,
+    // In modalità quiz semplice (senza navigazione libera), il progresso è
+    // sequenziale: una voce per ogni domanda già affrontata (0..idx-1).
+    progressoQuiz: !isSimulazione
+      ? logRisposte.map(e=>({id: e.domanda.id, scelta: e.scelta, esito: e.esito}))
+      : undefined,
+    // Tempo residuo/totale del timer, se presente (simulazione o countdown per domanda)
+    timerSecondiRimanenti: (isSimulazione || isCountdown) ? timerSecondi : null,
+    timerTotaleOrig: (isSimulazione || isCountdown) ? timerTotale : null,
+    creato: Date.now(),
+  };
+  const json = JSON.stringify(payload);
+  const base64 = btoa(unescape(encodeURIComponent(json)));
+  return CODICE_SESSIONE_PREFISSO + base64;
+}
+
+function apriEsportaSessione(){
+  const codice = costruisciEsportazioneSessione();
+  if(!codice){
+    alert('Nessuna sessione attiva da esportare.');
+    return;
+  }
+
+  const nDomande = sessione.length;
+  const nRisposte = isSimulazione
+    ? scelteSimulazione.filter(s=>s).length
+    : logRisposte.length;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--color-background-primary);color:var(--color-text-primary);border-radius:var(--border-radius-lg);padding:1.25rem;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;';
+
+  box.innerHTML = `
+    <p style="font-size:17px;font-weight:500;margin-bottom:4px">📤 Esporta questa sessione</p>
+    <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px">
+      ${nDomande} domande · ${nRisposte} già risposte${(isSimulazione||isCountdown) ? ' · timer incluso' : ''}.
+      Chi importa questo codice deve avere caricato lo stesso CSV di domande.
+    </p>
+    <textarea id="export-sessione-textarea" readonly
+      style="width:100%;height:110px;font-size:11px;font-family:monospace;padding:8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);resize:none;margin-bottom:12px;"
+    ></textarea>
+    <button class="btn primary" id="btn-copia-codice-sessione" style="margin-bottom:8px">📋 Copia codice negli appunti</button>
+    <button class="btn" id="btn-scarica-file-sessione" style="margin-bottom:8px">💾 Scarica come file</button>
+    <button class="btn" id="btn-chiudi-export-sessione" style="color:var(--color-text-secondary)">Chiudi</button>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const textarea = box.querySelector('#export-sessione-textarea');
+  textarea.value = codice;
+
+  box.querySelector('#btn-copia-codice-sessione').onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(codice);
+      const btn = box.querySelector('#btn-copia-codice-sessione');
+      const testoOriginale = btn.textContent;
+      btn.textContent = '✓ Copiato!';
+      setTimeout(()=>{ btn.textContent = testoOriginale; }, 1800);
+    }catch(e){
+      // Fallback se l'API Clipboard non è disponibile: seleziona il testo per la copia manuale
+      textarea.select();
+      textarea.setSelectionRange(0, 999999);
+      alert('Copia manuale: il testo è selezionato, usa Ctrl+C / Cmd+C.');
+    }
+  };
+
+  box.querySelector('#btn-scarica-file-sessione').onclick = () => {
+    const blob = new Blob([codice], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const data = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    a.href = url;
+    a.download = 'sessione_quiz_'+data+'.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  };
+
+  box.querySelector('#btn-chiudi-export-sessione').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
+}
+
+/*
+  ── Importazione sessione condivisa ──
+  Decodifica un codice generato da costruisciEsportazioneSessione(), rimappa
+  gli id delle domande sul DB attualmente caricato in questo dispositivo, e
+  ricostruisce una sessione (quiz o simulazione) pronta per essere ripresa
+  esattamente dal punto in cui era stata esportata. Riusa ripristinaSessione()
+  già usata per il ripristino locale automatico, per non duplicare la logica
+  di riavvio del timer e del toggle countdown.
+*/
+function decodificaCodiceSessione(testo){
+  const pulito = (testo || '').trim();
+  if(!pulito) throw new Error('Il codice è vuoto.');
+  const senzaPrefisso = pulito.startsWith(CODICE_SESSIONE_PREFISSO)
+    ? pulito.slice(CODICE_SESSIONE_PREFISSO.length)
+    : pulito;
+  let json;
+  try{
+    json = decodeURIComponent(escape(atob(senzaPrefisso)));
+  }catch(e){
+    throw new Error('Il codice non è valido o è corrotto (non decodificabile).');
+  }
+  let payload;
+  try{
+    payload = JSON.parse(json);
+  }catch(e){
+    throw new Error('Il codice non contiene dati validi.');
+  }
+  if(!payload || !Array.isArray(payload.ids) || payload.ids.length===0){
+    throw new Error('Il codice non contiene domande.');
+  }
+  return payload;
+}
+
+/*
+  Rimappa gli id importati sulle domande effettivamente presenti nel DB
+  locale, e ricostruisce lo "stato" nello stesso formato usato da
+  ripristinaSessione(). Restituisce { stato, mancanti, totaliOriginali }
+  oppure { errore } se non è stato possibile trovare nessuna domanda.
+*/
+function ricostruisciSessioneDaImport(payload){
+  const mappaId = new Map(DB.map(d => [String(d.id), d]));
+  const idsOriginali = payload.ids.map(String);
+  let mancanti = 0;
+
+  if(payload.isSimulazione){
+    const nuovaSessione = [];
+    const nuoveScelte = [];
+    let nuovoIdx = -1;
+
+    idsOriginali.forEach((id, i) => {
+      const d = mappaId.get(id);
+      if(!d){ mancanti++; return; }
+      nuovaSessione.push(d);
+      nuoveScelte.push((payload.scelteSimulazione && payload.scelteSimulazione[i]) || null);
+      if(i === payload.idx) nuovoIdx = nuovaSessione.length - 1;
+    });
+
+    if(nuovaSessione.length === 0){
+      return { errore: 'Nessuna delle domande importate è presente nel tuo database. Importa prima il CSV corrispondente.' };
+    }
+
+    return {
+      stato: {
+        sessione: nuovaSessione,
+        idx: nuovoIdx >= 0 ? nuovoIdx : 0,
+        n_corrette: 0, n_sbagliate: 0, n_saltate: 0,
+        logRisposte: [],
+        ultimaModalita: payload.ultimaModalita || 'sim',
+        isSimulazione: true,
+        isCountdown: !!payload.isCountdown,
+        scelteSimulazione: nuoveScelte,
+        timerSecondiRimanenti: payload.timerSecondiRimanenti,
+        timerTotaleOrig: payload.timerTotaleOrig,
+      },
+      mancanti,
+      totaliOriginali: idsOriginali.length,
+    };
+  }
+
+  // Quiz semplice: progresso lineare (0..idx-1) + resto della sessione da idx in poi
+  const progressoQuiz = payload.progressoQuiz || [];
+  const nuovoLog = [];
+  progressoQuiz.forEach(e => {
+    const d = mappaId.get(String(e.id));
+    if(!d){ mancanti++; return; }
+    nuovoLog.push({ domanda: d, scelta: e.scelta, esito: e.esito });
+  });
+
+  const futuri = [];
+  idsOriginali.slice(payload.idx).forEach(id => {
+    const d = mappaId.get(id);
+    if(!d){ mancanti++; return; }
+    futuri.push(d);
+  });
+
+  const nuovaSessione = nuovoLog.map(e => e.domanda).concat(futuri);
+  if(nuovaSessione.length === 0){
+    return { errore: 'Nessuna delle domande importate è presente nel tuo database. Importa prima il CSV corrispondente.' };
+  }
+
+  return {
+    stato: {
+      sessione: nuovaSessione,
+      idx: nuovoLog.length,
+      n_corrette: nuovoLog.filter(e=>e.esito==='correct').length,
+      n_sbagliate: nuovoLog.filter(e=>e.esito==='wrong').length,
+      n_saltate: nuovoLog.filter(e=>e.esito==='skipped').length,
+      logRisposte: nuovoLog,
+      ultimaModalita: payload.ultimaModalita || 'tutte',
+      isSimulazione: false,
+      isCountdown: !!payload.isCountdown,
+      scelteSimulazione: new Array(nuovaSessione.length).fill(null),
+      timerSecondiRimanenti: payload.timerSecondiRimanenti,
+      timerTotaleOrig: payload.timerTotaleOrig,
+    },
+    mancanti,
+    totaliOriginali: idsOriginali.length,
+  };
+}
+
+function apriImportaSessione(){
+  if(DB.length===0){
+    alert('Carica prima il CSV con le domande, poi importa la sessione condivisa.');
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--color-background-primary);color:var(--color-text-primary);border-radius:var(--border-radius-lg);padding:1.25rem;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;';
+
+  box.innerHTML = `
+    <p style="font-size:17px;font-weight:500;margin-bottom:4px">📥 Importa sessione condivisa</p>
+    <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px">
+      Incolla qui il codice ricevuto, oppure carica il file .txt esportato. Devi avere già importato lo stesso CSV di domande.
+    </p>
+    <textarea id="import-sessione-textarea" placeholder="QUIZMED1:...."
+      style="width:100%;height:110px;font-size:11px;font-family:monospace;padding:8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);resize:none;margin-bottom:10px;"
+    ></textarea>
+    <button class="btn" id="btn-carica-file-sessione" style="margin-bottom:12px">📎 Carica da file</button>
+    <button class="btn primary" id="btn-conferma-import-sessione" style="margin-bottom:8px">Importa e riprendi</button>
+    <button class="btn" id="btn-chiudi-import-sessione" style="color:var(--color-text-secondary)">Annulla</button>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const textarea = box.querySelector('#import-sessione-textarea');
+
+  // Caricamento da file
+  const fileInputSess = document.createElement('input');
+  fileInputSess.type = 'file';
+  fileInputSess.accept = '.txt,.json';
+  fileInputSess.style.display = 'none';
+  fileInputSess.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { textarea.value = ev.target.result.trim(); };
+    reader.readAsText(file, 'utf-8');
+  };
+  document.body.appendChild(fileInputSess);
+  box.querySelector('#btn-carica-file-sessione').onclick = () => fileInputSess.click();
+
+  box.querySelector('#btn-conferma-import-sessione').onclick = () => {
+    let payload;
+    try{
+      payload = decodificaCodiceSessione(textarea.value);
+    }catch(err){
+      alert('Errore: ' + err.message);
+      return;
+    }
+
+    const risultato = ricostruisciSessioneDaImport(payload);
+    if(risultato.errore){
+      alert('Errore: ' + risultato.errore);
+      return;
+    }
+
+    if(risultato.mancanti > 0){
+      const procedi = confirm(
+        '⚠ ' + risultato.mancanti + ' domande su ' + risultato.totaliOriginali +
+        ' non sono presenti nel tuo database (probabilmente hai un CSV diverso o non aggiornato).\n\n' +
+        'Vuoi comunque importare la sessione con le domande trovate (' +
+        (risultato.totaliOriginali - risultato.mancanti) + ')?'
+      );
+      if(!procedi) return;
+    }
+
+    overlay.remove();
+    fileInputSess.remove();
+    cancellaSessioneInterrotta(); // evita conflitti con un eventuale salvataggio locale precedente
+    ripristinaSessione(risultato.stato);
+  };
+
+  box.querySelector('#btn-chiudi-import-sessione').onclick = () => { overlay.remove(); fileInputSess.remove(); };
+  overlay.onclick = (e) => { if(e.target === overlay){ overlay.remove(); fileInputSess.remove(); } };
+}
+
 async function salvaSessioneInterrotta(){
   if(!sessione||sessione.length===0)return;
   const stato={
@@ -642,7 +1186,12 @@ async function cancellaSessioneInterrotta(){
 }
 
 /* ── Nav ── */
-function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+function showScreen(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+n).classList.add('active');
+  document.getElementById('app').classList.toggle('is-quiz-screen', n==='quiz');
+  document.getElementById('app').classList.toggle('is-risultato-screen', n==='risultato');
+}
 
 /* ── Util ── */
 function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -744,65 +1293,6 @@ function selezionaCustom(input){
 }
 
 /* ── Home ── */
-/* ── Obiettivo giornaliero ── */
-const OBIETTIVO_GIORNALIERO = 15;
-
-function oggiKey(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-function getObiettivo(){
-  const st=getStorage();
-  if(!st.obiettivo) st.obiettivo={};
-  return st.obiettivo;
-}
-
-function aggiornaObiettivoDomande(n){
-  // Aggiunge n domande svolte oggi (corrette+sbagliate+saltate)
-  const st=getStorage();
-  if(!st.obiettivo) st.obiettivo={};
-  const k=oggiKey();
-  st.obiettivo[k]=(st.obiettivo[k]||0)+n;
-  // Tieni solo ultimi 30 giorni
-  const keys=Object.keys(st.obiettivo).sort();
-  if(keys.length>30) keys.slice(0,keys.length-30).forEach(k=>delete st.obiettivo[k]);
-  saveStorage(st);
-}
-
-function aggiornaWidgetObiettivo(){
-  const st=getStorage();
-  const oggi=(st.obiettivo||{})[oggiKey()]||0;
-  const perc=Math.min(100,Math.round(oggi/OBIETTIVO_GIORNALIERO*100));
-  const completo=oggi>=OBIETTIVO_GIORNALIERO;
-  const card=document.getElementById('obiettivo-card');
-  const label=document.getElementById('ob-label');
-  const counter=document.getElementById('ob-counter');
-  const bar=document.getElementById('ob-bar');
-  const sub=document.getElementById('ob-sub');
-  if(!card) return;
-  counter.textContent=oggi+' / '+OBIETTIVO_GIORNALIERO;
-  bar.style.width=perc+'%';
-  if(completo){
-    card.style.borderColor='var(--color-border-success)';
-    card.style.background='var(--color-background-success)';
-    label.textContent='🎉 Obiettivo completato!';
-    label.style.color='var(--color-text-success)';
-    bar.style.background='var(--color-text-success)';
-    sub.textContent='Ottimo lavoro! Hai risposto a '+oggi+' domande oggi.';
-    sub.style.color='var(--color-text-success)';
-  } else {
-    card.style.borderColor='var(--color-border-tertiary)';
-    card.style.background='';
-    label.textContent='🎯 Obiettivo oggi';
-    label.style.color='';
-    const mancanti=OBIETTIVO_GIORNALIERO-oggi;
-    bar.style.background=perc>=60?'#f59e0b':'var(--color-text-primary)';
-    sub.textContent='Ancora '+mancanti+' domande per completare l\'obiettivo di oggi.';
-    sub.style.color='';
-  }
-}
-
 function aggiornHome(){
   const st=getStorage();
   const r=Object.values(st.risposte),g=r.filter(x=>x===true).length;
@@ -813,7 +1303,6 @@ function aggiornHome(){
   document.getElementById('btn-segnalibri').style.display=(st.segnalibri&&st.segnalibri.length>0)?'block':'none';
   const rmBtn=document.getElementById('btn-remove-db');
   if(rmBtn) rmBtn.style.display=(DB.length>0)?'block':'none';
-  aggiornaWidgetObiettivo();
 }
 
 /* ── Timer & Pausa ── */
@@ -864,7 +1353,9 @@ function togglePausa() {
 }
 function ripristinaVistePausa() {
   document.getElementById('btn-pause').textContent = '⏸️';
-  document.getElementById('quiz-content').style.display = 'block';
+  // Rimuove lo style inline invece di forzare 'block', così in landscape
+  // il layout a due colonne (CSS flex) non viene sovrascritto.
+  document.getElementById('quiz-content').style.display = '';
   document.getElementById('pause-content').style.display = 'none';
 }
 
@@ -1597,8 +2088,6 @@ function terminaSimulazione(timeout) {
 function mostraRisultato(timeout){
   fermaTimer();
   cancellaSessioneInterrotta(); // sessione completata, non serve più
-  // Registra domande svolte per obiettivo giornaliero
-  aggiornaObiettivoDomande(n_corrette+n_sbagliate+n_saltate);
   const score=n_corrette-n_sbagliate*0.25;
   const perc=sessione.length>0?Math.round(n_corrette/sessione.length*100):0;
   let titolo='';
@@ -1624,6 +2113,7 @@ function mostraRisultato(timeout){
     saveStorage(st);
   }
   costruisciRecap();
+  costruisciRisNavGrid();
   const btnEsportaSess = document.getElementById('btn-esporta-sessione');
   const nDaSpiegare = logRisposte.filter(e=>e.esito==='wrong'||e.esito==='skipped').length;
   btnEsportaSess.style.display = nDaSpiegare>0 ? 'block' : 'none';
@@ -1631,17 +2121,75 @@ function mostraRisultato(timeout){
   showScreen('risultato');
 }
 
+/*
+  Griglia colorata dei risultati (visibile come sidebar in modalità landscape):
+  un quadratino per ogni domanda della sessione, colorato in base all'esito
+  (verde=corretta, rosso=sbagliata, giallo=non data), per capire a colpo
+  d'occhio l'andamento senza scorrere tutto il recap. Cliccando un quadratino
+  si salta e si apre la relativa voce nel recap dettagliato.
+*/
+function costruisciRisNavGrid(){
+  const container = document.getElementById('ris-nav-grid-container');
+  const grid = document.getElementById('ris-nav-grid');
+  if(!container || !grid) return;
+  grid.innerHTML = '';
+
+  if(logRisposte.length === 0){
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+
+  logRisposte.forEach((entry, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'nav-cell esito-' + entry.esito;
+    cell.textContent = i + 1;
+    cell.title = entry.esito === 'correct' ? 'Corretta' : entry.esito === 'wrong' ? 'Sbagliata' : 'Non data';
+    cell.onclick = () => {
+      const target = document.getElementById('recap-item-' + i);
+      if(!target) return;
+      // Assicura che il filtro attivo non nasconda l'item target
+      const filtroAttivo = document.querySelector('.filter-pill.active');
+      if(filtroAttivo && filtroAttivo.dataset.filter !== 'all'){
+        document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+        document.querySelector('[data-filter="all"]').classList.add('active');
+        document.querySelectorAll('.recap-item').forEach(it=>it.style.display='block');
+      }
+      target.scrollIntoView({behavior:'smooth', block:'center'});
+      const body = target.querySelector('.recap-body');
+      const chev = target.querySelector('.recap-chevron');
+      if(body && !body.classList.contains('open')){
+        body.classList.add('open');
+        if(chev) chev.style.transform = 'rotate(180deg)';
+      }
+    };
+    grid.appendChild(cell);
+  });
+}
+
 /* ── Recap ── */
 function costruisciRecap(){
   const list=document.getElementById('recap-list');list.innerHTML='';
+  const st=getStorage();
   logRisposte.forEach((entry,i)=>{
     const d=entry.domanda,esito=entry.esito;
-    const item=document.createElement('div');item.className='recap-item';item.dataset.esito=esito;
+    const isBookmarked=st.segnalibri.includes(d.id);
+    const item=document.createElement('div');item.className='recap-item';item.id='recap-item-'+i;item.dataset.esito=esito;item.dataset.bookmarked=isBookmarked?'1':'0';
     const header=document.createElement('div');header.className='recap-header';
     const dot=document.createElement('div');dot.className='recap-dot '+esito;
     const qText=document.createElement('div');qText.className='recap-q';qText.innerHTML=escHtml((i+1)+'. ')+formattaDomanda(d.domanda);
+    const bmBtn=document.createElement('button');
+    bmBtn.className='bookmark-btn';
+    bmBtn.style.cssText='font-size:16px;padding:0 2px;flex-shrink:0;';
+    bmBtn.title='Aggiungi/rimuovi segnalibro';
+    bmBtn.textContent='🔖';
+    bmBtn.style.opacity=isBookmarked?'1':'0.3';
+    bmBtn.onclick=(ev)=>{
+      ev.stopPropagation(); // non aprire/chiudere l'item cliccando il segnalibro
+      toggleBookmarkRecap(d.id, item, bmBtn);
+    };
     const chev=document.createElement('div');chev.className='recap-chevron';chev.textContent='▼';
-    header.appendChild(dot);header.appendChild(qText);header.appendChild(chev);
+    header.appendChild(dot);header.appendChild(qText);header.appendChild(bmBtn);header.appendChild(chev);
     const body=document.createElement('div');body.className='recap-body';
     ['A','B','C','D','E'].forEach(l=>{
       if(!d[l])return;
@@ -1669,10 +2217,30 @@ function costruisciRecap(){
     item.appendChild(header);item.appendChild(body);list.appendChild(item);
   });
 }
+
+function toggleBookmarkRecap(id, itemEl, btnEl){
+  const st=getStorage();
+  const i=st.segnalibri.indexOf(id);
+  if(i===-1) st.segnalibri.push(id); else st.segnalibri.splice(i,1);
+  saveStorage(st);
+  const isBm=st.segnalibri.includes(id);
+  itemEl.dataset.bookmarked=isBm?'1':'0';
+  btnEl.style.opacity=isBm?'1':'0.3';
+  // Se il filtro attivo è "solo segnalibri" e l'item è stato appena rimosso, nascondilo
+  const filtroAttivo=document.querySelector('.filter-pill.active');
+  if(filtroAttivo && filtroAttivo.dataset.filter==='bookmarked'){
+    itemEl.style.display=isBm?'block':'none';
+  }
+}
+
 function filtraRecap(el){
   document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');
   const f=el.dataset.filter;
-  document.querySelectorAll('.recap-item').forEach(item=>{item.style.display=(f==='all'||item.dataset.esito===f)?'block':'none';});
+  document.querySelectorAll('.recap-item').forEach(item=>{
+    if(f==='all') item.style.display='block';
+    else if(f==='bookmarked') item.style.display=(item.dataset.bookmarked==='1')?'block':'none';
+    else item.style.display=(item.dataset.esito===f)?'block':'none';
+  });
 }
 
 /* ── Ricerca ── */
@@ -1753,8 +2321,8 @@ function mostraSceltaSpec(){
 /* ── Annales ── */
 // Tutte le annate SSM riconosciute (ordine cronologico inverso = più recenti prima)
 const ANNATE_SSM = [
-  'SSM 2025','SSM 2024','SSM 2023','SSM 2022','SSM 2021',
-  'SSM 2020','SSM 2019','SSM 2016','SSM 2015','SSM 2014',
+  'SSM 2026','SSM 2025','SSM 2024','SSM 2023','SSM 2022','SSM 2021',
+  'SSM 2020','SSM 2019','SSM 2018','SSM 2017','SSM 2016','SSM 2015','SSM 2014',
 ];
 
 function mostraAnnales(){
@@ -1806,7 +2374,7 @@ function mostraAnnales(){
   list.appendChild(divPerAnno);
 
   // Mappa anno → emoji stagionale (puramente estetico)
-  const emoji={'2025':'🆕','2024':'⭐','2023':'📗','2022':'📘','2021':'📙','2020':'📕','2019':'📓','2016':'📒','2015':'📔','2014':'📃'};
+  const emoji={'2026':'🆕','2025':'✨','2024':'⭐','2023':'📗','2022':'📘','2021':'📙','2020':'📕','2019':'📓','2018':'📑','2017':'📰','2016':'📒','2015':'📔','2014':'📃'};
 
   annatePresenti.forEach(annata=>{
     const count=conteggioPerAnnata[annata]||0;
@@ -2113,15 +2681,100 @@ function abbandonaSim(){
 }
 
 /* ── CSV ── */
+/*
+  Parser CSV completo (rispetta le virgolette): a differenza di un semplice
+  split(';'), gestisce correttamente:
+    - delimitatori dentro campi tra virgolette (es. "Qual è la terapia; in questo caso?")
+    - virgolette doppie escapate ("" dentro un campo tra virgolette → " letterale)
+    - ritorni a capo dentro un campo tra virgolette
+  Senza questo, una colonna aggiunta in fondo (es. "immagini") rischia di
+  ricevere valori disallineati ogni volta che un testo precedente contiene
+  accidentalmente il carattere delimitatore.
+*/
+function parseCSVCompleto(testo, delimitatore){
+  const righe = [];
+  let riga = [];
+  let campo = '';
+  let dentroVirgolette = false;
+  let i = 0;
+  const n = testo.length;
+
+  while(i < n){
+    const c = testo[i];
+
+    if(dentroVirgolette){
+      if(c === '"'){
+        if(testo[i+1] === '"'){
+          campo += '"'; // virgoletta escapata
+          i += 2;
+          continue;
+        } else {
+          dentroVirgolette = false;
+          i++;
+          continue;
+        }
+      } else {
+        campo += c;
+        i++;
+        continue;
+      }
+    } else {
+      if(c === '"'){
+        dentroVirgolette = true;
+        i++;
+        continue;
+      } else if(c === delimitatore){
+        riga.push(campo);
+        campo = '';
+        i++;
+        continue;
+      } else if(c === '\r'){
+        i++; // ignora, gestito da \n o fine campo
+        continue;
+      } else if(c === '\n'){
+        riga.push(campo);
+        righe.push(riga);
+        riga = [];
+        campo = '';
+        i++;
+        continue;
+      } else {
+        campo += c;
+        i++;
+        continue;
+      }
+    }
+  }
+  // Ultimo campo/riga se il testo non termina con \n
+  if(campo.length > 0 || riga.length > 0){
+    riga.push(campo);
+    righe.push(riga);
+  }
+  return righe.filter(r => !(r.length===1 && r[0].trim()===''));
+}
+
 function caricaCSV(testo){
-  const righe=testo.trim().split('\n');if(righe.length<2)return[];
-  const header=righe[0].split(';').map(h=>h.replace(/^"|"$/g,'').trim());
-  const domande=[];
-  for(let i=1;i<righe.length;i++){
-    const cols=righe[i].split(';').map(c=>c.replace(/^"|"$/g,'').trim());
-    if(cols.length<header.length)continue;
-    const obj={};header.forEach((h,j)=>obj[h]=cols[j]||'');
-    if(obj.domanda)domande.push(obj);
+  const delimitatore = ';';
+  const righeParsed = parseCSVCompleto(testo, delimitatore);
+  if(righeParsed.length < 2) return [];
+
+  const header = righeParsed[0].map(h => h.trim());
+  const domande = [];
+  for(let i=1; i<righeParsed.length; i++){
+    const cols = righeParsed[i].map(c => c.trim());
+    if(cols.length < header.length) continue;
+    const obj = {};
+    header.forEach((h,j) => obj[h] = cols[j] || '');
+    // Normalizza il nome colonna: il codice usa internamente "immagini" (plurale),
+    // ma il CSV potrebbe averla chiamata "immagine" (singolare) o con maiuscole diverse.
+    if(obj.immagini === undefined){
+      const chiaveImg = Object.keys(obj).find(k => k.toLowerCase() === 'immagine' || k.toLowerCase() === 'immagini');
+      if(chiaveImg){
+        obj.immagini = obj[chiaveImg];
+        if(chiaveImg !== 'immagini') delete obj[chiaveImg]; // evita colonna duplicata negli export
+      }
+    }
+    if(obj.domanda) domande.push(obj);
   }
   window._idGeneratiUltimoImport = ripristinaIdMancanti(domande);
   return domande;
@@ -2201,12 +2854,20 @@ const fileInputImg=document.createElement('input');
 fileInputImg.type='file';fileInputImg.accept='.zip';fileInputImg.style.display='none';
 fileInputImg.onchange=async e=>{
   const file=e.target.files[0];if(!file)return;
-  if(typeof JSZip==='undefined'){
-    alert('Errore: libreria ZIP non caricata. Verifica la connessione a internet e riprova.');
-    return;
-  }
   const btnImg=document.getElementById('btn-import-img');
   const testoOriginale=btnImg.textContent;
+  if(typeof JSZip==='undefined'){
+    btnImg.textContent='⏳ Carico libreria ZIP…';
+    btnImg.style.pointerEvents='none';
+    try{
+      await caricaScriptEsterno('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }catch(err){
+      alert('Impossibile caricare la libreria ZIP: verifica la connessione a internet e riprova.');
+      btnImg.textContent=testoOriginale;
+      btnImg.style.pointerEvents='';
+      return;
+    }
+  }
   btnImg.textContent='⏳ Importazione in corso…';
   btnImg.style.pointerEvents='none';
   try{
@@ -2431,6 +3092,18 @@ function ripristinaSessione(stato){
 
 // All'avvio: carica il DB da IndexedDB (asincrono)
 (async function init() {
+  aggiornaIconaTema(); // riflette il tema effettivamente applicato (salvato o di sistema)
+  // Nasconde i bottoni schermo intero se il dispositivo/browser non lo supporta affatto
+  // (es. iPhone Safari non espone requestFullscreen su elementi generici)
+  const fullscreenSupportato = !!(document.documentElement.requestFullscreen
+    || document.documentElement.webkitRequestFullscreen
+    || document.documentElement.msRequestFullscreen);
+  if(!fullscreenSupportato){
+    ['btn-toggle-fullscreen','btn-fullscreen-quiz'].forEach(id=>{
+      const btn = document.getElementById(id);
+      if(btn) btn.style.display = 'none';
+    });
+  }
   aggiornaLabelImmagini(); // mostra subito quante immagini sono già salvate
   try{
     const saved = await loadDBFromIDB();
