@@ -10,7 +10,7 @@
   la versione vecchia dalla cache anche dopo aver aggiornato il repository
   GitHub.
 */
-const CACHE_VERSION = 'v2026.07.30';
+const CACHE_VERSION = 'v2026.08.01';
 const CACHE_NAME = 'quiz-medicina-' + CACHE_VERSION;
 
 const ASSET_DA_CACHARE = [
