@@ -208,6 +208,43 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
     max-height: calc(100vh - 24px);
     overflow-y: auto;
   }
+  /* ── Gestione domande in orizzontale: elenco a sinistra, editor a destra ──
+     In verticale le due parti restano schermate separate (si alternano);
+     qui invece convivono, come in un file manager con pannello di modifica. */
+  #app.is-gestisci-screen{
+    max-width: 1400px;
+  }
+  #app.is-gestisci-screen .gest-content-layout{
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  #app.is-gestisci-screen .gest-list-col{
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block !important; /* in landscape l'elenco è sempre visibile */
+  }
+  #app.is-gestisci-screen .gest-editor-col{
+    flex: 0 0 420px;
+    display: block !important;
+    padding-left: 24px;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  /* In landscape il tasto "torna all'elenco" non serve: le colonne sono affiancate */
+  #app.is-gestisci-screen .gest-editor-back{
+    display: none;
+  }
+  #app.is-gestisci-screen .gest-tabella{
+    display: table;
+  }
+  #app.is-gestisci-screen .gest-card-mobile{
+    display: none;
+  }
 }
 .ris-nav-legend{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--color-text-secondary);margin-bottom:10px;}
 .ris-legend-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
@@ -299,6 +336,37 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .search-result-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background 0.1s;}
 .search-result-item:hover{background:var(--color-background-secondary);}
 /* ── Editor domande ── */
+/* Colonne: in verticale una alla volta, in orizzontale affiancate (vedi @media) */
+.gest-list-col{display:block;}
+.gest-editor-col{display:none;}
+.gest-content-layout.mostra-editor .gest-list-col{display:none;}
+.gest-content-layout.mostra-editor .gest-editor-col{display:block;}
+
+/* Barra azioni per la selezione multipla */
+.gest-bulk-bar{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;border:0.5px solid var(--color-border-primary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);}
+.gest-bulk-bar.attiva{display:flex;}
+.gest-bulk-azioni{display:flex;gap:8px;flex-wrap:wrap;}
+.gest-bulk-azioni button{padding:7px 12px;font-size:13px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);cursor:pointer;color:var(--color-text-primary);}
+.gest-bulk-azioni button:hover{background:var(--color-background-tertiary);}
+.gest-bulk-azioni button.del{color:var(--color-text-danger);border-color:var(--color-border-danger);}
+
+/* Tabella (visibile solo in orizzontale) */
+.gest-tabella{display:none;width:100%;border-collapse:collapse;font-size:13px;}
+.gest-tabella th{text-align:left;font-weight:500;font-size:12px;color:var(--color-text-secondary);padding:8px 10px;border-bottom:0.5px solid var(--color-border-secondary);position:sticky;top:0;background:var(--color-background-primary);z-index:1;}
+.gest-tabella td{padding:9px 10px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top;}
+.gest-tabella tbody tr{cursor:pointer;transition:background 0.1s;}
+.gest-tabella tbody tr:hover{background:var(--color-background-secondary);}
+.gest-tabella tbody tr.riga-attiva{background:var(--color-background-tertiary);}
+.gest-tabella tbody tr.riga-segnalata td:first-child{box-shadow:inset 3px 0 0 var(--color-text-danger);}
+.gest-col-check{width:34px;}
+.gest-col-spec{width:150px;}
+.gest-col-num{width:52px;color:var(--color-text-secondary);}
+.gest-col-seg{width:46px;text-align:center;}
+.gest-tabella input[type="checkbox"]{width:16px;height:16px;accent-color:var(--color-text-primary);cursor:pointer;}
+.gest-testo-cella{line-height:1.45;}
+
+/* Card (visibili solo in verticale) */
+.gest-card-mobile{display:block;}
 .gestisci-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:8px;}
 .gestisci-item-segnalata{border-color:var(--color-border-danger);background:var(--color-background-danger);}
 .gestisci-item-testo{font-size:14px;line-height:1.5;margin:6px 0 8px;}
@@ -306,6 +374,9 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .gestisci-item-azioni button{flex:1;padding:8px;font-size:13px;background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);cursor:pointer;color:var(--color-text-primary);}
 .gestisci-item-azioni button:hover{background:var(--color-background-secondary);}
 .gestisci-item-azioni button.del{color:var(--color-text-danger);border-color:var(--color-border-danger);}
+.gest-item-check{margin-right:8px;width:16px;height:16px;accent-color:var(--color-text-primary);cursor:pointer;vertical-align:middle;}
+
+/* Form */
 .form-label{display:block;font-size:13px;font-weight:500;color:var(--color-text-secondary);margin:14px 0 6px;}
 .form-label:first-of-type{margin-top:0;}
 .form-input,.form-textarea,.form-select{width:100%;padding:10px 12px;font-size:15px;font-family:var(--font-sans);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);outline:none;}
@@ -343,7 +414,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <p style="font-size:22px;font-weight:500">Quiz medicina</p>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="tag" style="font-size:11px;color:var(--color-text-secondary)" title="Versione dell'app">v2026.07.30</span>
+          <span class="tag" style="font-size:11px;color:var(--color-text-secondary)" title="Versione dell'app">v2026.08.01</span>
           <button id="btn-toggle-fullscreen" onclick="toggleFullscreen()" title="Schermo intero"
             style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);">⛶</button>
           <button id="btn-toggle-tema" onclick="toggleTema()" title="Cambia tema chiaro/scuro"
@@ -625,56 +696,92 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 
 <div id="screen-gestisci" class="screen">
   <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
-  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Crea / modifica domande</p>
-  <button class="btn primary" onclick="apriEditorDomanda(null)">➕ Nuova domanda</button>
-  <button class="btn" onclick="esportaDBCompleto()" style="border-color:var(--color-border-success);color:var(--color-text-success)">💾 Esporta tutte le domande (CSV)</button>
-  <div class="search-box" style="margin-top:1rem">
-    <span style="color:var(--color-text-secondary)">🔎</span>
-    <input type="text" id="gestisci-search-input" placeholder="Filtra per testo o specialità…" oninput="renderListaGestisci(this.value)" autocomplete="off">
-    <button onclick="document.getElementById('gestisci-search-input').value='';renderListaGestisci('');" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:16px;padding:0">✕</button>
-  </div>
-  <div onclick="toggleFiltroSegnalate()" id="gestisci-filtro-segnalate-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:11px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
-    <div>
-      <span style="font-size:14px;font-weight:500">🚩 Mostra solo le domande segnalate</span>
-      <span id="gestisci-filtro-segnalate-count" style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">0 domande segnalate come errate</span>
+
+  <div class="gest-content-layout" id="gest-layout">
+
+    <!-- ── Colonna sinistra: elenco domande con filtri e selezione multipla ── -->
+    <div class="gest-list-col" id="gest-list-col">
+      <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Crea / modifica domande</p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn primary" style="flex:1;min-width:160px;margin:0" onclick="apriEditorDomanda(null)">➕ Nuova domanda</button>
+        <button class="btn" style="flex:1;min-width:160px;margin:0;border-color:var(--color-border-success);color:var(--color-text-success)" onclick="esportaDBCompleto()">💾 Esporta tutte (CSV)</button>
+      </div>
+
+      <!-- Filtri -->
+      <select id="gestisci-filtro-spec" class="form-select" style="margin-bottom:8px" onchange="renderListaGestisci(document.getElementById('gestisci-search-input').value)">
+        <option value="">Tutte le specialità</option>
+      </select>
+
+      <div class="search-box" style="margin-top:0">
+        <span style="color:var(--color-text-secondary)">🔎</span>
+        <input type="text" id="gestisci-search-input" placeholder="Filtra per testo o specialità…" oninput="renderListaGestisci(this.value)" autocomplete="off">
+        <button onclick="document.getElementById('gestisci-search-input').value='';renderListaGestisci('');" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:16px;padding:0">✕</button>
+      </div>
+
+      <div onclick="toggleFiltroSegnalate()" id="gestisci-filtro-segnalate-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:11px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+        <div>
+          <span style="font-size:14px;font-weight:500">🚩 Mostra solo le domande segnalate</span>
+          <span id="gestisci-filtro-segnalate-count" style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">0 domande segnalate come errate</span>
+        </div>
+        <div id="gestisci-filtro-segnalate-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+          <div id="gestisci-filtro-segnalate-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+        </div>
+      </div>
+
+      <!-- Azioni sulla selezione multipla: compare solo quando c'è almeno una domanda spuntata -->
+      <div class="gest-bulk-bar" id="gest-bulk-bar" style="margin-top:10px">
+        <span style="font-size:13px;font-weight:500" id="gest-bulk-count">0 selezionate</span>
+        <div class="gest-bulk-azioni">
+          <button onclick="segnalaSelezionate()">🚩 Segnala</button>
+          <button onclick="esportaSelezionate()">📤 Esporta selezionate</button>
+          <button class="del" onclick="eliminaSelezionate()">🗑 Elimina selezionate</button>
+          <button onclick="deselezionaTutte()">✕ Deseleziona</button>
+        </div>
+      </div>
+
+      <div id="gestisci-list"></div>
     </div>
-    <div id="gestisci-filtro-segnalate-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
-      <div id="gestisci-filtro-segnalate-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+
+    <!-- ── Colonna destra: editor della domanda ── -->
+    <div class="gest-editor-col" id="gest-editor-col">
+      <div class="nav-row gest-editor-back"><button onclick="chiudiEditorDomanda()">← Elenco domande</button></div>
+      <p id="editor-titolo" style="font-size:18px;font-weight:500;margin-bottom:1rem">Nuova domanda</p>
+
+      <div id="editor-placeholder" class="empty-state" style="display:none">Seleziona una domanda dall'elenco per modificarla,<br>oppure crea una nuova domanda.</div>
+
+      <div id="editor-form">
+        <div id="editor-avviso-segnalata" style="display:none;background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
+          <span style="font-size:13px;color:var(--color-text-danger)">🚩 Segnalata come da correggere</span>
+          <button onclick="risolviSegnalazioneEditor()" style="flex-shrink:0;background:none;border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-sm);padding:6px 10px;font-size:12px;color:var(--color-text-danger);cursor:pointer">✅ Segna come risolta</button>
+        </div>
+
+        <label class="form-label">Specialità *</label>
+        <input type="text" id="ed-specialita" class="form-input" list="ed-specialita-list" placeholder="es. Cardiologia">
+        <datalist id="ed-specialita-list"></datalist>
+
+        <label class="form-label">Testo della domanda *</label>
+        <textarea id="ed-domanda" class="form-textarea" placeholder="Scrivi qui il testo della domanda…"></textarea>
+
+        <label class="form-label">Opzioni di risposta (seleziona quella corretta) *</label>
+        <div class="form-opt-row"><span class="form-opt-letter">A</span><input type="text" id="ed-A" class="form-input" placeholder="Opzione A"><input type="radio" name="ed-corretta" value="A" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">B</span><input type="text" id="ed-B" class="form-input" placeholder="Opzione B"><input type="radio" name="ed-corretta" value="B" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">C</span><input type="text" id="ed-C" class="form-input" placeholder="Opzione C (opzionale)"><input type="radio" name="ed-corretta" value="C" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">D</span><input type="text" id="ed-D" class="form-input" placeholder="Opzione D (opzionale)"><input type="radio" name="ed-corretta" value="D" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">E</span><input type="text" id="ed-E" class="form-input" placeholder="Opzione E (opzionale)"><input type="radio" name="ed-corretta" value="E" class="form-opt-radio"></div>
+
+        <label class="form-label">Spiegazione (opzionale)</label>
+        <textarea id="ed-spiegazione" class="form-textarea" placeholder="Spiegazione della risposta corretta…"></textarea>
+
+        <label class="form-label">Numero domanda (opzionale, per annate/ordine)</label>
+        <input type="text" id="ed-numero" class="form-input" placeholder="es. 12">
+
+        <button class="btn primary" style="margin-top:18px" onclick="salvaDomandaEditor()">💾 Salva domanda</button>
+        <button class="btn" id="btn-elimina-editor" style="display:none;color:var(--color-text-danger);border-color:var(--color-border-danger)" onclick="eliminaDomandaEditor()">🗑 Elimina domanda</button>
+      </div>
     </div>
+
   </div>
-  <div id="gestisci-list"></div>
-</div>
-
-<div id="screen-editor-domanda" class="screen">
-  <div class="nav-row"><button onclick="showScreen('gestisci')">← Elenco domande</button></div>
-  <p id="editor-titolo" style="font-size:18px;font-weight:500;margin-bottom:1rem">Nuova domanda</p>
-  <div id="editor-avviso-segnalata" style="display:none;background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
-    <span style="font-size:13px;color:var(--color-text-danger)">🚩 Segnalata come da correggere</span>
-    <button onclick="risolviSegnalazioneEditor()" style="flex-shrink:0;background:none;border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-sm);padding:6px 10px;font-size:12px;color:var(--color-text-danger);cursor:pointer">✅ Segna come risolta</button>
-  </div>
-
-  <label class="form-label">Specialità *</label>
-  <input type="text" id="ed-specialita" class="form-input" list="ed-specialita-list" placeholder="es. Cardiologia">
-  <datalist id="ed-specialita-list"></datalist>
-
-  <label class="form-label">Testo della domanda *</label>
-  <textarea id="ed-domanda" class="form-textarea" placeholder="Scrivi qui il testo della domanda…"></textarea>
-
-  <label class="form-label">Opzioni di risposta (seleziona quella corretta) *</label>
-  <div class="form-opt-row"><span class="form-opt-letter">A</span><input type="text" id="ed-A" class="form-input" placeholder="Opzione A"><input type="radio" name="ed-corretta" value="A" class="form-opt-radio"></div>
-  <div class="form-opt-row"><span class="form-opt-letter">B</span><input type="text" id="ed-B" class="form-input" placeholder="Opzione B"><input type="radio" name="ed-corretta" value="B" class="form-opt-radio"></div>
-  <div class="form-opt-row"><span class="form-opt-letter">C</span><input type="text" id="ed-C" class="form-input" placeholder="Opzione C (opzionale)"><input type="radio" name="ed-corretta" value="C" class="form-opt-radio"></div>
-  <div class="form-opt-row"><span class="form-opt-letter">D</span><input type="text" id="ed-D" class="form-input" placeholder="Opzione D (opzionale)"><input type="radio" name="ed-corretta" value="D" class="form-opt-radio"></div>
-  <div class="form-opt-row"><span class="form-opt-letter">E</span><input type="text" id="ed-E" class="form-input" placeholder="Opzione E (opzionale)"><input type="radio" name="ed-corretta" value="E" class="form-opt-radio"></div>
-
-  <label class="form-label">Spiegazione (opzionale)</label>
-  <textarea id="ed-spiegazione" class="form-textarea" placeholder="Spiegazione della risposta corretta…"></textarea>
-
-  <label class="form-label">Numero domanda (opzionale, per annate/ordine)</label>
-  <input type="text" id="ed-numero" class="form-input" placeholder="es. 12">
-
-  <button class="btn primary" style="margin-top:18px" onclick="salvaDomandaEditor()">💾 Salva domanda</button>
-  <button class="btn" id="btn-elimina-editor" style="display:none;color:var(--color-text-danger);border-color:var(--color-border-danger)" onclick="eliminaDomandaEditor()">🗑 Elimina domanda</button>
 </div>
 
 </div>
@@ -1353,6 +1460,7 @@ function showScreen(n){
   document.getElementById('app').classList.toggle('is-quiz-screen', n==='quiz');
   document.getElementById('app').classList.toggle('is-risultato-screen', n==='risultato');
   document.getElementById('app').classList.toggle('is-home-screen', n==='home');
+  document.getElementById('app').classList.toggle('is-gestisci-screen', n==='gestisci');
 }
 
 /* ── Util ── */
@@ -2570,30 +2678,49 @@ function toggleSegnalazioneDiretta(id){
   btn.style.borderColor = segnalata?'var(--color-border-danger)':'';
 }
 
-/* ── Gestione domande (crea / modifica / elimina / esporta tutto) ── */
+/* ── Gestione domande (crea / modifica / elimina / esporta) ── */
 let gestisciSoloSegnalate = false;
+let gestisciSelezione = new Set();   // id delle domande spuntate
+let gestisciIdVisibili = [];         // id attualmente mostrati (per "seleziona tutte")
 
 function mostraGestisciDomande(){
+  resetFiltriGestisci();
+  renderListaGestisci('');
+  chiudiEditorDomanda();
+  showScreen('gestisci');
+}
+function mostraGestisciSegnalate(){
+  resetFiltriGestisci();
+  gestisciSoloSegnalate = true;
+  aggiornaKnobFiltroSegnalate();
+  renderListaGestisci('');
+  chiudiEditorDomanda();
+  showScreen('gestisci');
+}
+function resetFiltriGestisci(){
   const inp = document.getElementById('gestisci-search-input');
   if(inp) inp.value = '';
   gestisciSoloSegnalate = false;
+  gestisciSelezione.clear();
   aggiornaKnobFiltroSegnalate();
-  renderListaGestisci('');
-  showScreen('gestisci');
+  popolaFiltroSpecialita();
+}
+
+/* Riempie la tendina delle specialità con quelle presenti nel DB */
+function popolaFiltroSpecialita(){
+  const sel = document.getElementById('gestisci-filtro-spec');
+  if(!sel) return;
+  const precedente = sel.value;
+  const specs = [...new Set(DB.map(d=>d.specialita).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Tutte le specialità</option>'
+    + specs.map(s=>'<option value="'+escHtml(s)+'">'+escHtml(s)+'</option>').join('');
+  if(specs.includes(precedente)) sel.value = precedente;
 }
 
 function toggleFiltroSegnalate(){
   gestisciSoloSegnalate = !gestisciSoloSegnalate;
   aggiornaKnobFiltroSegnalate();
   renderListaGestisci(document.getElementById('gestisci-search-input').value);
-}
-function mostraGestisciSegnalate(){
-  const inp = document.getElementById('gestisci-search-input');
-  if(inp) inp.value = '';
-  gestisciSoloSegnalate = true;
-  aggiornaKnobFiltroSegnalate();
-  renderListaGestisci('');
-  showScreen('gestisci');
 }
 function aggiornaKnobFiltroSegnalate(){
   const knob=document.getElementById('gestisci-filtro-segnalate-knob');
@@ -2604,20 +2731,18 @@ function aggiornaKnobFiltroSegnalate(){
   }
 }
 
-function renderListaGestisci(query){
-  const cont = document.getElementById('gestisci-list');
+/*
+  Applica tutti i filtri attivi (specialità + testo + solo segnalate) e
+  restituisce l'elenco completo delle domande corrispondenti.
+*/
+function filtraDomandeGestisci(query){
   const q = (query||'').trim().toLowerCase();
   const st = getStorage();
   const segnalate = new Set(st.segnalate||[]);
+  const selSpec = (document.getElementById('gestisci-filtro-spec')||{}).value || '';
 
-  const countLbl = document.getElementById('gestisci-filtro-segnalate-count');
-  if(countLbl) countLbl.textContent = segnalate.size+' domand'+(segnalate.size===1?'a segnalata':'e segnalate')+' come errate';
-
-  if(DB.length===0){
-    cont.innerHTML = '<div class="empty-state">Nessuna domanda ancora presente.<br>Crea la prima con "➕ Nuova domanda" oppure importa un CSV.</div>';
-    return;
-  }
   let elenco = DB;
+  if(selSpec) elenco = elenco.filter(d=>d.specialita===selSpec);
   if(gestisciSoloSegnalate) elenco = elenco.filter(d=>segnalate.has(d.id));
   if(q.length>=2){
     elenco = elenco.filter(d =>
@@ -2625,21 +2750,75 @@ function renderListaGestisci(query){
       (d.specialita||'').toLowerCase().includes(q)
     );
   }
-  const totaleReale = elenco.length;
-  elenco = elenco.slice(0,80);
-  if(elenco.length===0){
-    const msg = gestisciSoloSegnalate
-      ? 'Nessuna domanda segnalata'+(q.length>=2?' per questa ricerca':'')+'. 🎉'
-      : 'Nessuna domanda trovata per "<strong>'+escHtml(query)+'</strong>"';
-    cont.innerHTML = '<div class="empty-state">'+msg+'</div>';
+  return {elenco, segnalate};
+}
+
+function renderListaGestisci(query){
+  const cont = document.getElementById('gestisci-list');
+  const {elenco, segnalate} = filtraDomandeGestisci(query);
+
+  const countLbl = document.getElementById('gestisci-filtro-segnalate-count');
+  if(countLbl) countLbl.textContent = segnalate.size+' domand'+(segnalate.size===1?'a segnalata':'e segnalate')+' come errate';
+
+  popolaFiltroSpecialita();
+
+  if(DB.length===0){
+    cont.innerHTML = '<div class="empty-state">Nessuna domanda ancora presente.<br>Crea la prima con "➕ Nuova domanda" oppure importa un CSV.</div>';
+    gestisciIdVisibili = [];
+    aggiornaBarraSelezione();
     return;
   }
-  let html = '<p style="font-size:13px;color:var(--color-text-secondary);margin:10px 0">'+totaleReale+(totaleReale>80?' (prime 80 mostrate)':'')+' domande</p>';
-  elenco.forEach(d=>{
+
+  const totale = elenco.length;
+  const mostrate = elenco.slice(0,150);
+  gestisciIdVisibili = mostrate.map(d=>d.id);
+
+  if(mostrate.length===0){
+    cont.innerHTML = '<div class="empty-state">'+(gestisciSoloSegnalate
+      ? 'Nessuna domanda segnalata con questi filtri. 🎉'
+      : 'Nessuna domanda trovata con questi filtri.')+'</div>';
+    aggiornaBarraSelezione();
+    return;
+  }
+
+  const attivo = window._editorDomandaId;
+  const tutteSpuntate = mostrate.every(d=>gestisciSelezione.has(d.id));
+
+  let html = '<p style="font-size:13px;color:var(--color-text-secondary);margin:10px 0">'
+    + totale + (totale>150?' domande (prime 150 mostrate)':' domande') + '</p>';
+
+  /* ── Tabella: usata in orizzontale ── */
+  html += '<table class="gest-tabella"><thead><tr>'
+    + '<th class="gest-col-check"><input type="checkbox" '+(tutteSpuntate?'checked':'')+' onclick="toggleSelezionaTutte(this.checked)" title="Seleziona tutte le domande mostrate"></th>'
+    + '<th class="gest-col-spec">Specialità</th>'
+    + '<th class="gest-col-num">N°</th>'
+    + '<th>Testo</th>'
+    + '<th class="gest-col-seg">🚩</th>'
+    + '</tr></thead><tbody>';
+  mostrate.forEach(d=>{
     const testo = (d.domanda||'').replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
     const isSeg = segnalate.has(d.id);
+    const isSel = gestisciSelezione.has(d.id);
+    html += '<tr class="'+(isSeg?'riga-segnalata ':'')+(d.id===attivo?'riga-attiva':'')+'" onclick="apriEditorDomanda(\''+d.id+'\')">'
+      + '<td class="gest-col-check" onclick="event.stopPropagation()"><input type="checkbox" '+(isSel?'checked':'')+' onclick="toggleSelezioneDomanda(\''+d.id+'\',this.checked)"></td>'
+      + '<td class="gest-col-spec">'+escHtml(d.specialita||'—')+'</td>'
+      + '<td class="gest-col-num">'+escHtml(d.numero_domanda||'—')+'</td>'
+      + '<td class="gest-testo-cella">'+escHtml(testo.length>170?testo.slice(0,170)+'…':testo)+'</td>'
+      + '<td class="gest-col-seg">'+(isSeg?'🚩':'')+'</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  /* ── Card: usate in verticale ── */
+  html += '<div class="gest-card-mobile">';
+  mostrate.forEach(d=>{
+    const testo = (d.domanda||'').replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
+    const isSeg = segnalate.has(d.id);
+    const isSel = gestisciSelezione.has(d.id);
     html += '<div class="gestisci-item'+(isSeg?' gestisci-item-segnalata':'')+'">'
+      + '<input type="checkbox" class="gest-item-check" '+(isSel?'checked':'')+' onclick="toggleSelezioneDomanda(\''+d.id+'\',this.checked)">'
       + '<span class="tag" style="font-size:11px">'+escHtml(d.specialita||'—')+'</span>'
+      + (d.numero_domanda?' <span class="tag" style="font-size:11px">n° '+escHtml(d.numero_domanda)+'</span>':'')
       + (isSeg?' <span class="tag" style="font-size:11px;color:var(--color-text-danger);border-color:var(--color-border-danger)">🚩 da correggere</span>':'')
       + '<div class="gestisci-item-testo">'+escHtml(testo.length>140?testo.slice(0,140)+'…':testo)+'</div>'
       + '<div class="gestisci-item-azioni">'
@@ -2648,7 +2827,66 @@ function renderListaGestisci(query){
       + '<button class="del" onclick="eliminaDomandaGestisci(\''+d.id+'\')">🗑 Elimina</button>'
       + '</div></div>';
   });
+  html += '</div>';
+
   cont.innerHTML = html;
+  aggiornaBarraSelezione();
+}
+
+/* ── Selezione multipla ── */
+function toggleSelezioneDomanda(id, spuntata){
+  if(spuntata) gestisciSelezione.add(id); else gestisciSelezione.delete(id);
+  aggiornaBarraSelezione();
+}
+function toggleSelezionaTutte(spuntata){
+  gestisciIdVisibili.forEach(id=>{ if(spuntata) gestisciSelezione.add(id); else gestisciSelezione.delete(id); });
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+function deselezionaTutte(){
+  gestisciSelezione.clear();
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+function aggiornaBarraSelezione(){
+  const bar = document.getElementById('gest-bulk-bar');
+  const lbl = document.getElementById('gest-bulk-count');
+  if(!bar||!lbl) return;
+  const n = gestisciSelezione.size;
+  bar.classList.toggle('attiva', n>0);
+  lbl.textContent = n+' selezionat'+(n===1?'a':'e');
+}
+
+function eliminaSelezionate(){
+  const n = gestisciSelezione.size;
+  if(n===0) return;
+  if(!confirm('Eliminare definitivamente '+n+' domand'+(n===1?'a':'e')+'?\n\nL\'operazione non può essere annullata.')) return;
+  DB = DB.filter(d=>!gestisciSelezione.has(d.id));
+  gestisciSelezione.clear();
+  // Se la domanda aperta nell'editor è stata eliminata, chiudi l'editor
+  if(window._editorDomandaId && !DB.some(d=>d.id===window._editorDomandaId)) chiudiEditorDomanda();
+  saveDBToIDB(DB).finally(()=>{
+    aggiornHome();
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  });
+}
+
+function segnalaSelezionate(){
+  if(gestisciSelezione.size===0) return;
+  const st = getStorage();
+  // Se sono già tutte segnalate, il pulsante funziona al contrario (rimuove le segnalazioni)
+  const tutteGiaSegnalate = [...gestisciSelezione].every(id=>st.segnalate.includes(id));
+  gestisciSelezione.forEach(id=>{
+    const i = st.segnalate.indexOf(id);
+    if(tutteGiaSegnalate){ if(i!==-1) st.segnalate.splice(i,1); }
+    else { if(i===-1) st.segnalate.push(id); }
+  });
+  saveStorage(st);
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+
+function esportaSelezionate(){
+  if(gestisciSelezione.size===0) return;
+  const sottoinsieme = DB.filter(d=>gestisciSelezione.has(d.id));
+  esportaDomandeCSV(sottoinsieme, 'domande_selezionate');
 }
 
 function toggleSegnalazioneGestisci(id){
@@ -2661,6 +2899,8 @@ function eliminaDomandaGestisci(id){
   if(!d) return;
   if(!confirm('Eliminare definitivamente questa domanda?\n\n"'+(d.domanda||'').slice(0,80)+'…"')) return;
   DB = DB.filter(x=>x.id!==id);
+  gestisciSelezione.delete(id);
+  if(window._editorDomandaId===id) chiudiEditorDomanda();
   saveDBToIDB(DB).finally(()=>{
     aggiornHome();
     renderListaGestisci(document.getElementById('gestisci-search-input').value);
@@ -2680,10 +2920,17 @@ function generaIdDomandaManuale(){
   return id;
 }
 
+/*
+  Apre l'editor. In orizzontale è la colonna di destra sempre visibile;
+  in verticale prende il posto dell'elenco (classe "mostra-editor").
+*/
 function apriEditorDomanda(id){
   window._editorDomandaId = id;
   const titolo = document.getElementById('editor-titolo');
   const btnElimina = document.getElementById('btn-elimina-editor');
+
+  document.getElementById('editor-placeholder').style.display = 'none';
+  document.getElementById('editor-form').style.display = 'block';
 
   // Popola il datalist delle specialità già esistenti, per coerenza col resto del DB
   const specs = [...new Set(DB.map(d=>d.specialita).filter(Boolean))].sort();
@@ -2694,7 +2941,7 @@ function apriEditorDomanda(id){
 
   if(id){
     const d = DB.find(x=>x.id===id);
-    if(!d){ showScreen('gestisci'); return; }
+    if(!d){ chiudiEditorDomanda(); return; }
     titolo.textContent = 'Modifica domanda';
     btnElimina.style.display = 'block';
     document.getElementById('ed-specialita').value = d.specialita||'';
@@ -2705,8 +2952,7 @@ function apriEditorDomanda(id){
     const radio = document.querySelector('input[name="ed-corretta"][value="'+d.risposta_corretta+'"]');
     if(radio) radio.checked = true;
     const st = getStorage();
-    const avviso = document.getElementById('editor-avviso-segnalata');
-    avviso.style.display = st.segnalate.includes(id) ? 'flex' : 'none';
+    document.getElementById('editor-avviso-segnalata').style.display = st.segnalate.includes(id) ? 'flex' : 'none';
   } else {
     titolo.textContent = 'Nuova domanda';
     btnElimina.style.display = 'none';
@@ -2716,7 +2962,24 @@ function apriEditorDomanda(id){
     document.getElementById('ed-numero').value = '';
     document.getElementById('editor-avviso-segnalata').style.display = 'none';
   }
-  showScreen('editor-domanda');
+
+  document.getElementById('gest-layout').classList.add('mostra-editor');
+  // Evidenzia nella tabella la riga corrispondente
+  if(document.getElementById('screen-gestisci').classList.contains('active')){
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  }
+}
+
+/* Chiude l'editor: in verticale torna all'elenco, in orizzontale mostra il placeholder */
+function chiudiEditorDomanda(){
+  window._editorDomandaId = null;
+  document.getElementById('gest-layout').classList.remove('mostra-editor');
+  document.getElementById('editor-form').style.display = 'none';
+  document.getElementById('editor-placeholder').style.display = 'block';
+  document.getElementById('editor-titolo').textContent = 'Modifica domanda';
+  if(document.getElementById('screen-gestisci').classList.contains('active')){
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  }
 }
 
 function risolviSegnalazioneEditor(){
@@ -2760,59 +3023,64 @@ function salvaDomandaEditor(){
     DB.push(nuova);
   }
 
+  const idSalvato = id || DB[DB.length-1].id;
   saveDBToIDB(DB).then(()=>{
     aggiornHome();
-    mostraGestisciDomande();
+    popolaFiltroSpecialita();
+    // Resta sulla domanda appena salvata, così in orizzontale si vede subito il risultato
+    apriEditorDomanda(idSalvato);
   }).catch(()=>{
     aggiornHome();
     alert('⚠ Domanda salvata in memoria, ma il salvataggio permanente non è riuscito: potrebbe non essere ricordata al prossimo accesso.');
-    mostraGestisciDomande();
+    apriEditorDomanda(idSalvato);
   });
 }
 
 function eliminaDomandaEditor(){
   const id = window._editorDomandaId;
   if(!id) return;
-  eliminaDomandaGestisci(id);
-  // eliminaDomandaGestisci non cambia schermata: torniamo esplicitamente all'elenco
-  showScreen('gestisci');
+  eliminaDomandaGestisci(id); // si occupa anche di chiudere l'editor
 }
 
 /*
-  Esporta l'INTERO database domande (comprese quelle create/modificate
-  in-app) in un unico file CSV, con tutte le colonne effettivamente in uso
-  in almeno una domanda. Pensato per sostituire/aggiornare il CSV master
-  tenuto sul proprio computer.
+  Costruisce e scarica un CSV a partire da un elenco di domande, includendo
+  tutte le colonne effettivamente usate da almeno una di esse. Condiviso fra
+  l'export completo e quello delle sole domande selezionate.
 */
-function esportaDBCompleto(){
-  if(DB.length===0){ alert('Nessuna domanda da esportare.'); return; }
+function esportaDomandeCSV(elenco, nomeBase){
+  if(!elenco || elenco.length===0){ alert('Nessuna domanda da esportare.'); return; }
 
   const ordinePreferito = ['id','specialita','numero_domanda','domanda','immagini','A','B','C','D','E','risposta_corretta','spiegazione'];
   const colonneViste = new Set();
-  DB.forEach(d=>{ Object.keys(d).forEach(k=>{ if(!k.startsWith('__')) colonneViste.add(k); }); });
+  elenco.forEach(d=>{ Object.keys(d).forEach(k=>{ if(!k.startsWith('__')) colonneViste.add(k); }); });
   const colonneOrdinate = ordinePreferito.filter(c=>colonneViste.has(c));
   const colonneExtra = [...colonneViste].filter(c=>!ordinePreferito.includes(c)).sort();
   const colonneFinali = [...colonneOrdinate, ...colonneExtra];
 
-  const righe = [];
-  righe.push(colonneFinali.map(csvEscape).join(';'));
-  DB.forEach(d=>{
-    righe.push(colonneFinali.map(c=>csvEscape(d[c])).join(';'));
-  });
+  const righe = [colonneFinali.map(csvEscape).join(';')];
+  elenco.forEach(d=>{ righe.push(colonneFinali.map(c=>csvEscape(d[c])).join(';')); });
 
-  const csvText = righe.join('\n');
-  const blob = new Blob([csvText], {type:'text/csv;charset=utf-8'});
+  const blob = new Blob([righe.join('\n')], {type:'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const data = new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = 'domande_complete_'+data+'.csv';
+  a.download = nomeBase+'_'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  return elenco.length;
+}
 
-  alert('✓ Esportate '+DB.length+' domande in un unico file CSV.\n\n'+
+/*
+  Esporta l'INTERO database domande (comprese quelle create/modificate
+  in-app) in un unico file CSV. Pensato per sostituire/aggiornare il CSV
+  master tenuto sul proprio computer.
+*/
+function esportaDBCompleto(){
+  const n = esportaDomandeCSV(DB, 'domande_complete');
+  if(!n) return;
+  alert('✓ Esportate '+n+' domande in un unico file CSV.\n\n'+
     'Questo file contiene TUTTE le domande attualmente nel database (quelle originarie + quelle create/modificate qui dentro). '+
     'Puoi usarlo per sostituire il tuo vecchio CSV come nuova versione master.');
 }
