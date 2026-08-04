@@ -1,37 +1,39 @@
 {
-  "name": "Quiz Medicina – Specializzazioni",
-  "short_name": "Quiz Medicina",
-  "description": "Quiz per la preparazione al concorso di specializzazione in medicina",
+  "name": "Studio Medicina",
+  "short_name": "StudioMed",
+  "description": "Quiz SSM e allenamento ECG per lo studio della medicina",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#ffffff",
-  "theme_color": "#111111",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quiz SSM",
+      "short_name": "Quiz",
+      "url": "./quiz.html",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
     },
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "name": "Allenamento ECG",
+      "short_name": "ECG",
+      "url": "./ecg.html",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

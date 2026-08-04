@@ -1,0 +1,2456 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Allenamento ECG</title>
+<style>
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-background-tertiary: #ebebeb;
+  --color-background-success: #f0fdf4;
+  --color-background-danger: #fef2f2;
+  --color-background-warning: #fffbeb;
+  --color-text-primary: #111111;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-text-success: #16a34a;
+  --color-text-danger: #dc2626;
+  --color-text-warning: #d97706;
+  --color-border-primary: #111111;
+  --color-border-secondary: #d0d0d0;
+  --color-border-tertiary: #e8e8e8;
+  --color-border-success: #bbf7d0;
+  --color-border-danger: #fecaca;
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  --ecg-paper: #fffcf8;
+  --ecg-grid-minor: #f2c9bd;
+  --ecg-grid-major: #e08d78;
+  --ecg-trace: #12100f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background-primary: #1a1a1a;
+    --color-background-secondary: #262626;
+    --color-background-tertiary: #333333;
+    --color-background-success: #052e16;
+    --color-background-danger: #2d0a0a;
+    --color-background-warning: #1c1400;
+    --color-text-primary: #f0f0f0;
+    --color-text-secondary: #aaaaaa;
+    --color-text-tertiary: #666666;
+    --color-text-success: #4ade80;
+    --color-text-danger: #f87171;
+    --color-text-warning: #fbbf24;
+    --color-border-primary: #f0f0f0;
+    --color-border-secondary: #3a3a3a;
+    --color-border-tertiary: #2e2e2e;
+    --color-border-success: #166534;
+    --color-border-danger: #7f1d1d;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+header {
+  background: var(--color-background-primary);
+  border-bottom: 1px solid var(--color-border-tertiary);
+  padding: 10px max(14px, env(safe-area-inset-left));
+  position: sticky; top: 0; z-index: 20;
+}
+.header-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+h1 { font-size: 15px; margin: 0; font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+h1 .sub { color: var(--color-text-tertiary); font-weight: 400; }
+.spacer { flex: 1 1 auto; }
+.score { display: flex; gap: 6px; align-items: center; font-variant-numeric: tabular-nums; }
+.pill {
+  font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--color-border-tertiary);
+  background: var(--color-background-secondary); white-space: nowrap;
+}
+.pill.ok { color: var(--color-text-success); background: var(--color-background-success); border-color: var(--color-border-success); }
+.pill.ko { color: var(--color-text-danger);  background: var(--color-background-danger);  border-color: var(--color-border-danger); }
+
+button {
+  font-family: inherit; font-size: 14px; cursor: pointer;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-background-primary); color: var(--color-text-primary);
+  padding: 9px 14px; transition: background .12s, border-color .12s;
+}
+button:hover:not(:disabled) { background: var(--color-background-tertiary); }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+button.primary {
+  background: var(--color-border-primary); color: var(--color-background-primary);
+  border-color: var(--color-border-primary); font-weight: 600;
+}
+button.primary:hover:not(:disabled) { opacity: .88; background: var(--color-border-primary); }
+button.ghost { border-color: transparent; background: transparent; padding: 6px 8px; font-size: 13px; color: var(--color-text-secondary); }
+button.ghost:hover { background: var(--color-background-tertiary); }
+
+/* ---------- menu a tendina delle categorie ---------- */
+.dd { position: relative; }
+.dd > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-background-primary); color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.dd > summary::-webkit-details-marker { display: none; }
+.dd > summary:hover { background: var(--color-background-tertiary); }
+.dd[open] > summary { background: var(--color-background-tertiary); }
+.dd.active > summary {
+  background: var(--color-border-primary); color: var(--color-background-primary);
+  border-color: var(--color-border-primary);
+}
+.dd-panel {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
+  min-width: 250px; padding: 8px;
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+}
+.dd-panel .opt { font-size: 13px; }
+.dd-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid var(--color-border-tertiary); margin-top: 6px; padding-top: 6px;
+}
+.dd-foot span { font-size: 11.5px; color: var(--color-text-tertiary); }
+
+/* ---------- ricerca diretta delle voci ---------- */
+.search-wrap { position: relative; }
+#searchBox {
+  width: 100%; font-family: inherit; font-size: 14px; padding: 9px 12px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-background-primary); color: var(--color-text-primary);
+}
+#searchBox::placeholder { color: var(--color-text-tertiary); }
+.hits {
+  margin-top: 6px; max-height: 260px; overflow-y: auto;
+  border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md);
+}
+.hits:empty { display: none; }
+.hit {
+  display: flex; gap: 8px; align-items: baseline; width: 100%;
+  padding: 7px 10px; font-size: 13.5px; text-align: left; line-height: 1.3;
+  border: 0; border-bottom: 1px solid var(--color-border-tertiary);
+  border-radius: 0; background: transparent;
+}
+.hit:last-child { border-bottom: 0; }
+.hit .txt { flex: 1 1 auto; }
+.hit .code { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); }
+.hit .lvl {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+  padding: 1px 6px; border-radius: 999px;
+  background: var(--color-background-tertiary); color: var(--color-text-secondary);
+}
+.hit.on { background: var(--color-background-success); color: var(--color-text-success); }
+.hit mark { background: transparent; color: inherit; font-weight: 700; }
+.sel-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.sel-chip {
+  font-size: 12px; padding: 3px 8px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--color-border-success);
+  background: var(--color-background-success); color: var(--color-text-success);
+}
+
+/* ---------- schermate ---------- */
+.screen { display: none; }
+.screen.on { display: block; }
+
+.home-wrap { max-width: 720px; margin: 0 auto; padding: 18px 14px 40px; }
+.home-wrap h2.big {
+  font-size: 22px; margin: 0 0 4px; font-weight: 680; letter-spacing: -.02em;
+  text-transform: none; color: var(--color-text-primary);
+}
+.home-wrap p.lead { color: var(--color-text-secondary); font-size: 14px; margin: 0 0 18px; }
+.field { margin-bottom: 18px; }
+.field > label.lbl {
+  display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--color-text-tertiary); margin-bottom: 7px;
+}
+.field .hint { font-size: 12px; color: var(--color-text-tertiary); margin-top: 6px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button {
+  padding: 7px 14px; font-size: 13.5px;
+  border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md);
+  background: var(--color-background-primary);
+}
+.seg button[aria-pressed="true"] {
+  background: var(--color-border-primary); color: var(--color-background-primary);
+  border-color: var(--color-border-primary); font-weight: 600;
+}
+.mix { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; align-items: center; }
+.mix .nm { font-size: 13.5px; }
+.mix .nm small { color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 11px; }
+.mix input[type=number] {
+  width: 74px; font-family: inherit; font-size: 13.5px; padding: 5px 8px;
+  border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-sm);
+  background: var(--color-background-primary); color: var(--color-text-primary);
+}
+.switch { display: flex; align-items: center; gap: 9px; font-size: 13.5px; cursor: pointer; }
+.pick-note {
+  font-size: 12.5px; color: var(--color-text-secondary);
+  background: var(--color-background-secondary); padding: 8px 10px;
+  border-radius: var(--border-radius-sm); margin-top: 8px;
+}
+
+/* ---------- barra di avanzamento della sessione ---------- */
+.progress { flex: 0 0 120px; height: 5px; border-radius: 3px; background: var(--color-background-tertiary); overflow: hidden; }
+.progress > i { display: block; height: 100%; background: var(--color-border-primary); transition: width .25s; }
+
+/* ---------- riepilogo finale ---------- */
+.recap { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.recap .box {
+  flex: 1 1 110px; padding: 12px; border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-border-tertiary); text-align: center;
+}
+.recap .box b { display: block; font-size: 24px; font-weight: 680; line-height: 1.1; }
+.recap .box span { font-size: 11.5px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .05em; }
+.caselist { display: flex; flex-direction: column; gap: 5px; }
+.caserow {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 11px; font-size: 13.5px;
+  border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md);
+  background: var(--color-background-primary);
+}
+.caserow .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+.caserow .dot.ok { background: var(--color-text-success); }
+.caserow .dot.ko { background: var(--color-text-danger); }
+.caserow .who { flex: 1 1 auto; }
+.caserow .who small { color: var(--color-text-tertiary); font-family: var(--font-mono); font-size: 11px; }
+
+/* ---------- schermo intero del tracciato ---------- */
+#paper:fullscreen { background: var(--ecg-paper); padding: 10px; display: flex; align-items: center; }
+#paper:fullscreen #ecg { max-height: 100vh; }
+.paper-tools { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+
+/* ---------- tracciato sempre visibile su mobile ---------- */
+@media (max-width: 980px) {
+  .sticky-col {
+    position: sticky; top: 52px; z-index: 12;
+    background: var(--color-background-secondary);
+    padding-bottom: 6px; margin: 0 -10px; padding-left: 10px; padding-right: 10px;
+  }
+  .sticky-col .card { padding: 8px; }
+  .sticky-col .meta { gap: 10px; font-size: 11px; margin-top: 6px; }
+}
+
+/* ---------- calibro ---------- */
+/* Il contenitore si dimensiona sul canvas così il foglio può scorrere,
+   e l'overlay del calibro combacia esattamente con il tracciato. */
+.paper-stack { position: relative; display: inline-block; line-height: 0; }
+#ecgOverlay {
+  position: absolute; left: 0; top: 0;
+  pointer-events: none; touch-action: none;
+}
+#ecgOverlay.on { pointer-events: auto; cursor: crosshair; }
+.mis-bar { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.mis-bar button {
+  padding: 5px 10px; font-size: 12.5px; border-radius: var(--border-radius-sm);
+}
+.mis-bar button[aria-pressed="true"] {
+  background: #1d4ed8; border-color: #1d4ed8; color: #fff; font-weight: 600;
+}
+.mis-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 8px; align-items: center; }
+.mis-grid .k { font-size: 12.5px; color: var(--color-text-secondary); }
+.mis-grid input {
+  width: 100%; font-family: var(--font-mono); font-size: 13px; padding: 4px 7px;
+  border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-sm);
+  background: var(--color-background-primary); color: var(--color-text-primary);
+}
+.mis-grid .u { font-size: 11.5px; color: var(--color-text-tertiary); font-family: var(--font-mono); }
+.mis-grid .calc input { background: var(--color-background-secondary); font-weight: 600; }
+.mis-hint { font-size: 11.5px; color: var(--color-text-tertiary); margin-top: 7px; }
+
+/* ---------- sezioni richiudibili ---------- */
+.step-title { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+.step-title .caret { transition: transform .15s; font-size: 10px; opacity: .6; }
+.step-title.closed .caret { transform: rotate(-90deg); }
+.step-title .count {
+  margin-left: auto; font-size: 11px; font-weight: 600;
+  padding: 1px 7px; border-radius: 999px;
+  background: var(--color-background-tertiary); color: var(--color-text-secondary);
+}
+.step-title .count.has {
+  background: var(--color-background-success); color: var(--color-text-success);
+}
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font-size: 12.5px; padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-background-primary); color: var(--color-text-secondary);
+}
+.chip[aria-pressed="true"] {
+  background: var(--color-border-primary); color: var(--color-background-primary);
+  border-color: var(--color-border-primary); font-weight: 600;
+}
+
+main {
+  display: grid; grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 14px; padding: 14px; align-items: start; max-width: 1600px; margin: 0 auto;
+}
+@media (max-width: 980px) { main { grid-template-columns: minmax(0,1fr); padding: 10px; gap: 10px; } }
+
+.card {
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-lg); padding: 14px;
+}
+.card + .card { margin-top: 12px; }
+.card h2 {
+  font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--color-text-tertiary); margin: 0 0 10px; font-weight: 700;
+}
+.sticky-col { position: sticky; top: 62px; }
+@media (max-width: 980px) { .sticky-col { position: static; } }
+
+#paper {
+  background: var(--ecg-paper); border: 1px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md); padding: 6px;
+  overflow: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; touch-action: pan-x pan-y;
+}
+#paper::-webkit-scrollbar { height: 6px; width: 6px; }
+#paper::-webkit-scrollbar-thumb { background: rgba(0,0,0,.22); border-radius: 3px; }
+@media (max-width: 980px) { #paper { max-height: 46vh; } }
+#paper:fullscreen { max-height: none; }
+.zoom-bar { display: flex; align-items: center; gap: 4px; }
+.zoom-bar button { padding: 2px 9px; font-size: 13px; line-height: 1.4; }
+.zoom-bar .lvl {
+  font-family: var(--font-mono); font-size: 11.5px; min-width: 42px;
+  text-align: center; color: var(--color-text-secondary);
+}
+#ecg { display: block; width: 100%; height: auto; }
+.meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--color-text-secondary); margin-top: 10px;
+}
+.meta b { color: var(--color-text-primary); font-weight: 600; }
+
+/* ---------- percorso strutturato ---------- */
+.step { border-top: 1px solid var(--color-border-tertiary); padding-top: 12px; margin-top: 12px; }
+.step:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.step-title {
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--color-text-tertiary); margin-bottom: 8px;
+}
+.step-title i { font-style: normal; color: var(--color-text-primary); }
+.grp { margin-bottom: 10px; }
+.grp-label {
+  font-size: 11.5px; font-weight: 600; color: var(--color-text-secondary);
+  margin: 0 0 4px 2px;
+}
+.opt {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 5px 8px; border-radius: var(--border-radius-sm);
+  cursor: pointer; font-size: 13.5px; line-height: 1.35;
+}
+.opt:hover { background: var(--color-background-secondary); }
+.opt input { margin: 3px 0 0; flex: 0 0 auto; cursor: pointer; }
+.opt .txt { flex: 1 1 auto; }
+.opt .code {
+  font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary);
+  flex: 0 0 auto; padding-top: 1px;
+}
+.opt.parent { font-weight: 600; }
+.kids {
+  margin-left: 14px; padding-left: 10px;
+  border-left: 2px solid var(--color-border-tertiary);
+}
+.hidden { display: none !important; }
+
+/* ---------- correzione ---------- */
+.res-group { margin-bottom: 12px; }
+.res-head {
+  font-size: 12px; font-weight: 700; margin-bottom: 5px;
+  display: flex; align-items: center; gap: 6px;
+}
+.res-head .n { font-weight: 400; color: var(--color-text-tertiary); }
+.res-item {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 13.5px; padding: 5px 9px; border-radius: var(--border-radius-sm);
+  margin-bottom: 3px; line-height: 1.35;
+}
+.res-item .code { font-family: var(--font-mono); font-size: 11px; opacity: .75; flex: 0 0 auto; padding-top: 1px; }
+.res-item .lik { font-family: var(--font-mono); font-size: 11px; opacity: .75; flex: 0 0 auto; padding-top: 1px; }
+.r-ok   { background: var(--color-background-success); color: var(--color-text-success); }
+.r-near { background: var(--color-background-warning); color: var(--color-text-warning); }
+.r-ko   { background: var(--color-background-danger);  color: var(--color-text-danger); }
+.r-miss { background: var(--color-background-tertiary); color: var(--color-text-secondary); }
+.legend { font-size: 11.5px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+.report {
+  background: var(--color-background-secondary);
+  border-left: 3px solid var(--color-border-secondary);
+  padding: 10px 12px; border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+  font-size: 13.5px; margin: 10px 0;
+}
+.report.empty { color: var(--color-text-tertiary); font-style: italic; }
+
+.answers { display: flex; flex-direction: column; gap: 7px; }
+.answers button { text-align: left; width: 100%; }
+.answers button.correct { background: var(--color-background-success); border-color: var(--color-text-success); color: var(--color-text-success); font-weight: 600; }
+.answers button.wrong   { background: var(--color-background-danger);  border-color: var(--color-text-danger);  color: var(--color-text-danger);  font-weight: 600; }
+.verdict { padding: 10px 12px; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.verdict.ok { background: var(--color-background-success); color: var(--color-text-success); border: 1px solid var(--color-border-success); }
+.verdict.ko { background: var(--color-background-danger);  color: var(--color-text-danger);  border: 1px solid var(--color-border-danger); }
+
+.stat { margin-bottom: 9px; }
+.stat-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
+.stat-top span:last-child { font-variant-numeric: tabular-nums; color: var(--color-text-tertiary); font-size: 12px; }
+.bar { height: 5px; border-radius: 3px; background: var(--color-background-tertiary); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 3px; }
+.empty-note { color: var(--color-text-tertiary); font-size: 13px; margin: 0; }
+
+#loader { position: fixed; inset: 0; z-index: 50; background: var(--color-background-secondary); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.loader-box { max-width: 470px; text-align: center; }
+.loader-box h2 { font-size: 18px; margin: 0 0 8px; }
+.loader-box p { color: var(--color-text-secondary); font-size: 14px; margin: 0 0 16px; }
+.loader-box code { font-family: var(--font-mono); font-size: 12px; background: var(--color-background-tertiary); padding: 2px 6px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-box">
+    <h2 id="loadTitle">Carico il pacchetto ECG…</h2>
+    <p id="loadMsg">Un momento.</p>
+    <div id="loadActions" class="hidden">
+      <button class="primary" id="btnPick">Scegli ecg_pack.json…</button>
+      <button id="btnDemo">Prova con tracciati dimostrativi</button>
+      <button id="btnRetry">Riprova</button>
+      <input type="file" id="filePick" accept=".json,application/json" class="hidden">
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-row">
+    <a href="./index.html" title="Torna al menu principale" style="text-decoration:none;color:var(--color-text-primary);font-size:16px;margin-right:4px;">🏠</a>
+    <h1>Allenamento ECG <span class="sub" id="poolInfo"></span></h1>
+    <div class="spacer"></div>
+    <div id="hdrTest" class="header-row" style="gap:10px">
+      <div class="progress" id="prog"><i style="width:0%"></i></div>
+      <div class="score">
+        <span class="pill ok" id="pillOk">✓ 0</span>
+        <span class="pill ko" id="pillKo">✗ 0</span>
+        <span class="pill"    id="pillPct">—</span>
+      </div>
+      <details class="dd" id="ddCat">
+        <summary id="ddCatLabel">Categorie</summary>
+        <div class="dd-panel">
+          <div id="filters"></div>
+          <div class="dd-foot">
+            <span>Vuoto = pesca da tutte</span>
+            <button class="ghost" id="btnClearCat">Azzera</button>
+          </div>
+        </div>
+      </details>
+      <button class="ghost" id="btnTipo">Domanda: diagnosi</button>
+      <button class="ghost" id="btnMode">Modalità: percorso completo</button>
+      <button class="ghost" id="btnHome">Esci</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ SCHERMATA INIZIALE ============ -->
+<div class="screen on" id="scHome">
+  <div class="home-wrap">
+    <h2 class="big">Imposta la sessione</h2>
+    <p class="lead" id="homeLead">Scegli quanti tracciati affrontare e come.</p>
+
+    <div class="field">
+      <label class="lbl">Numero di ECG</label>
+      <div class="seg" id="segN"></div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Tipo di esercizio</label>
+      <div class="seg" id="segMode"></div>
+      <div class="hint" id="hintMode"></div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Composizione</label>
+      <div class="seg" id="segMix"></div>
+      <div id="mixBox" class="hidden" style="margin-top:10px"></div>
+      <div class="hint">Bilanciata = quote uguali fra le macro-categorie disponibili.</div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Ordine dei casi</label>
+      <div class="seg" id="segOrd"></div>
+      <div class="hint" id="hintOrd"></div>
+    </div>
+
+    <div class="field">
+      <label class="lbl">Solo una patologia specifica</label>
+      <input id="homeSearch" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Es. IMI, atrial fibrillation, LVH — lascia vuoto per tutte">
+      <div class="hits" id="homeHits"></div>
+      <div id="homePick" class="pick-note hidden"></div>
+    </div>
+
+    <div class="field">
+      <label class="switch">
+        <input type="checkbox" id="optStats" checked>
+        <span>Mostra le statistiche per categoria durante l'esercizio</span>
+      </label>
+    </div>
+
+    <button class="primary" id="btnStart" style="width:100%;padding:12px">Inizia</button>
+    <div class="hint" id="startHint" style="text-align:center"></div>
+  </div>
+</div>
+
+<!-- ============ ESERCIZIO ============ -->
+<div class="screen" id="scTest"></div>
+
+<!-- ============ RIEPILOGO FINALE ============ -->
+<div class="screen" id="scEnd">
+  <div class="home-wrap">
+    <h2 class="big">Sessione conclusa</h2>
+    <div class="recap" id="recapBoxes"></div>
+    <div class="field">
+      <label class="lbl">Rivedi i tracciati</label>
+      <div class="caselist" id="caseList"></div>
+    </div>
+    <button class="primary" id="btnAgain" style="width:100%;padding:12px">Nuova sessione</button>
+  </div>
+</div>
+
+<main id="mainTest">
+  <section class="sticky-col">
+    <div class="card">
+      <div id="paper"><div class="paper-stack"><canvas id="ecg"></canvas><canvas id="ecgOverlay"></canvas></div></div>
+      <div class="meta">
+        <span>ID <b id="mId">—</b></span>
+        <span>Età <b id="mAge">—</b></span>
+        <span>Sesso <b id="mSex">—</b></span>
+        <span>25 mm/s · 10 mm/mV</span>
+        <span class="spacer"></span>
+        <span class="zoom-bar">
+          <button class="ghost" id="btnZoomOut" title="Riduci">−</button>
+          <span class="lvl" id="zoomLvl">100%</span>
+          <button class="ghost" id="btnZoomIn" title="Ingrandisci">+</button>
+          <button class="ghost" id="btnZoomFit" title="Adatta alla larghezza">Adatta</button>
+        </span>
+        <button class="ghost" id="btnFull" style="padding:2px 8px">⛶ Schermo intero</button>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card" id="cardSearch">
+      <h2>Ricerca diretta</h2>
+      <div class="search-wrap">
+        <input id="searchBox" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Scrivi una diagnosi o un codice — es. AV block, 1AVB, inferior">
+        <div class="hits" id="hits"></div>
+        <div class="sel-chips" id="selChips"></div>
+      </div>
+    </div>
+
+    <div class="card" id="cardAnswer">
+      <h2 id="answerTitle">Interpretazione</h2>
+      <div id="answerArea"></div>
+    </div>
+
+    <div class="card" id="cardStats">
+      <h2>Statistiche sessione</h2>
+      <div id="stats"></div>
+      <div id="queueNote" class="empty-note" style="margin-top:6px"></div>
+      <button class="ghost" id="btnReset" style="margin-top:8px">Azzera statistiche</button>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. STATO
+   ============================================================ */
+const ORDINE_CAT = ["NORM", "CD", "MI", "STTC", "HYP"];
+const COLORE_CAT = { NORM:"#16a34a", MI:"#dc2626", STTC:"#d97706", CD:"#2563eb", HYP:"#9333ea" };
+
+const S = {
+  pack: null, tax: null, etichette: {},
+  pool: [], filtri: new Set(),
+  corrente: null, rivelato: false,
+  scelta: null,                  // modalità scelta multipla
+  sel: new Set(),                // percorso strutturato: chiavi "l:CODE", "s:SUB", "c:CLS", "a:AXIS", "t:STADIUM"
+  open: new Set(),               // rami aperti nell'albero (indipendente dalla selezione)
+  indice: [],                    // indice per la ricerca diretta
+  esito: null,                   // risultato della correzione strutturata
+  modalita: "full",              // "full" | "mc" | "auto"
+  tipoDomanda: "cat",            // per la modalità mc: "cat" | "asse"
+  corretti: 0, errori: 0,
+  perCat: {}, perLivello: {},
+  ripasso: [],
+  // --- sessione impostata dalla schermata iniziale ---
+  sess: null,        // { casi:[idx], i:0, esiti:[], nMax }
+  cfg: { n: 10, modalita: "full", mix: "auto", quote: {}, code: null, stats: true,
+         ordine: "chiari" },
+  revisione: false,  // true quando si rivede un caso dal riepilogo
+  revIdx: 0,         // quale caso si sta rivedendo
+  mis: {},           // misure prese col calibro
+  calibro: { campo: null, asse: "x", drag: null },
+  chiusi: new Set(["mis", "form"]),   // sezioni richiuse all'apertura
+  pxMm: 1, dpr: 1, zoom: 1, baseMm: 1,
+};
+
+/* ============================================================
+   2. PERSISTENZA
+   ============================================================ */
+const DB_NOME = "ecgTrainer", DB_STORE = "stato";
+let dbPromise = null;
+function apriDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NOME, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(DB_STORE);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+  return dbPromise;
+}
+async function salvaStato() {
+  try {
+    const db = await apriDB();
+    db.transaction(DB_STORE, "readwrite").objectStore(DB_STORE).put({
+      corretti: S.corretti, errori: S.errori, perCat: S.perCat,
+      perLivello: S.perLivello, ripasso: S.ripasso,
+      filtri: [...S.filtri], modalita: S.modalita, tipoDomanda: S.tipoDomanda,
+    }, "progresso");
+  } catch (e) { /* la sessione continua anche senza salvataggio */ }
+}
+async function caricaStato() {
+  try {
+    const db = await apriDB();
+    const val = await new Promise((res, rej) => {
+      const q = db.transaction(DB_STORE, "readonly").objectStore(DB_STORE).get("progresso");
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    if (!val) return;
+    S.corretti = val.corretti || 0;
+    S.errori = val.errori || 0;
+    S.perCat = val.perCat || {};
+    S.perLivello = val.perLivello || {};
+    S.ripasso = val.ripasso || [];
+    S.modalita = val.modalita || "full";
+    S.tipoDomanda = val.tipoDomanda || "cat";
+    (val.filtri || []).forEach(c => S.filtri.add(c));
+  } catch (e) { /* primo avvio */ }
+}
+
+/* ============================================================
+   3. DISEGNO DEL TRACCIATO
+   Layout clinico 4x3 (2,5 s per colonna) + striscia DII a 10 s.
+   ============================================================ */
+const GRIGLIA = [["I","aVR","V1","V4"], ["II","aVL","V2","V5"], ["III","aVF","V3","V6"]];
+const MM_LARGH = 262, MM_ALT = 182, MM_S = 25, MM_MV = 10;
+
+/* Derivazioni da evidenziare in correzione, per codice SCP.
+   Sono i territori standard: dove guardare per quel reperto.
+   I codici che il dataset stesso definisce aspecifici o diffusi
+   (ISC_, NST_, NDT, STD_, STE_, ABQRS, LVOLT...) non compaiono qui:
+   attribuire loro una localizzazione sarebbe inventarla. */
+const INF = ["II","III","aVF"], LATB = ["V5","V6"], LATA = ["I","aVL"];
+const ANTSET = ["V1","V2","V3","V4"], POST = ["V1","V2","V3"];
+const MAPPA_DERIVAZIONI = {
+  // --- Infarto ---
+  IMI: INF, INJIN: INF,
+  ILMI: [...INF, ...LATB], INJIL: [...INF, ...LATB],
+  IPMI: [...INF, ...POST],
+  IPLMI: [...INF, ...LATB, ...POST],
+  ASMI: ANTSET, AMI: ANTSET, INJAS: ANTSET,
+  ALMI: ["V3","V4","V5","V6","I","aVL"], INJAL: ["V3","V4","V5","V6","I","aVL"],
+  LMI: [...LATA, ...LATB], INJLA: [...LATA, ...LATB],
+  PMI: POST,
+  // --- Ischemia ---
+  ISCIN: INF, ISCIL: [...INF, ...LATB],
+  ISCAS: ANTSET, ISCAN: ANTSET,
+  ISCAL: ["V3","V4","V5","V6","I","aVL"],
+  ISCLA: [...LATA, ...LATB],
+  LNGQT: ["II","V5"],
+  // --- Conduzione ---
+  CRBBB: ["V1","V2","I","V6"], IRBBB: ["V1","V2"],
+  CLBBB: ["V1","V2","V5","V6","I","aVL"], ILBBB: ["V1","V2","V5","V6"],
+  LAFB: [...LATA, ...INF], LPFB: [...LATA, ...INF],
+  "1AVB": ["II","V1"], "2AVB": ["II","V1"], "3AVB": ["II","V1"],
+  LPR: ["II","V1"], IVCD: ["II","V1"],
+  WPW: ["II","V1","V2","V3"],
+  // --- Ipertrofia ---
+  LVH: ["aVL","V1","V3","V5","V6"], VCLVH: ["aVL","V1","V3","V5","V6"],
+  RVH: ["V1","V2","V5","V6"], SEHYP: ["V1","V2"],
+  "LAO/LAE": ["II","V1"], "RAO/RAE": [...INF, "V1"],
+  // --- Ritmo ---
+  // Ritmo sinusale e sue varianti di frequenza non compaiono: sono reperti
+  // globali, presenti su quasi tutti i tracciati, e accenderebbero II ogni
+  // volta togliendo significato all'evidenziazione.
+  AFIB: ["II","V1"], AFLT: ["II","V1"], PACE: ["II","V1"],
+  PVC: ["II"], PAC: ["II"], BIGU: ["II"], TRIGU: ["II"],
+  SVARR: ["II","V1"], SVTAC: ["II","V1"], PSVT: ["II","V1"],
+};
+
+function derivazioniDaEvidenziare(record) {
+  // Solo i codici realmente presenti nell'ECG, e solo quelli localizzabili.
+  const tutti = [...(record.rhythm||[]), ...(record.form||[]), ...(record.diag||[])];
+  const set = new Set();
+  for (const c of tutti) for (const d of (MAPPA_DERIVAZIONI[c] || [])) set.add(d.toUpperCase());
+  return set;
+}
+
+function decodificaSegnale(b64, nDeriv) {
+  const bin = atob(b64);
+  const buf = new ArrayBuffer(bin.length);
+  const byte = new Uint8Array(buf);
+  for (let i = 0; i < bin.length; i++) byte[i] = bin.charCodeAt(i);
+  const dv = new DataView(buf);
+  const perDeriv = (bin.length / 2) / nDeriv;
+  const out = [];
+  for (let d = 0; d < nDeriv; d++) {
+    const arr = new Float32Array(perDeriv);
+    for (let i = 0; i < perDeriv; i++) arr[i] = dv.getInt16((d * perDeriv + i) * 2, true) / 1000;
+    out.push(arr);
+  }
+  return out;
+}
+
+function disegnaGriglia(ctx, pxMm) {
+  const L = MM_LARGH * pxMm, A = MM_ALT * pxMm;
+  const st = getComputedStyle(document.documentElement);
+  ctx.fillStyle = st.getPropertyValue("--ecg-paper").trim() || "#fffcf8";
+  ctx.fillRect(0, 0, L, A);
+  // Un path unico per le sottili e uno per le spesse: molto più veloce
+  // di migliaia di chiamate separate.
+  ctx.beginPath();
+  for (let mm = 0; mm <= MM_LARGH; mm++) {
+    if (mm % 5 === 0) continue;
+    const x = Math.round(mm * pxMm) + .5; ctx.moveTo(x, 0); ctx.lineTo(x, A);
+  }
+  for (let mm = 0; mm <= MM_ALT; mm++) {
+    if (mm % 5 === 0) continue;
+    const y = Math.round(mm * pxMm) + .5; ctx.moveTo(0, y); ctx.lineTo(L, y);
+  }
+  ctx.strokeStyle = st.getPropertyValue("--ecg-grid-minor").trim() || "#f2c9bd";
+  ctx.lineWidth = 1; ctx.stroke();
+
+  ctx.beginPath();
+  for (let mm = 0; mm <= MM_LARGH; mm += 5) { const x = Math.round(mm*pxMm)+.5; ctx.moveTo(x,0); ctx.lineTo(x,A); }
+  for (let mm = 0; mm <= MM_ALT;   mm += 5) { const y = Math.round(mm*pxMm)+.5; ctx.moveTo(0,y); ctx.lineTo(L,y); }
+  ctx.strokeStyle = st.getPropertyValue("--ecg-grid-major").trim() || "#e08d78";
+  ctx.lineWidth = 1.1; ctx.stroke();
+}
+
+function disegnaTraccia(ctx, dati, x0mm, y0mm, durata, fs, pxMm, offsetS) {
+  const inizio = Math.round(offsetS * fs);
+  const n = Math.min(Math.round(durata * fs), dati.length - inizio);
+  if (n <= 0) return;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const x = (x0mm + (i / fs) * MM_S) * pxMm;
+    const y = (y0mm - dati[inizio + i] * MM_MV) * pxMm;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function disegnaCalibrazione(ctx, x0, y0, pxMm) {
+  const p = mm => mm * pxMm;
+  ctx.beginPath();
+  ctx.moveTo(p(x0), p(y0));       ctx.lineTo(p(x0+1), p(y0));
+  ctx.lineTo(p(x0+1), p(y0-MM_MV)); ctx.lineTo(p(x0+5), p(y0-MM_MV));
+  ctx.lineTo(p(x0+5), p(y0));     ctx.lineTo(p(x0+6), p(y0));
+  ctx.stroke();
+}
+
+function disegnaECG(record, evidenzia) {
+  const canvas = document.getElementById("ecg");
+  const paper = canvas.closest("#paper");
+  const pieno = document.fullscreenElement === paper;
+  const largh = (pieno ? window.innerWidth : paper.clientWidth) - 14;
+  // Scala "adatta": il tracciato intero deve starci in larghezza, e su schermo
+  // stretto anche entro una frazione dell'altezza. Nessun minimo forzato:
+  // imporne uno faceva sforare il contenitore e tagliava le ultime derivazioni.
+  const altMax = pieno ? window.innerHeight - 24
+               : (window.innerWidth <= 980 ? window.innerHeight * 0.44 : Infinity);
+  const base = Math.min(largh / MM_LARGH, altMax / MM_ALT);
+  S.baseMm = base;
+  const pxMm = Math.max(0.8, base * (S.zoom || 1));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.style.width = (MM_LARGH*pxMm) + "px";
+  canvas.style.height = (MM_ALT*pxMm) + "px";
+  canvas.width = Math.round(MM_LARGH*pxMm*dpr);
+  canvas.height = Math.round(MM_ALT*pxMm*dpr);
+  S.pxMm = pxMm; S.dpr = dpr;
+  const lvl = document.getElementById("zoomLvl");
+  if (lvl) lvl.textContent = Math.round((S.zoom || 1) * 100) + "%";
+
+  // L'overlay del calibro deve combaciare esattamente col tracciato.
+  const ov = document.getElementById("ecgOverlay");
+  if (ov) {
+    ov.style.width = canvas.style.width; ov.style.height = canvas.style.height;
+    ov.width = canvas.width; ov.height = canvas.height;
+    disegnaCalibro();
+  }
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  disegnaGriglia(ctx, pxMm);
+
+  const derivazioni = S.pack.derivazioni.map(d => d.toUpperCase());
+  const fs = S.pack.fs;
+  const inchiostro = getComputedStyle(document.documentElement)
+    .getPropertyValue("--ecg-trace").trim() || "#12100f";
+
+  const MSX = 10, MSU = 8, ALT_RIGA = 40, LARG_COL = 62.5;
+  const evid = evidenzia && evidenzia.size ? evidenzia : null;
+
+  // Prima passata: sfondo delle derivazioni da evidenziare, sotto al tracciato.
+  if (evid) {
+    ctx.fillStyle = "rgba(37, 99, 235, .13)";
+    ctx.strokeStyle = "rgba(37, 99, 235, .5)";
+    ctx.lineWidth = 1;
+    for (let r = 0; r < GRIGLIA.length; r++) {
+      for (let c = 0; c < GRIGLIA[r].length; c++) {
+        if (!evid.has(GRIGLIA[r][c].toUpperCase())) continue;
+        const x = (MSX + c*LARG_COL - 2) * pxMm, y = (MSU + r*ALT_RIGA) * pxMm;
+        const w = (LARG_COL - 1) * pxMm, h = (ALT_RIGA - 1) * pxMm;
+        ctx.fillRect(x, y, w, h); ctx.strokeRect(x + .5, y + .5, w, h);
+      }
+    }
+  }
+
+  ctx.strokeStyle = inchiostro; ctx.fillStyle = inchiostro;
+  ctx.lineWidth = Math.max(1, pxMm * .35);
+  ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.font = `600 ${Math.round(pxMm*3.4)}px ui-monospace, monospace`;
+
+  disegnaCalibrazione(ctx, 2, MSU + ALT_RIGA/2, pxMm);
+
+  for (let r = 0; r < GRIGLIA.length; r++) {
+    for (let c = 0; c < GRIGLIA[r].length; c++) {
+      const nome = GRIGLIA[r][c];
+      const idx = derivazioni.indexOf(nome.toUpperCase());
+      if (idx < 0) continue;
+      const x0 = MSX + c*LARG_COL, y0 = MSU + r*ALT_RIGA + ALT_RIGA/2;
+      const acceso = evid && evid.has(nome.toUpperCase());
+      ctx.fillStyle = acceso ? "#1d4ed8" : inchiostro;
+      ctx.fillText(nome, x0*pxMm + 2, (y0 - ALT_RIGA/2 + 5)*pxMm);
+      ctx.strokeStyle = acceso ? "#12285f" : inchiostro;
+      ctx.lineWidth = Math.max(1, pxMm * (acceso ? .5 : .35));
+      disegnaTraccia(ctx, record.segnale[idx], x0, y0, 2.5, fs, pxMm, c*2.5);
+    }
+  }
+  const ii = derivazioni.indexOf("II");
+  if (ii >= 0) {
+    const y0 = MSU + 3*ALT_RIGA + ALT_RIGA/2;
+    ctx.fillStyle = inchiostro; ctx.strokeStyle = inchiostro;
+    ctx.lineWidth = Math.max(1, pxMm * .35);
+    ctx.fillText("II", MSX*pxMm + 2, (y0 - ALT_RIGA/2 + 5)*pxMm);
+    disegnaTraccia(ctx, record.segnale[ii], MSX, y0, 10, fs, pxMm, 0);
+  }
+}
+
+/* ============================================================
+   3b. CALIBRO E MISURE
+   Il tracciato è disegnato a scala nota (25 mm/s, 10 mm/mV), quindi
+   misurare è pura geometria: pixel -> mm -> ms oppure mV.
+   Il disegno avviene su un canvas sovrapposto, così trascinare non
+   costringe a ridisegnare griglia e tracciati a ogni movimento.
+   ============================================================ */
+const CAMPI_MISURA = [
+  { k: "RR",   lbl: "RR",         u: "ms", asse: "x" },
+  { k: "FC",   lbl: "Frequenza",  u: "bpm", calc: true },
+  { k: "PR",   lbl: "PR",         u: "ms", asse: "x" },
+  { k: "QRS",  lbl: "QRS",        u: "ms", asse: "x" },
+  { k: "QT",   lbl: "QT",         u: "ms", asse: "x" },
+  { k: "QTc",  lbl: "QTc (Bazett)", u: "ms", calc: true },
+  { k: "SV12", lbl: "S in V1/V2", u: "mm", asse: "y" },
+  { k: "RV56", lbl: "R in V5/V6", u: "mm", asse: "y" },
+  { k: "SOK",  lbl: "Sokolow-Lyon", u: "mm", calc: true },
+  { k: "SV3",  lbl: "S in V3",    u: "mm", asse: "y" },
+  { k: "RAVL", lbl: "R in aVL",   u: "mm", asse: "y" },
+  { k: "COR",  lbl: "Cornell",    u: "mm", calc: true },
+];
+
+function mmDaPixel(px) { return px / (S.pxMm || 1); }
+function msDaMm(mm) { return mm / MM_S * 1000; }      // 25 mm/s
+function mvDaMm(mm) { return mm / MM_MV; }            // 10 mm/mV
+
+function ricalcolaMisure() {
+  const m = S.mis;
+  m.FC  = m.RR ? Math.round(60000 / m.RR) : null;
+  // Bazett: QTc = QT / radice(RR in secondi)
+  m.QTc = (m.QT && m.RR) ? Math.round(m.QT / Math.sqrt(m.RR / 1000)) : null;
+  m.SOK = (m.SV12 != null && m.RV56 != null) ? +(m.SV12 + m.RV56).toFixed(1) : null;
+  m.COR = (m.SV3 != null && m.RAVL != null) ? +(m.SV3 + m.RAVL).toFixed(1) : null;
+}
+
+function disegnaCalibro() {
+  const ov = document.getElementById("ecgOverlay");
+  if (!ov) return;
+  const ctx = ov.getContext("2d");
+  ctx.setTransform(S.dpr || 1, 0, 0, S.dpr || 1, 0, 0);
+  ctx.clearRect(0, 0, ov.width, ov.height);
+  const d = S.calibro.drag;
+  if (!d) return;
+
+  const asse = S.calibro.asse;
+  const x1 = d.x0, y1 = d.y0, x2 = d.x1, y2 = d.y1;
+  ctx.strokeStyle = "#1d4ed8"; ctx.fillStyle = "#1d4ed8"; ctx.lineWidth = 1.5;
+
+  if (asse === "x" || asse === "free") {
+    // Due montanti verticali uniti da una barra: il compasso del cardiologo.
+    ctx.beginPath();
+    ctx.moveTo(x1, 0); ctx.lineTo(x1, ov.height / (S.dpr||1));
+    ctx.moveTo(x2, 0); ctx.lineTo(x2, ov.height / (S.dpr||1));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x1, y2); ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  if (asse === "y" || asse === "free") {
+    ctx.beginPath();
+    ctx.moveTo(0, y1); ctx.lineTo(ov.width / (S.dpr||1), y1);
+    ctx.moveTo(0, y2); ctx.lineTo(ov.width / (S.dpr||1), y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y1); ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  // Etichetta con il valore corrente.
+  const mmX = Math.abs(mmDaPixel(x2 - x1)), mmY = Math.abs(mmDaPixel(y2 - y1));
+  let testo;
+  if (asse === "y") testo = `${mmY.toFixed(1)} mm · ${mvDaMm(mmY).toFixed(2)} mV`;
+  else if (asse === "x") {
+    const ms = msDaMm(mmX);
+    testo = `${Math.round(ms)} ms` + (S.calibro.campo === "RR" && ms > 0
+      ? ` · ${Math.round(60000 / ms)} bpm` : "");
+  } else testo = `${Math.round(msDaMm(mmX))} ms · ${mmY.toFixed(1)} mm`;
+
+  ctx.font = "600 13px ui-monospace, monospace";
+  const w = ctx.measureText(testo).width + 12;
+  const bx = Math.min(Math.max(0, (x1 + x2) / 2 - w / 2), ov.width/(S.dpr||1) - w);
+  const by = Math.max(16, Math.min(y1, y2) - 8);
+  ctx.fillStyle = "rgba(29,78,216,.95)";
+  ctx.fillRect(bx, by - 15, w, 20);
+  ctx.fillStyle = "#fff";
+  ctx.fillText(testo, bx + 6, by);
+}
+
+function attivaCalibro(campo) {
+  const def = CAMPI_MISURA.find(c => c.k === campo);
+  if (S.calibro.campo === campo) { spegniCalibro(); return; }
+  S.calibro.campo = campo;
+  S.calibro.asse = campo === "free" ? "free" : (def ? def.asse : "x");
+  S.calibro.drag = null;
+  document.getElementById("ecgOverlay").classList.add("on");
+  disegnaCalibro(); renderRisposta();
+}
+function spegniCalibro() {
+  S.calibro.campo = null; S.calibro.drag = null;
+  const ov = document.getElementById("ecgOverlay");
+  if (ov) ov.classList.remove("on");
+  disegnaCalibro(); renderRisposta();
+}
+
+function collegaCalibro() {
+  const ov = document.getElementById("ecgOverlay");
+  if (!ov || ov.dataset.legato) return;
+  ov.dataset.legato = "1";
+  const punto = (e) => {
+    const r = ov.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  ov.addEventListener("pointerdown", (e) => {
+    if (!S.calibro.campo) return;
+    ov.setPointerCapture(e.pointerId);
+    const p = punto(e);
+    S.calibro.drag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+    disegnaCalibro();
+  });
+  ov.addEventListener("pointermove", (e) => {
+    if (!S.calibro.drag) return;
+    const p = punto(e);
+    S.calibro.drag.x1 = p.x; S.calibro.drag.y1 = p.y;
+    disegnaCalibro();
+  });
+  const chiudi = () => {
+    const d = S.calibro.drag, campo = S.calibro.campo;
+    if (!d || !campo) return;
+    const mmX = Math.abs(mmDaPixel(d.x1 - d.x0)), mmY = Math.abs(mmDaPixel(d.y1 - d.y0));
+    const def = CAMPI_MISURA.find(c => c.k === campo);
+    if (def && def.asse === "y") S.mis[campo] = +mmY.toFixed(1);
+    else if (def) S.mis[campo] = Math.round(msDaMm(mmX));
+    ricalcolaMisure();
+    // La misura resta disegnata finché non se ne prende un'altra.
+    if (campo !== "free") { S.calibro.campo = null; document.getElementById("ecgOverlay").classList.remove("on"); }
+    renderRisposta();
+  };
+  ov.addEventListener("pointerup", chiudi);
+  ov.addEventListener("pointercancel", chiudi);
+}
+
+function renderMisure(cont) {
+  const bar = document.createElement("div");
+  bar.className = "mis-bar";
+  for (const c of CAMPI_MISURA) {
+    if (c.calc) continue;
+    const b = document.createElement("button");
+    b.textContent = c.lbl;
+    b.setAttribute("aria-pressed", S.calibro.campo === c.k ? "true" : "false");
+    b.onclick = () => attivaCalibro(c.k);
+    bar.appendChild(b);
+  }
+  const lib = document.createElement("button");
+  lib.textContent = "Libero";
+  lib.setAttribute("aria-pressed", S.calibro.campo === "free" ? "true" : "false");
+  lib.onclick = () => attivaCalibro("free");
+  bar.appendChild(lib);
+  cont.appendChild(bar);
+
+  const grid = document.createElement("div");
+  grid.className = "mis-grid";
+  for (const c of CAMPI_MISURA) {
+    const k = document.createElement("div");
+    k.className = "k"; k.textContent = c.lbl;
+    const wrap = document.createElement("div");
+    if (c.calc) wrap.className = "calc";
+    const inp = document.createElement("input");
+    inp.type = "number"; inp.value = S.mis[c.k] ?? "";
+    inp.readOnly = !!c.calc;
+    inp.placeholder = c.calc ? "—" : "";
+    inp.oninput = () => {
+      S.mis[c.k] = inp.value === "" ? null : +inp.value;
+      ricalcolaMisure(); renderRisposta();
+    };
+    wrap.appendChild(inp);
+    const u = document.createElement("div");
+    u.className = "u"; u.textContent = c.u;
+    grid.append(k, wrap, u);
+  }
+  cont.appendChild(grid);
+
+  const h = document.createElement("div");
+  h.className = "mis-hint";
+  h.textContent = S.calibro.campo
+    ? "Trascina sul tracciato per misurare " + (S.calibro.campo === "free" ? "liberamente" : S.calibro.campo) + "."
+    : "Scegli una misura e trascina sul tracciato. Le misure sono un ausilio: il dataset non contiene i valori di riferimento, quindi non vengono corrette.";
+  cont.appendChild(h);
+}
+
+/* ============================================================
+   3c. ZOOM DEL TRACCIATO
+   Lo zoom moltiplica la scala "adatta alla larghezza". Sopra il 100%
+   il foglio diventa scorrevole e si può spostare con il dito.
+   ============================================================ */
+const ZOOM_MIN = 1, ZOOM_MAX = 6;
+
+function impostaZoom(nuovo, ancora) {
+  const paper = document.getElementById("paper");
+  const prima = S.zoom || 1;
+  const z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, nuovo));
+  if (Math.abs(z - prima) < 0.001) return;
+  // Punto da tenere fermo: il centro visibile, o quello indicato dalle dita.
+  const cx = ancora ? ancora.x : paper.clientWidth / 2;
+  const cy = ancora ? ancora.y : paper.clientHeight / 2;
+  const fx = (paper.scrollLeft + cx) / prima;
+  const fy = (paper.scrollTop + cy) / prima;
+  S.zoom = z;
+  ridisegnaCorrente();
+  paper.scrollLeft = fx * z - cx;
+  paper.scrollTop  = fy * z - cy;
+}
+
+function ridisegnaCorrente() {
+  if (S.corrente)
+    disegnaECG(S.corrente, S.rivelato ? derivazioniDaEvidenziare(S.corrente) : null);
+}
+
+function collegaZoom() {
+  const paper = document.getElementById("paper");
+  if (!paper || paper.dataset.zoomLegato) return;
+  paper.dataset.zoomLegato = "1";
+
+  // Pizzico a due dita.
+  const dita = new Map();
+  let distIniziale = 0, zoomIniziale = 1;
+  const distanza = () => {
+    const [a, b] = [...dita.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  paper.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    dita.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dita.size === 2) { distIniziale = distanza(); zoomIniziale = S.zoom || 1; }
+  });
+  paper.addEventListener("pointermove", (e) => {
+    if (!dita.has(e.pointerId)) return;
+    dita.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dita.size !== 2 || !distIniziale) return;
+    e.preventDefault();
+    const [a, b] = [...dita.values()];
+    const r = paper.getBoundingClientRect();
+    impostaZoom(zoomIniziale * (distanza() / distIniziale),
+                { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top });
+  }, { passive: false });
+  const via = (e) => { dita.delete(e.pointerId); if (dita.size < 2) distIniziale = 0; };
+  paper.addEventListener("pointerup", via);
+  paper.addEventListener("pointercancel", via);
+
+  // Rotellina con Ctrl / trackpad su desktop.
+  paper.addEventListener("wheel", (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const r = paper.getBoundingClientRect();
+    impostaZoom((S.zoom || 1) * (e.deltaY < 0 ? 1.12 : 1 / 1.12),
+                { x: e.clientX - r.left, y: e.clientY - r.top });
+  }, { passive: false });
+
+  // Doppio tocco: alterna adatta / ingrandito.
+  let ultimoTocco = 0;
+  paper.addEventListener("pointerup", (e) => {
+    if (e.pointerType === "mouse" || S.calibro.campo) return;
+    const ora = Date.now();
+    if (ora - ultimoTocco < 300) {
+      const r = paper.getBoundingClientRect();
+      impostaZoom((S.zoom || 1) > 1.2 ? 1 : 2.5,
+                  { x: e.clientX - r.left, y: e.clientY - r.top });
+    }
+    ultimoTocco = ora;
+  });
+}
+
+/* ============================================================
+   4. COSTRUZIONE DELLA SESSIONE E AVANZAMENTO
+   ============================================================ */
+
+/* Chiarezza didattica di un tracciato.
+   In PTB-XL ogni codice ha una likelihood 0-100, dove 0 significa
+   "non specificata" (non "improbabile"): va quindi trattata come
+   assenza di informazione, non come incertezza.
+   Un caso è tanto più pulito quanti più codici stanno a 100 e
+   quanti meno ne stanno in mezzo (1-99), che sono i dubbi veri. */
+function chiarezza(rec) {
+  const lik = rec.lik || {};
+  let n100 = 0, nAmb = 0;
+  for (const v of Object.values(lik)) {
+    if (v === 100) n100++;
+    else if (v > 0) nAmb++;
+  }
+  return { n100, nAmb };
+}
+function confrontaChiarezza(a, b) {
+  const ca = chiarezza(a), cb = chiarezza(b);
+  if (ca.nAmb !== cb.nAmb) return ca.nAmb - cb.nAmb;   // prima i casi senza dubbi
+  return cb.n100 - ca.n100;                             // poi quelli con più certezze
+}
+
+function indiciDisponibili() {
+  const rec = S.pack.records;
+  const serveAsse = S.cfg.modalita === "mc" && S.tipoDomanda === "asse";
+  return rec.map((_, i) => i).filter(i => {
+    if (serveAsse && !rec[i].axis) return false;
+    if (S.cfg.code) {
+      const tutti = [...(rec[i].rhythm||[]), ...(rec[i].form||[]), ...(rec[i].diag||[])];
+      if (!tutti.includes(S.cfg.code) && rec[i].axis !== S.cfg.code) return false;
+    }
+    return true;
+  });
+}
+
+function mescola(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function costruisciSessione() {
+  const rec = S.pack.records;
+  const disp = indiciDisponibili();
+  const progressivo = S.cfg.ordine === "chiari";
+  // Con l'ordine progressivo si pesca fra i tracciati più netti invece che
+  // a caso, così i primi casi hanno diagnosi date al 100%.
+  const pesca = (pool, quanti) => {
+    const p = pool.slice();
+    if (progressivo) p.sort((a, b) => confrontaChiarezza(rec[a], rec[b]));
+    else mescola(p);
+    return p.slice(0, quanti);
+  };
+  let casi = [];
+
+  if (S.cfg.mix === "auto" || S.cfg.code) {
+    // Bilanciata: quote uguali fra le categorie effettivamente presenti.
+    const perCat = {};
+    for (const i of disp) for (const c of rec[i].cat) (perCat[c] = perCat[c] || []).push(i);
+    const presenti = ORDINE_CAT.filter(c => perCat[c] && perCat[c].length);
+    if (!presenti.length) { casi = pesca(disp, S.cfg.n); }
+    else {
+      const quota = Math.ceil(S.cfg.n / presenti.length);
+      const visti = new Set();
+      for (const c of presenti)
+        for (const i of pesca(perCat[c], quota))
+          if (!visti.has(i)) { visti.add(i); casi.push(i); }
+      casi = progressivo ? casi : mescola(casi);
+      casi = casi.slice(0, S.cfg.n);
+      if (casi.length < S.cfg.n)   // completiamo se una categoria era scarsa
+        for (const i of pesca(disp, disp.length)) {
+          if (casi.length >= S.cfg.n) break;
+          if (!casi.includes(i)) casi.push(i);
+        }
+    }
+  } else {
+    // Manuale: tanti ECG per categoria quanti ne hai chiesti.
+    const visti = new Set();
+    for (const c of ORDINE_CAT) {
+      const quanti = S.cfg.quote[c] | 0;
+      if (!quanti) continue;
+      const pool = disp.filter(i => rec[i].cat.includes(c) && !visti.has(i));
+      for (const i of pesca(pool, quanti)) { visti.add(i); casi.push(i); }
+    }
+    casi = progressivo ? casi : mescola(casi);
+  }
+
+  // Difficoltà crescente: i tracciati più netti vengono proposti per primi.
+  if (progressivo) casi.sort((a, b) => confrontaChiarezza(rec[a], rec[b]));
+
+  S.sess = { casi, i: 0, esiti: [], nMax: casi.length };
+  return casi.length;
+}
+
+function caricaCaso(indice) {
+  S.corrente = S.pack.records[indice];
+  if (!S.corrente.segnale)
+    S.corrente.segnale = decodificaSegnale(S.corrente.sig, S.pack.derivazioni.length);
+  S.rivelato = false; S.scelta = null; S.esito = null;
+  S.sel = new Set(); S.open = new Set();
+  S.mis = {}; S.calibro = { campo: null, asse: "x", drag: null };
+  S.zoom = 1;
+  const paper = document.getElementById("paper");
+  if (paper) { paper.scrollLeft = 0; paper.scrollTop = 0; }
+  const ov = document.getElementById("ecgOverlay");
+  if (ov) ov.classList.remove("on");
+  const sb = document.getElementById("searchBox");
+  if (sb) sb.value = "";
+  render();
+}
+
+function prossimo() {
+  if (!S.sess) return;
+  S.sess.i++;
+  if (S.sess.i >= S.sess.casi.length) { mostraRiepilogo(); return; }
+  caricaCaso(S.sess.casi[S.sess.i]);
+}
+
+function aggiornaProgresso() {
+  if (!S.sess) return;
+  const fatti = S.sess.i + (S.rivelato ? 1 : 0);
+  const pct = Math.round(fatti / Math.max(1, S.sess.nMax) * 100);
+  document.querySelector("#prog > i").style.width = pct + "%";
+  document.getElementById("poolInfo").textContent =
+    S.revisione ? "· revisione" : `· ${S.sess.i + 1} di ${S.sess.nMax}`;
+}
+
+/* ============================================================
+   5. PERCORSO STRUTTURATO — costruzione dell'albero
+   ============================================================ */
+function opzione(chiave, testo, codice, extraClass) {
+  const l = document.createElement("label");
+  l.className = "opt" + (extraClass ? " " + extraClass : "");
+  const inp = document.createElement("input");
+  inp.type = "checkbox"; inp.dataset.key = chiave;
+  inp.checked = S.sel.has(chiave);
+  const txt = document.createElement("span");
+  txt.className = "txt"; txt.textContent = testo;
+  const cod = document.createElement("span");
+  cod.className = "code"; cod.textContent = codice || "";
+  l.append(inp, txt, cod);
+  return { label: l, input: inp };
+}
+
+function blocco(titolo, numero, chiave, nSel) {
+  const d = document.createElement("div");
+  d.className = "step";
+  const chiuso = S.chiusi.has(chiave);
+  const h = document.createElement("div");
+  h.className = "step-title" + (chiuso ? " closed" : "");
+  h.setAttribute("role", "button");
+  h.tabIndex = 0;
+
+  const car = document.createElement("span");
+  car.className = "caret"; car.textContent = "▼";
+  const tit = document.createElement("span");
+  tit.innerHTML = `<i>${numero}</i> · ${titolo}`;
+  const cnt = document.createElement("span");
+  cnt.className = "count" + (nSel ? " has" : "");
+  cnt.textContent = nSel ? `${nSel} scelte` : "—";
+  h.append(car, tit, cnt);
+
+  const body = document.createElement("div");
+  body.className = chiuso ? "hidden" : "";
+  const apri = () => {
+    S.chiusi.has(chiave) ? S.chiusi.delete(chiave) : S.chiusi.add(chiave);
+    renderRisposta();
+  };
+  h.onclick = apri;
+  h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); apri(); } };
+
+  d.append(h, body);
+  d.corpo = body;
+  return d;
+}
+
+function contaSel(prefissi) {
+  let n = 0;
+  for (const k of S.sel) if (prefissi.some(p => k.startsWith(p))) n++;
+  return n;
+}
+
+function gruppoPiatto(gruppi, prefisso) {
+  // Livelli senza gerarchia (ritmo, forma): etichetta di gruppo + foglie.
+  const frag = document.createDocumentFragment();
+  for (const g of gruppi) {
+    const box = document.createElement("div");
+    box.className = "grp";
+    const lab = document.createElement("div");
+    lab.className = "grp-label"; lab.textContent = g.label;
+    box.appendChild(lab);
+    for (const f of g.leaves) {
+      const { label, input } = opzione(prefisso + f.code, f.desc, f.code);
+      input.onchange = () => toggle(prefisso + f.code, input.checked);
+      box.appendChild(label);
+    }
+    frag.appendChild(box);
+  }
+  return frag;
+}
+
+function toggle(chiave, attivo) {
+  attivo ? S.sel.add(chiave) : S.sel.delete(chiave);
+  // Spuntare un padre apre il ramo; toglierlo lo richiude e svuota i figli.
+  if (chiave.startsWith("c:") || chiave.startsWith("s:")) {
+    if (attivo) {
+      S.open.add(chiave);
+    } else {
+      S.open.delete(chiave);
+      const pref = chiave.slice(2);
+      for (const insieme of [S.sel, S.open]) {
+        for (const k of [...insieme]) {
+          if (k.startsWith("s:") && chiave.startsWith("c:") && appartiene(k.slice(2), pref)) insieme.delete(k);
+          if (k.startsWith("l:") && foglieDi(pref).includes(k.slice(2))) insieme.delete(k);
+        }
+      }
+    }
+  }
+  renderRisposta();
+}
+
+/* Ricerca diretta: seleziona una foglia e apre il ramo che la contiene,
+   senza però spuntare i padri (non devono valere come risposta a sé). */
+function selezionaDaRicerca(chiave) {
+  if (S.sel.has(chiave)) { S.sel.delete(chiave); renderRisposta(); return; }
+  S.sel.add(chiave);
+  if (chiave.startsWith("l:")) {
+    const code = chiave.slice(2);
+    for (const c of S.tax.diagnostic) {
+      for (const s of c.subs) {
+        const foglie = s.leaves.length ? s.leaves.map(l => l.code) : [s.soloCode];
+        if (foglie.includes(code)) {
+          S.open.add("c:" + c.code);
+          if (s.leaves.length) S.open.add("s:" + s.code);
+        }
+      }
+    }
+  }
+  renderRisposta();
+}
+
+function appartiene(sub, cls) {
+  const c = S.tax.diagnostic.find(x => x.code === cls);
+  return !!(c && c.subs.some(s => s.code === sub));
+}
+function foglieDi(codice) {
+  // Foglie di una classe o di una sottoclasse.
+  const out = [];
+  for (const c of S.tax.diagnostic) {
+    if (c.code === codice) {
+      for (const s of c.subs) out.push(...(s.leaves.length ? s.leaves.map(l => l.code) : [s.soloCode]));
+    }
+    for (const s of c.subs) {
+      if (s.code === codice) out.push(...(s.leaves.length ? s.leaves.map(l => l.code) : [s.soloCode]));
+    }
+  }
+  return out.filter(Boolean);
+}
+
+function alberoDiagnosi() {
+  const frag = document.createDocumentFragment();
+  for (const cls of S.tax.diagnostic) {
+    const nodo = document.createElement("div");
+    const { label, input } = opzione("c:" + cls.code, cls.label, cls.code, "parent");
+    input.onchange = () => toggle("c:" + cls.code, input.checked);
+    nodo.appendChild(label);
+
+    if (S.open.has("c:" + cls.code)) {
+      const kids = document.createElement("div");
+      kids.className = "kids";
+      for (const sub of cls.subs) {
+        if (!sub.leaves.length) {
+          // Sottoclasse con un solo codice: niente terzo livello.
+          const o = opzione("l:" + sub.soloCode, sub.desc || sub.label, sub.soloCode);
+          o.input.onchange = () => toggle("l:" + sub.soloCode, o.input.checked);
+          kids.appendChild(o.label);
+          continue;
+        }
+        const o = opzione("s:" + sub.code, sub.label, sub.code, "parent");
+        o.input.onchange = () => toggle("s:" + sub.code, o.input.checked);
+        kids.appendChild(o.label);
+        if (S.open.has("s:" + sub.code)) {
+          const gk = document.createElement("div");
+          gk.className = "kids";
+          for (const f of sub.leaves) {
+            const of_ = opzione("l:" + f.code, f.desc, f.code);
+            of_.input.onchange = () => toggle("l:" + f.code, of_.input.checked);
+            gk.appendChild(of_.label);
+          }
+          kids.appendChild(gk);
+        }
+      }
+      // Stadio dell'infarto: compare sotto MI quando un ramo è aperto.
+      if (cls.code === "MI" && S.corrente.stadium && S.corrente.stadium.length) {
+        const st = document.createElement("div");
+        st.className = "kids";
+        const lab = document.createElement("div");
+        lab.className = "grp-label"; lab.textContent = "Infarction stadium";
+        st.appendChild(lab);
+        for (const s of S.tax.stadium) {
+          const o = opzione("t:" + s.code, s.code + " — " + s.desc, "");
+          o.input.onchange = () => toggle("t:" + s.code, o.input.checked);
+          st.appendChild(o.label);
+        }
+        kids.appendChild(st);
+      }
+      nodo.appendChild(kids);
+    }
+    frag.appendChild(nodo);
+  }
+  return frag;
+}
+
+/* ============================================================
+   5b. RICERCA DIRETTA
+   ============================================================ */
+function costruisciIndice() {
+  const idx = [];
+  const agg = (chiave, code, desc, lvl) => idx.push({ chiave, code, desc, lvl });
+  for (const g of S.tax.rhythm) for (const l of g.leaves) agg("l:"+l.code, l.code, l.desc, "rhythm");
+  for (const g of S.tax.form)   for (const l of g.leaves) agg("l:"+l.code, l.code, l.desc, "form");
+  for (const c of S.tax.diagnostic) {
+    for (const s of c.subs) {
+      if (s.leaves.length) {
+        for (const l of s.leaves) agg("l:"+l.code, l.code, l.desc, c.code);
+      } else {
+        agg("l:"+s.soloCode, s.soloCode, s.desc || s.label, c.code);
+      }
+    }
+  }
+  for (const a of S.tax.axis)    agg("a:"+a.code, a.code, a.desc, "axis");
+  for (const s of S.tax.stadium) agg("t:"+s.code, s.code, s.desc, "stadium");
+  // Un codice può comparire in più livelli (i duplicati form/diagnostic):
+  // ne teniamo una voce sola per non mostrare doppioni nei risultati.
+  const visti = new Set();
+  S.indice = idx.filter(v => !visti.has(v.chiave) && visti.add(v.chiave));
+}
+
+function evidenzia(testo, q) {
+  const i = testo.toLowerCase().indexOf(q);
+  if (i < 0) return document.createTextNode(testo);
+  const f = document.createDocumentFragment();
+  f.append(testo.slice(0, i));
+  const m = document.createElement("mark");
+  m.textContent = testo.slice(i, i + q.length);
+  f.append(m, testo.slice(i + q.length));
+  return f;
+}
+
+function renderRicerca() {
+  const card = document.getElementById("cardSearch");
+  const box = document.getElementById("searchBox");
+  const hits = document.getElementById("hits");
+  const chips = document.getElementById("selChips");
+  const attiva = S.tax && S.modalita === "full" && !S.rivelato;
+  card.classList.toggle("hidden", !attiva);
+  if (!attiva) return;
+
+  const q = box.value.trim().toLowerCase();
+  hits.innerHTML = "";
+  if (q.length >= 2) {
+    const trovati = S.indice
+      .filter(v => v.code.toLowerCase().includes(q) || v.desc.toLowerCase().includes(q))
+      // I risultati che iniziano con il testo cercato vengono prima.
+      .sort((a, b) => {
+        const pa = a.code.toLowerCase().startsWith(q) ? 0 : a.desc.toLowerCase().startsWith(q) ? 1 : 2;
+        const pb = b.code.toLowerCase().startsWith(q) ? 0 : b.desc.toLowerCase().startsWith(q) ? 1 : 2;
+        return pa - pb;
+      })
+      .slice(0, 12);
+    for (const v of trovati) {
+      const b = document.createElement("button");
+      b.className = "hit" + (S.sel.has(v.chiave) ? " on" : "");
+      const t = document.createElement("span");
+      t.className = "txt"; t.appendChild(evidenzia(v.desc, q));
+      const c = document.createElement("span");
+      c.className = "code"; c.textContent = v.code;
+      const l = document.createElement("span");
+      l.className = "lvl"; l.textContent = v.lvl;
+      b.append(t, c, l);
+      b.onclick = () => { selezionaDaRicerca(v.chiave); };
+      hits.appendChild(b);
+    }
+    if (!trovati.length) {
+      const p = document.createElement("div");
+      p.className = "hit"; p.style.color = "var(--color-text-tertiary)";
+      p.textContent = "Nessuna voce corrisponde.";
+      hits.appendChild(p);
+    }
+  }
+
+  // Riepilogo di ciò che hai selezionato finora, con click per togliere.
+  chips.innerHTML = "";
+  for (const k of S.sel) {
+    const c = document.createElement("button");
+    c.className = "sel-chip";
+    c.textContent = "✓ " + k.slice(2);
+    c.title = "Togli dalla selezione";
+    c.onclick = () => { S.sel.delete(k); renderRisposta(); };
+    chips.appendChild(c);
+  }
+}
+
+function renderPercorso(area) {
+  // Scorciatoia: ECG completamente normale.
+  const norm = document.createElement("button");
+  norm.className = "primary";
+  norm.style.width = "100%"; norm.style.marginBottom = "12px";
+  norm.textContent = "Normal ECG — nessuna anomalia (NORM + SR)";
+  norm.onclick = () => { S.sel = new Set(["l:NORM", "l:SR"]); correggi(); };
+  area.appendChild(norm);
+
+  const codiciRitmo = new Set(S.tax.rhythm.flatMap(g => g.leaves.map(l => "l:" + l.code)));
+  const codiciForma = new Set(S.tax.form.flatMap(g => g.leaves.map(l => "l:" + l.code)));
+  const nRitmo = [...S.sel].filter(k => codiciRitmo.has(k)).length;
+  const nForma = [...S.sel].filter(k => codiciForma.has(k)).length;
+  const nDiag  = [...S.sel].filter(k => k.startsWith("l:") && !codiciRitmo.has(k) && !codiciForma.has(k)).length
+               + contaSel(["c:", "s:", "t:"]);
+
+  let n = 1;
+  const nMis = Object.entries(S.mis).filter(([k, v]) => v != null).length;
+  const bm = blocco("Misure — calibro", "⌗", "mis", nMis);
+  renderMisure(bm.corpo);
+  area.appendChild(bm);
+
+  const b1 = blocco("Rhythm", n++, "rhythm", nRitmo);
+  b1.corpo.appendChild(gruppoPiatto(S.tax.rhythm, "l:"));
+  area.appendChild(b1);
+
+  if (S.corrente.axis) {
+    const b2 = blocco("Heart axis", n++, "axis", contaSel(["a:"]));
+    for (const a of S.tax.axis) {
+      const o = opzione("a:" + a.code, a.desc, a.code);
+      o.input.onchange = () => toggle("a:" + a.code, o.input.checked);
+      b2.corpo.appendChild(o.label);
+    }
+    area.appendChild(b2);
+  }
+
+  const b3 = blocco("Form — what you see", n++, "form", nForma);
+  b3.corpo.appendChild(gruppoPiatto(S.tax.form, "l:"));
+  area.appendChild(b3);
+
+  const b4 = blocco("Diagnosis", n++, "diag", nDiag);
+  b4.corpo.appendChild(alberoDiagnosi());
+  area.appendChild(b4);
+
+  const go = document.createElement("button");
+  go.className = "primary";
+  go.style.width = "100%"; go.style.marginTop = "14px";
+  go.textContent = `Correggi (${[...S.sel].length} selezionate)`;
+  go.onclick = correggi;
+  area.appendChild(go);
+}
+
+/* ============================================================
+   6. CORREZIONE DEL PERCORSO
+   ============================================================ */
+function correggi() {
+  const r = S.corrente;
+  const veri = new Set([...(r.rhythm||[]), ...(r.form||[]), ...(r.diag||[])]);
+  const scelte = [...S.sel];
+
+  const ok = [], near = [], ko = [], miss = [];
+
+  for (const k of scelte) {
+    const tipo = k.slice(0, 2), val = k.slice(2);
+    if (tipo === "l:") {
+      veri.has(val) ? ok.push({ code: val, lik: r.lik[val] }) : ko.push({ code: val });
+    } else if (tipo === "a:") {
+      (r.axis === val) ? ok.push({ code: val, axis: true }) : ko.push({ code: val, axis: true });
+    } else if (tipo === "t:") {
+      (r.stadium || []).includes(val) ? ok.push({ code: val, stad: true }) : ko.push({ code: val, stad: true });
+    } else if (tipo === "c:") {
+      // Classe: giusta se l'ECG appartiene a quella superclasse.
+      (r.cat || []).includes(val) ? near.push({ code: val, liv: "classe" }) : ko.push({ code: val });
+    } else if (tipo === "s:") {
+      (r.sub || []).includes(val) ? near.push({ code: val, liv: "sottoclasse" }) : ko.push({ code: val });
+    }
+  }
+
+  // Mancate: codici presenti nell'ECG e non selezionati da nessuna parte.
+  // I duplicati form/diagnostic contano una volta sola, quindi basta che il
+  // codice sia stato scelto in uno dei due livelli.
+  const sceltiCodici = new Set(scelte.filter(k => k.startsWith("l:")).map(k => k.slice(2)));
+  for (const c of veri) {
+    if (sceltiCodici.has(c)) continue;
+    // Se l'utente aveva preso il ramo padre giusto, è una mancata "parziale".
+    const parziale = near.some(n => foglieDi(n.code).includes(c));
+    miss.push({ code: c, lik: r.lik[c], parziale });
+  }
+  if (r.axis && !scelte.some(k => k === "a:" + r.axis)) miss.push({ code: r.axis, axis: true });
+  for (const s of (r.stadium || []))
+    if (!scelte.includes("t:" + s)) miss.push({ code: s, stad: true });
+
+  S.esito = { ok, near, ko, miss };
+
+  // Punteggio di sessione: "corretto" se nessun errore e nessuna mancata piena.
+  const pieno = ko.length === 0 && miss.filter(m => !m.parziale).length === 0;
+  registra(pieno);
+  S.perLivello.ok   = (S.perLivello.ok   || 0) + ok.length;
+  S.perLivello.near = (S.perLivello.near || 0) + near.length;
+  S.perLivello.ko   = (S.perLivello.ko   || 0) + ko.length;
+  S.perLivello.miss = (S.perLivello.miss || 0) + miss.length;
+  segnaEsito(pieno);
+
+  S.rivelato = true;
+  salvaStato();
+  render();
+}
+
+function segnaEsito(pieno) {
+  if (!S.sess || S.revisione) return;
+  S.sess.esiti[S.sess.i] = { idx: S.sess.casi[S.sess.i], ok: pieno, esito: S.esito };
+}
+
+function descrizioneDi(code) {
+  for (const g of S.tax.rhythm) for (const l of g.leaves) if (l.code === code) return l.desc;
+  for (const g of S.tax.form)   for (const l of g.leaves) if (l.code === code) return l.desc;
+  for (const c of S.tax.diagnostic) {
+    if (c.code === code) return c.label;
+    for (const s of c.subs) {
+      if (s.code === code) return s.desc || s.label;
+      for (const l of s.leaves) if (l.code === code) return l.desc;
+    }
+  }
+  for (const a of S.tax.axis)    if (a.code === code) return a.desc;
+  for (const s of S.tax.stadium) if (s.code === code) return s.desc;
+  return code;
+}
+
+function likTesto(v) {
+  if (v === undefined || v === null) return "";
+  return v > 0 ? String(v) : "n.s.";   // 0 = likelihood non specificata
+}
+
+function bloccoRisultati(titolo, voci, classe, nota) {
+  if (!voci.length) return null;
+  const d = document.createElement("div");
+  d.className = "res-group";
+  const h = document.createElement("div");
+  h.className = "res-head";
+  h.innerHTML = `${titolo} <span class="n">(${voci.length})</span>`;
+  d.appendChild(h);
+  for (const v of voci) {
+    const row = document.createElement("div");
+    row.className = "res-item " + classe;
+    const txt = document.createElement("span");
+    txt.className = "txt";
+    txt.style.flex = "1 1 auto";
+    txt.textContent = descrizioneDi(v.code) + (v.liv ? ` — livello ${v.liv}` : "");
+    const cod = document.createElement("span");
+    cod.className = "code"; cod.textContent = v.code;
+    row.append(txt, cod);
+    const lt = likTesto(v.lik);
+    if (lt) {
+      const lik = document.createElement("span");
+      lik.className = "lik"; lik.textContent = lt;
+      row.appendChild(lik);
+    }
+    d.appendChild(row);
+  }
+  if (nota) {
+    const p = document.createElement("div");
+    p.className = "legend"; p.textContent = nota;
+    d.appendChild(p);
+  }
+  return d;
+}
+
+function renderCorrezione(area) {
+  const r = S.corrente;
+  const e = S.esito || { ok: [], near: [], ko: [], miss: [] };
+  const pieno = e.ko.length === 0 && e.miss.filter(m => !m.parziale).length === 0;
+  const v = document.createElement("div");
+  v.className = "verdict " + (pieno ? "ok" : "ko");
+  v.textContent = pieno ? "Interpretazione completa e corretta."
+                        : `${e.ok.length} corrette · ${e.near.length} parziali · ${e.ko.length} errate · ${e.miss.length} mancate`;
+  area.appendChild(v);
+
+  const blocchi = [
+    bloccoRisultati("✓ Corrette", e.ok, "r-ok", "Il numero a destra è la likelihood assegnata dal cardiologo (n.s. = non specificata)."),
+    bloccoRisultati("◐ Ramo giusto, non specifico", e.near, "r-near"),
+    bloccoRisultati("✗ Errate", e.ko, "r-ko"),
+    bloccoRisultati("○ Mancate", e.miss.filter(m => !m.parziale), "r-miss"),
+    bloccoRisultati("○ Mancate (avevi il ramo giusto)", e.miss.filter(m => m.parziale), "r-near"),
+  ];
+  for (const b of blocchi) if (b) area.appendChild(b);
+
+  const rep = document.createElement("div");
+  rep.className = r.ref ? "report" : "report empty";
+  rep.textContent = r.ref || "Nessun referto per questo tracciato.";
+  area.appendChild(rep);
+
+  const nEvid = derivazioniDaEvidenziare(r).size;
+  if (nEvid) {
+    const p = document.createElement("div");
+    p.className = "legend";
+    p.textContent = "Sul tracciato sono evidenziate in blu le derivazioni dove si cercano questi reperti.";
+    area.appendChild(p);
+  }
+
+  if (S.revisione) { navRevisione(area); return; }
+  const go = document.createElement("button");
+  go.className = "primary"; go.style.width = "100%"; go.style.marginTop = "8px";
+  go.textContent = "Prossimo ECG →";
+  go.onclick = prossimo;
+  area.appendChild(go);
+}
+
+/* ============================================================
+   7. MODALITÀ RAPIDE (scelta multipla / autovalutazione)
+   ============================================================ */
+function correttoPer(cat) {
+  return S.tipoDomanda === "asse" ? S.corrente.axis === cat : S.corrente.cat.includes(cat);
+}
+function registra(giusto) {
+  giusto ? S.corretti++ : S.errori++;
+  if (!giusto && !S.ripasso.includes(S.corrente.id)) S.ripasso.push(S.corrente.id);
+  for (const c of S.corrente.cat) {
+    S.perCat[c] = S.perCat[c] || { ok: 0, ko: 0 };
+    S.perCat[c][giusto ? "ok" : "ko"]++;
+  }
+}
+function rispondiMC(cat) {
+  if (S.rivelato) return;
+  S.scelta = cat; S.rivelato = true;
+  const g = correttoPer(cat);
+  registra(g); segnaEsito(g); salvaStato(); render();
+}
+function autoValuta(g) { registra(g); segnaEsito(g); salvaStato(); prossimo(); }
+
+function renderMC(area) {
+  const opzioni = S.tipoDomanda === "asse"
+    ? S.tax.axis.map(a => a.code) : ORDINE_CAT;
+  const et = c => S.tipoDomanda === "asse"
+    ? (S.tax.axis.find(a => a.code === c) || {}).desc || c
+    : (S.etichette[c] || c);
+
+  const box = document.createElement("div");
+  box.className = "answers";
+  for (const c of opzioni) {
+    const b = document.createElement("button");
+    b.textContent = et(c);
+    if (S.rivelato) {
+      b.disabled = true;
+      if (correttoPer(c)) b.classList.add("correct");
+      else if (S.scelta === c) b.classList.add("wrong");
+    } else b.onclick = () => rispondiMC(c);
+    box.appendChild(b);
+  }
+  area.appendChild(box);
+
+  if (S.rivelato) {
+    const rep = document.createElement("div");
+    rep.className = S.corrente.ref ? "report" : "report empty";
+    rep.textContent = S.corrente.ref || "Nessun referto per questo tracciato.";
+    area.appendChild(rep);
+    if (S.revisione) { navRevisione(area); return; }
+    const go = document.createElement("button");
+    go.className = "primary"; go.style.width = "100%";
+    go.textContent = "Prossimo ECG →";
+    go.onclick = prossimo;
+    area.appendChild(go);
+  }
+}
+
+function renderAuto(area) {
+  if (!S.rivelato) {
+    const b = document.createElement("button");
+    b.className = "primary"; b.style.width = "100%";
+    b.textContent = "Rivela la diagnosi";
+    b.onclick = () => { S.rivelato = true; render(); };
+    area.appendChild(b);
+    return;
+  }
+  const r = S.corrente;
+  const rep = document.createElement("div");
+  rep.className = r.ref ? "report" : "report empty";
+  rep.textContent = r.ref || "Nessun referto per questo tracciato.";
+  area.appendChild(rep);
+
+  const veri = [...new Set([...(r.rhythm||[]), ...(r.form||[]), ...(r.diag||[])])]
+    .map(c => ({ code: c, lik: r.lik[c] }));
+  const b = bloccoRisultati("Codici dell'ECG", veri, "r-ok",
+    "Il numero è la likelihood assegnata dal cardiologo (n.s. = non specificata).");
+  if (b) area.appendChild(b);
+
+  const box = document.createElement("div");
+  box.className = "answers";
+  const ok = document.createElement("button");
+  ok.textContent = "✓ Avevo indovinato"; ok.onclick = () => autoValuta(true);
+  const ko = document.createElement("button");
+  ko.textContent = "✗ Avevo sbagliato"; ko.onclick = () => autoValuta(false);
+  box.append(ok, ko);
+  area.appendChild(box);
+}
+
+/* ============================================================
+   8. RENDER
+   ============================================================ */
+function renderFiltri() {
+  const box = document.getElementById("filters");
+  box.innerHTML = "";
+  for (const c of ORDINE_CAT) {
+    const l = document.createElement("label");
+    l.className = "opt";
+    const i = document.createElement("input");
+    i.type = "checkbox"; i.checked = S.filtri.has(c);
+    i.onchange = () => {
+      i.checked ? S.filtri.add(c) : S.filtri.delete(c);
+      renderFiltri(); salvaStato();
+    };
+    const t = document.createElement("span");
+    t.className = "txt"; t.textContent = S.etichette[c] || c;
+    const k = document.createElement("span");
+    k.className = "code"; k.textContent = c;
+    l.append(i, t, k);
+    box.appendChild(l);
+  }
+  const dd = document.getElementById("ddCat");
+  const n = S.filtri.size;
+  dd.classList.toggle("active", n > 0);
+  document.getElementById("ddCatLabel").textContent =
+    n === 0 ? "Categorie" : n === 1 ? [...S.filtri][0] : `Categorie · ${n}`;
+}
+
+function renderRisposta() {
+  const area = document.getElementById("answerArea");
+  const titolo = document.getElementById("answerTitle");
+  area.innerHTML = "";
+  renderRicerca();
+  if (S.modalita === "full") {
+    titolo.textContent = S.rivelato ? "Correzione" : "Interpretazione";
+    S.rivelato ? renderCorrezione(area) : renderPercorso(area);
+  } else if (S.modalita === "mc") {
+    titolo.textContent = S.rivelato ? "Risposta"
+      : (S.tipoDomanda === "asse" ? "Qual è l'asse elettrico?" : "Qual è la diagnosi?");
+    renderMC(area);
+  } else {
+    titolo.textContent = "Autovalutazione";
+    renderAuto(area);
+  }
+}
+
+function renderPunteggio() {
+  const tot = S.corretti + S.errori;
+  document.getElementById("pillOk").textContent = "✓ " + S.corretti;
+  document.getElementById("pillKo").textContent = "✗ " + S.errori;
+  document.getElementById("pillPct").textContent = tot ? Math.round(S.corretti/tot*100) + "%" : "—";
+}
+
+function renderStats() {
+  const box = document.getElementById("stats");
+  box.innerHTML = "";
+  const voci = ORDINE_CAT.filter(c => S.perCat[c]);
+  if (!voci.length) {
+    box.innerHTML = '<p class="empty-note">Rispondi a qualche ECG per vedere dove sei forte e dove no.</p>';
+  } else {
+    for (const c of voci) {
+      const { ok, ko } = S.perCat[c];
+      const tot = ok + ko, pct = Math.round(ok/tot*100);
+      const d = document.createElement("div");
+      d.className = "stat";
+      d.innerHTML = `<div class="stat-top"><span>${S.etichette[c] || c}</span>` +
+        `<span>${pct}% · ${ok}/${tot}</span></div>` +
+        `<div class="bar"><i style="width:${pct}%;background:${COLORE_CAT[c]}"></i></div>`;
+      box.appendChild(d);
+    }
+  }
+  const p = S.perLivello;
+  if (p && (p.ok || p.ko || p.miss)) {
+    const d = document.createElement("div");
+    d.className = "legend"; d.style.marginTop = "8px";
+    d.textContent = `Voci: ${p.ok||0} corrette · ${p.near||0} parziali · ${p.ko||0} errate · ${p.miss||0} mancate`;
+    box.appendChild(d);
+  }
+  document.getElementById("queueNote").textContent =
+    S.ripasso.length ? `${S.ripasso.length} in coda di ripasso.` : "";
+}
+
+function render() {
+  const r = S.corrente;
+  document.getElementById("mId").textContent = r.id;
+  document.getElementById("mAge").textContent = r.eta ?? "—";
+  document.getElementById("mSex").textContent = r.sesso === 0 ? "M" : r.sesso === 1 ? "F" : "—";
+  // Le derivazioni si accendono solo dopo la correzione: prima sarebbe un suggerimento.
+  disegnaECG(r, S.rivelato ? derivazioniDaEvidenziare(r) : null);
+  renderRisposta(); renderPunteggio(); renderStats(); aggiornaProgresso();
+}
+
+/* ============================================================
+   9. TRACCIATI DIMOSTRATIVI
+   ============================================================ */
+function generaDemo() {
+  const fs = 100, n = fs * 10;
+  const derivazioni = ["I","II","III","aVR","aVL","aVF","V1","V2","V3","V4","V5","V6"];
+  const profili = [
+    { cat:"NORM", cls:"NORM", fc:72, st:0,    q:0,  diag:["NORM"], form:[],
+      rhythm:["SR"], axis:"MID", ref:"Sinusrhythmus. Normales EKG." },
+    { cat:"MI", cls:"MI", fc:78, st:.28, q:.5, diag:["IMI"], form:["QWAVE","ABQRS"],
+      rhythm:["SR"], axis:"LAD", stadium:["Stadium III"], ref:"Inferiorer Infarkt, alt." },
+    { cat:"STTC", cls:"STTC", fc:84, st:-.16, q:0, diag:["ISC_"], form:["STD_","NDT"],
+      rhythm:["SR"], axis:"MID", ref:"ST-Senkung, unspezifisch." },
+    { cat:"CD", cls:"CD", fc:62, st:0, q:0, largo:true, diag:["CRBBB"], form:["ABQRS"],
+      rhythm:["SR"], axis:"RAD", ref:"Kompletter Rechtsschenkelblock." },
+    { cat:"HYP", cls:"HYP", fc:68, st:-.1, q:0, ampio:true, diag:["LVH"], form:["VCLVH"],
+      rhythm:["AFIB"], axis:"ALAD", ref:"Linksherzhypertrophie." },
+  ];
+  const records = [];
+  for (let k = 0; k < 25; k++) {
+    const p = profili[k % profili.length];
+    const fc = p.fc + Math.round((Math.random()-.5)*16);
+    const passo = Math.round(60/fc*fs);
+    const segnale = derivazioni.map((_, d) => {
+      const g = .55 + .75*Math.sin((d+1)*.8);
+      const a = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const t = i % passo; let v = 0;
+        if (t >= 4 && t < 12) v += .14*Math.sin((t-4)/8*Math.PI);
+        if (p.q && t >= 15 && t < 18) v -= p.q*.6;
+        const w = p.largo ? 9 : 5;
+        if (t >= 17 && t < 17+w) { const f = (t-17)/w; v += (p.ampio?1.9:1.15)*Math.sin(f*Math.PI)*(f<.45?1:-.42); }
+        if (t >= 17+w && t < 17+w+22) v += p.st;
+        if (t >= 30 && t < 46) v += .26*Math.sin((t-30)/16*Math.PI);
+        a[i] = v*g + (Math.random()-.5)*.022;
+      }
+      return a;
+    });
+    const lik = {};
+    [...p.diag, ...p.form, ...p.rhythm].forEach((c, i) => lik[c] = i === 0 ? 100 : (i % 2 ? 0 : 80));
+    records.push({
+      id: 9000+k, eta: 40 + (k*7)%45, sesso: k%2,
+      cat: [p.cls], sub: p.diag.slice(0,1), lik,
+      rhythm: p.rhythm, form: p.form, diag: p.diag,
+      axis: p.axis, stadium: p.stadium || [],
+      ref: p.ref + " (tracciato dimostrativo sintetico)", segnale,
+    });
+  }
+  return {
+    versione: 2, fs, derivazioni, demo: true,
+    categorie: { NORM:"Normal ECG", CD:"Conduction Disturbance", MI:"Myocardial Infarction",
+                 STTC:"ST/T change", HYP:"Hypertrophy" },
+    tassonomia: {
+      rhythm: [
+        { label:"Sinus rhythm", leaves:[
+          {code:"SR",desc:"sinus rhythm"},{code:"STACH",desc:"sinus tachycardia"},
+          {code:"SARRH",desc:"sinus arrhythmia"},{code:"SBRAD",desc:"sinus bradycardia"}]},
+        { label:"Atrial arrhythmia", leaves:[
+          {code:"AFIB",desc:"atrial fibrillation"},{code:"AFLT",desc:"atrial flutter"},
+          {code:"SVARR",desc:"supraventricular arrhythmia"}]},
+        { label:"Paced", leaves:[{code:"PACE",desc:"normal functioning artificial pacemaker"}]},
+      ],
+      form: [
+        { label:"ST-T basic roots", leaves:[
+          {code:"STD_",desc:"non-specific ST depression"},{code:"STE_",desc:"non-specific ST elevation"},
+          {code:"NST_",desc:"non-specific ST changes"}]},
+        { label:"Other ST-T descriptive", leaves:[
+          {code:"NDT",desc:"non-diagnostic T abnormalities"},{code:"INVT",desc:"inverted T-waves"}]},
+        { label:"QRS morphology", leaves:[
+          {code:"QWAVE",desc:"Q waves present"},{code:"LVOLT",desc:"low QRS voltages in the frontal and horizontal leads"}]},
+        { label:"Normal/abnormal", leaves:[{code:"ABQRS",desc:"abnormal QRS"}]},
+        { label:"Ventricular hypertrophy", leaves:[
+          {code:"VCLVH",desc:"voltage criteria (QRS) for left ventricular hypertrophy"}]},
+      ],
+      axis: [
+        {code:"MID",desc:"Normal axis"},{code:"LAD",desc:"Left axis deviation"},
+        {code:"ALAD",desc:"Abnormal LAD, extreme left axis deviation"},
+        {code:"RAD",desc:"Right axis deviation"},{code:"ARAD",desc:"Abnormal RAD, extreme right axis deviation"},
+      ],
+      diagnostic: [
+        { code:"NORM", label:"Normal ECG", subs:[
+          {code:"NORM",label:"Normal ECG",leaves:[],soloCode:"NORM",desc:"normal ECG"}]},
+        { code:"CD", label:"Conduction Disturbance", subs:[
+          {code:"CRBBB",label:"Complete RBBB",leaves:[],soloCode:"CRBBB",desc:"complete right bundle branch block"},
+          {code:"CLBBB",label:"Complete LBBB",leaves:[],soloCode:"CLBBB",desc:"complete left bundle branch block"},
+          {code:"_AVB",label:"AV block",leaves:[
+            {code:"1AVB",desc:"first degree AV block"},{code:"2AVB",desc:"second degree AV block"},
+            {code:"3AVB",desc:"third degree AV block"}],soloCode:null,desc:""}]},
+        { code:"MI", label:"Myocardial Infarction", subs:[
+          {code:"IMI",label:"Inferior",leaves:[
+            {code:"IMI",desc:"inferior myocardial infarction"},
+            {code:"ILMI",desc:"inferolateral myocardial infarction"}],soloCode:null,desc:""},
+          {code:"AMI",label:"Anterior",leaves:[
+            {code:"ASMI",desc:"anteroseptal myocardial infarction"},
+            {code:"AMI",desc:"anterior myocardial infarction"}],soloCode:null,desc:""},
+          {code:"LMI",label:"Lateral",leaves:[],soloCode:"LMI",desc:"lateral myocardial infarction"}]},
+        { code:"STTC", label:"ST/T change", subs:[
+          {code:"ISC_",label:"Ischemic, non-specific",leaves:[],soloCode:"ISC_",desc:"non-specific ischemic"},
+          {code:"NST_",label:"Non-specific ST changes",leaves:[],soloCode:"NST_",desc:"non-specific ST changes"},
+          {code:"STTC",label:"ST/T changes",leaves:[
+            {code:"NDT",desc:"non-diagnostic T abnormalities"},
+            {code:"LNGQT",desc:"long QT-interval"}],soloCode:null,desc:""}]},
+        { code:"HYP", label:"Hypertrophy", subs:[
+          {code:"LVH",label:"Left ventricular hypertrophy",leaves:[],soloCode:"LVH",desc:"left ventricular hypertrophy"},
+          {code:"RVH",label:"Right ventricular hypertrophy",leaves:[],soloCode:"RVH",desc:"right ventricular hypertrophy"}]},
+      ],
+      stadium: [
+        {code:"Stadium I",desc:"acut, early"},{code:"Stadium II",desc:"recent, subacut, bereits abgelaufen"},
+        {code:"Stadium II-III",desc:"subacut/chronisch"},{code:"Stadium III",desc:"old, abgelaufen, chronisch"},
+      ],
+      duplicates: ["NDT","NST_","DIG","LNGQT"],
+    },
+    records,
+  };
+}
+
+/* ============================================================
+   9b. SCHERMATA INIZIALE, RIEPILOGO E REVISIONE
+   ============================================================ */
+function mostraSchermata(nome) {
+  for (const s of ["scHome", "scTest", "scEnd"])
+    document.getElementById(s).classList.toggle("on", s === nome);
+  document.getElementById("mainTest").style.display = nome === "scTest" ? "" : "none";
+  document.getElementById("hdrTest").style.display = nome === "scTest" ? "" : "none";
+  if (nome !== "scTest") document.getElementById("poolInfo").textContent = "";
+  window.scrollTo(0, 0);
+}
+
+function segButtons(box, valori, attuale, onPick) {
+  box.innerHTML = "";
+  for (const v of valori) {
+    const b = document.createElement("button");
+    b.textContent = v.label;
+    b.setAttribute("aria-pressed", v.val === attuale ? "true" : "false");
+    b.onclick = () => onPick(v.val);
+    box.appendChild(b);
+  }
+}
+
+function contaPerCategoria() {
+  const c = {};
+  for (const r of S.pack.records) for (const k of r.cat) c[k] = (c[k] || 0) + 1;
+  return c;
+}
+
+function renderHome() {
+  const conte = contaPerCategoria();
+
+  segButtons(document.getElementById("segN"),
+    [5, 10, 20, 30, 50].map(n => ({ val: n, label: String(n) })),
+    S.cfg.n, v => { S.cfg.n = v; renderHome(); });
+
+  const modi = S.tax
+    ? [{ val:"full", label:"Percorso completo" }, { val:"mc", label:"Scelta multipla" }, { val:"auto", label:"Autovalutazione" }]
+    : [{ val:"mc", label:"Scelta multipla" }, { val:"auto", label:"Autovalutazione" }];
+  if (!S.tax && S.cfg.modalita === "full") S.cfg.modalita = "mc";
+  segButtons(document.getElementById("segMode"), modi, S.cfg.modalita,
+    v => { S.cfg.modalita = v; renderHome(); });
+  document.getElementById("hintMode").textContent = {
+    full: "Ritmo, asse, reperti e diagnosi, con l'albero completo e la correzione voce per voce.",
+    mc:   "Una sola domanda a risposta multipla per tracciato: veloce.",
+    auto: "Guardi, formuli la tua ipotesi, riveli e ti giudichi da solo.",
+  }[S.cfg.modalita];
+
+  segButtons(document.getElementById("segMix"),
+    [{ val:"auto", label:"Bilanciata" }, { val:"man", label:"Scelgo io" }],
+    S.cfg.mix, v => { S.cfg.mix = v; renderHome(); });
+
+  const mixBox = document.getElementById("mixBox");
+  mixBox.classList.toggle("hidden", S.cfg.mix !== "man");
+  if (S.cfg.mix === "man") {
+    mixBox.innerHTML = "";
+    const grid = document.createElement("div");
+    grid.className = "mix";
+    for (const c of ORDINE_CAT) {
+      const disp = conte[c] || 0;
+      const nm = document.createElement("div");
+      nm.className = "nm";
+      nm.innerHTML = `${S.etichette[c] || c} <small>${disp} disponibili</small>`;
+      const inp = document.createElement("input");
+      inp.type = "number"; inp.min = 0; inp.max = disp;
+      inp.value = S.cfg.quote[c] || 0;
+      inp.disabled = !disp;
+      inp.onchange = () => {
+        S.cfg.quote[c] = Math.max(0, Math.min(disp, +inp.value || 0));
+        inp.value = S.cfg.quote[c]; renderHome();
+      };
+      grid.append(nm, inp);
+    }
+    mixBox.appendChild(grid);
+  }
+
+  segButtons(document.getElementById("segOrd"),
+    [{ val:"chiari", label:"Dal più netto" }, { val:"caso", label:"Casuale" }],
+    S.cfg.ordine, v => { S.cfg.ordine = v; renderHome(); });
+  document.getElementById("hintOrd").textContent = S.cfg.ordine === "chiari"
+    ? "Prima i tracciati con diagnosi date al 100%, poi quelli via via più incerti."
+    : "Ordine casuale, come capita nella pratica.";
+
+  document.getElementById("optStats").checked = S.cfg.stats;
+
+  // Riepilogo della patologia specifica eventualmente scelta.
+  const pick = document.getElementById("homePick");
+  pick.classList.toggle("hidden", !S.cfg.code);
+  if (S.cfg.code) {
+    const quanti = indiciDisponibili().length;
+    pick.innerHTML = "";
+    pick.append(`Solo ECG con ${S.cfg.code} — ${quanti} disponibili. `);
+    const b = document.createElement("button");
+    b.className = "ghost"; b.textContent = "Togli";
+    b.onclick = () => { S.cfg.code = null; document.getElementById("homeSearch").value = ""; renderHome(); };
+    pick.appendChild(b);
+  }
+
+  const tot = S.cfg.mix === "man" && !S.cfg.code
+    ? ORDINE_CAT.reduce((s, c) => s + (S.cfg.quote[c] | 0), 0)
+    : Math.min(S.cfg.n, indiciDisponibili().length);
+  const btn = document.getElementById("btnStart");
+  btn.disabled = tot === 0;
+  btn.textContent = tot ? `Inizia — ${tot} ECG` : "Nessun ECG con questi criteri";
+  document.getElementById("startHint").textContent =
+    S.pack.demo ? "Pacchetto dimostrativo: pochi tracciati sintetici." : "";
+}
+
+function renderHomeSearch() {
+  const box = document.getElementById("homeSearch");
+  const hits = document.getElementById("homeHits");
+  const q = box.value.trim().toLowerCase();
+  hits.innerHTML = "";
+  if (!S.indice.length || q.length < 2) return;
+  const trovati = S.indice
+    .filter(v => v.code.toLowerCase().includes(q) || v.desc.toLowerCase().includes(q))
+    .slice(0, 8);
+  for (const v of trovati) {
+    const b = document.createElement("button");
+    b.className = "hit";
+    const t = document.createElement("span");
+    t.className = "txt"; t.textContent = v.desc;
+    const c = document.createElement("span");
+    c.className = "code"; c.textContent = v.code;
+    const l = document.createElement("span");
+    l.className = "lvl"; l.textContent = v.lvl;
+    b.append(t, c, l);
+    b.onclick = () => {
+      S.cfg.code = v.code; box.value = v.desc; hits.innerHTML = ""; renderHome();
+    };
+    hits.appendChild(b);
+  }
+}
+
+function iniziaSessione() {
+  S.modalita = S.cfg.modalita;
+  const n = costruisciSessione();
+  if (!n) return;
+  document.getElementById("cardStats").classList.toggle("hidden", !S.cfg.stats);
+  aggiornaBottoni();
+  mostraSchermata("scTest");
+  S.revisione = false;
+  caricaCaso(S.sess.casi[0]);
+}
+
+function mostraRiepilogo() {
+  S.revisione = false;
+  mostraSchermata("scEnd");
+  const esiti = S.sess.esiti.filter(Boolean);
+  const giusti = esiti.filter(e => e.ok).length;
+  const pct = esiti.length ? Math.round(giusti / esiti.length * 100) : 0;
+
+  const box = document.getElementById("recapBoxes");
+  box.innerHTML = "";
+  const dati = [
+    { n: esiti.length, t: "ECG svolti" },
+    { n: giusti, t: "completi" },
+    { n: esiti.length - giusti, t: "con errori" },
+    { n: pct + "%", t: "accuratezza" },
+  ];
+  for (const d of dati) {
+    const b = document.createElement("div");
+    b.className = "box";
+    b.innerHTML = `<b>${d.n}</b><span>${d.t}</span>`;
+    box.appendChild(b);
+  }
+
+  // Elenco dei casi: il tracciato viene disegnato solo quando lo apri.
+  const list = document.getElementById("caseList");
+  list.innerHTML = "";
+  S.sess.esiti.forEach((e, i) => {
+    if (!e) return;
+    const rec = S.pack.records[e.idx];
+    const row = document.createElement("button");
+    row.className = "caserow";
+    const dot = document.createElement("span");
+    dot.className = "dot " + (e.ok ? "ok" : "ko");
+    const who = document.createElement("span");
+    who.className = "who";
+    const codici = (rec.diag || []).slice(0, 4).join(", ") || "—";
+    const ch = chiarezza(rec);
+    const nota = ch.nAmb ? `${ch.nAmb} incerti` : (ch.n100 ? "netto" : "");
+    who.innerHTML = `${i + 1}. ${codici} <small>ID ${rec.id}${nota ? " · " + nota : ""}</small>`;
+    const go = document.createElement("span");
+    go.className = "code"; go.textContent = "rivedi →";
+    row.append(dot, who, go);
+    row.onclick = () => rivediCaso(i);
+    list.appendChild(row);
+  });
+}
+
+function rivediCaso(i) {
+  const validi = S.sess.esiti.map((e, k) => e ? k : -1).filter(k => k >= 0);
+  if (!validi.length) return;
+  const pos = Math.max(0, Math.min(validi.length - 1, validi.indexOf(i) >= 0 ? validi.indexOf(i) : 0));
+  const k = validi[pos];
+  const e = S.sess.esiti[k];
+  S.revisione = true; S.revIdx = k;
+  mostraSchermata("scTest");
+  S.corrente = S.pack.records[e.idx];
+  if (!S.corrente.segnale)
+    S.corrente.segnale = decodificaSegnale(S.corrente.sig, S.pack.derivazioni.length);
+  S.esito = e.esito || null;
+  S.rivelato = true;
+  render();
+}
+
+/* Barra di navigazione mostrata solo mentre si rivedono i casi. */
+function navRevisione(area) {
+  const validi = S.sess.esiti.map((e, k) => e ? k : -1).filter(k => k >= 0);
+  const pos = validi.indexOf(S.revIdx);
+  const riga = document.createElement("div");
+  riga.style.cssText = "display:flex;gap:6px;align-items:center;margin-top:10px";
+
+  const prec = document.createElement("button");
+  prec.textContent = "← Prec.";
+  prec.disabled = pos <= 0;
+  prec.onclick = () => rivediCaso(validi[pos - 1]);
+
+  const su = document.createElement("button");
+  su.className = "primary"; su.style.flex = "1 1 auto";
+  su.textContent = `Riepilogo (${pos + 1} di ${validi.length})`;
+  su.onclick = mostraRiepilogo;
+
+  const succ = document.createElement("button");
+  succ.textContent = "Succ. →";
+  succ.disabled = pos < 0 || pos >= validi.length - 1;
+  succ.onclick = () => rivediCaso(validi[pos + 1]);
+
+  riga.append(prec, su, succ);
+  area.appendChild(riga);
+}
+
+/* ============================================================
+   10. AVVIO
+   ============================================================ */
+function testoModalita() {
+  return { full: "percorso completo", mc: "scelta multipla", auto: "autovalutazione" }[S.modalita];
+}
+function aggiornaBottoni() {
+  document.getElementById("btnMode").textContent = "Modalità: " + testoModalita();
+  const t = document.getElementById("btnTipo");
+  t.textContent = "Domanda: " + (S.tipoDomanda === "asse" ? "asse elettrico" : "diagnosi");
+  t.classList.toggle("hidden", S.modalita !== "mc");
+}
+
+function avvia(pack) {
+  S.pack = pack;
+  S.tax = pack.tassonomia || null;
+  S.etichette = pack.categorie || {};
+  if (S.tax) costruisciIndice();
+  S.indice = S.indice || [];
+  document.getElementById("loader").classList.add("hidden");
+  if (pack.demo)
+    document.querySelector("h1").insertAdjacentHTML("beforeend", ' <span class="sub">· demo</span>');
+  if (!S.tax && S.cfg.modalita === "full") S.cfg.modalita = "mc";
+  collegaCalibro();
+  collegaZoom();
+  renderFiltri();
+  renderHome();
+  mostraSchermata("scHome");
+}
+
+async function caricaPacchetto() {
+  const loader = document.getElementById("loader");
+  const titolo = document.getElementById("loadTitle");
+  const msg = document.getElementById("loadMsg");
+  const azioni = document.getElementById("loadActions");
+  loader.classList.remove("hidden"); azioni.classList.add("hidden");
+  titolo.textContent = "Carico il pacchetto ECG…"; msg.textContent = "Un momento.";
+  try {
+    const r = await fetch("ecg_pack.json");
+    if (!r.ok) throw new Error(r.status);
+    const pack = await r.json();
+    if (!pack.records || !pack.records.length) throw new Error("vuoto");
+    avvia(pack);
+  } catch (e) {
+    titolo.textContent = "Nessun pacchetto ECG trovato";
+    msg.innerHTML = location.protocol === "file:"
+      ? 'La pagina è aperta come file locale e il browser non le permette di leggere ' +
+        '<code>ecg_pack.json</code> da sola. Sceglilo a mano qui sotto, oppure avvia ' +
+        '<code>python -m http.server</code> nella cartella.'
+      : 'Metti <code>ecg_pack.json</code> nella stessa cartella di questa pagina. ' +
+        'Lo generi con <code>export_ecg_pack.py</code>.';
+    azioni.classList.remove("hidden");
+  }
+}
+
+document.getElementById("btnPick").onclick = () => document.getElementById("filePick").click();
+document.getElementById("filePick").onchange = async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const titolo = document.getElementById("loadTitle"), msg = document.getElementById("loadMsg");
+  titolo.textContent = "Leggo il pacchetto…";
+  msg.textContent = file.name + " · " + (file.size/1e6).toFixed(1) + " MB";
+  try {
+    const pack = JSON.parse(await file.text());
+    if (!pack.records || !pack.records.length) throw new Error("vuoto");
+    avvia(pack);
+  } catch (err) {
+    titolo.textContent = "Non riesco a leggere il pacchetto";
+    msg.textContent = "Il file non sembra un ecg_pack.json valido. Rigeneralo con export_ecg_pack.py.";
+  }
+};
+document.getElementById("btnDemo").onclick = () => avvia(generaDemo());
+document.getElementById("btnRetry").onclick = caricaPacchetto;
+
+document.getElementById("searchBox").addEventListener("input", renderRicerca);
+document.getElementById("searchBox").addEventListener("keydown", (e) => {
+  // Invio seleziona il primo risultato, così si può lavorare da tastiera.
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const primo = document.querySelector("#hits .hit");
+  if (primo && primo.tagName === "BUTTON") { primo.click(); e.target.value = ""; renderRicerca(); }
+});
+
+document.getElementById("btnClearCat").onclick = () => {
+  S.filtri.clear(); renderFiltri(); salvaStato();
+};
+
+// Chiude il menu a tendina cliccando fuori.
+document.addEventListener("click", (e) => {
+  const dd = document.getElementById("ddCat");
+  if (dd.open && !dd.contains(e.target)) dd.open = false;
+});
+
+document.getElementById("btnMode").onclick = () => {
+  const giro = S.tax ? ["full", "mc", "auto"] : ["mc", "auto"];
+  S.modalita = giro[(giro.indexOf(S.modalita) + 1) % giro.length];
+  S.cfg.modalita = S.modalita;
+  S.rivelato = false; S.scelta = null; S.esito = null;
+  S.sel = new Set(); S.open = new Set();
+  aggiornaBottoni(); salvaStato(); render();
+};
+document.getElementById("btnTipo").onclick = () => {
+  S.tipoDomanda = S.tipoDomanda === "cat" ? "asse" : "cat";
+  S.rivelato = false; S.scelta = null;
+  aggiornaBottoni(); salvaStato(); render();
+};
+document.getElementById("btnHome").onclick = () => {
+  if (S.sess && S.sess.esiti.filter(Boolean).length) mostraRiepilogo();
+  else { renderHome(); mostraSchermata("scHome"); }
+};
+document.getElementById("btnStart").onclick = iniziaSessione;
+document.getElementById("btnAgain").onclick = () => { renderHome(); mostraSchermata("scHome"); };
+document.getElementById("homeSearch").addEventListener("input", renderHomeSearch);
+document.getElementById("optStats").onchange = (e) => { S.cfg.stats = e.target.checked; };
+
+document.getElementById("btnZoomIn").onclick  = () => impostaZoom((S.zoom||1) * 1.35);
+document.getElementById("btnZoomOut").onclick = () => impostaZoom((S.zoom||1) / 1.35);
+document.getElementById("btnZoomFit").onclick = () => {
+  S.zoom = 1;
+  const p = document.getElementById("paper");
+  p.scrollLeft = 0; p.scrollTop = 0;
+  ridisegnaCorrente();
+};
+
+document.getElementById("btnFull").onclick = () => {
+  const paper = document.getElementById("paper");
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (paper.requestFullscreen) paper.requestFullscreen();
+};
+document.addEventListener("fullscreenchange", () => { S.zoom = 1; ridisegnaCorrente(); });
+
+document.getElementById("btnReset").onclick = () => {
+  S.corretti = 0; S.errori = 0; S.perCat = {}; S.perLivello = {}; S.ripasso = [];
+  salvaStato(); renderPunteggio(); renderStats();
+};
+
+let ridisegna;
+window.addEventListener("resize", () => {
+  clearTimeout(ridisegna);
+  ridisegna = setTimeout(ridisegnaCorrente, 120);
+});
+
+(async function () {
+  await caricaStato();
+  S.cfg.modalita = S.modalita || "full";
+  caricaPacchetto();
+})();
+
+/* Registrazione Service Worker (PWA) — permette funzionamento offline
+   anche se questa pagina viene aperta direttamente, non solo da index.html. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => {
+      console.warn('Service worker non registrato (normale se aperto da file locale):', e);
+    });
+  });
+}
+</script>
+</body>
+</html>

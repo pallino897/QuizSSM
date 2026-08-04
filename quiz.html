@@ -1,0 +1,3954 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Quiz Medicina – Specializzazioni</title>
+<script>
+/* Applica il tema salvato PRIMA del rendering, per evitare il flash del tema sbagliato.
+   Se l'utente non ha mai scelto manualmente, segue il sistema (comportamento invariato). */
+(function(){
+  try{
+    var salvato = localStorage.getItem('quiz_med_tema');
+    if(salvato === 'light' || salvato === 'dark'){
+      document.documentElement.setAttribute('data-theme', salvato);
+    }
+  }catch(e){}
+})();
+</script>
+<style>
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-background-tertiary: #ebebeb;
+  --color-background-success: #f0fdf4;
+  --color-background-danger: #fef2f2;
+  --color-background-warning: #fffbeb;
+  --color-text-primary: #111111;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  --color-text-success: #16a34a;
+  --color-text-danger: #dc2626;
+  --color-text-warning: #d97706;
+  --color-border-primary: #111111;
+  --color-border-secondary: #d0d0d0;
+  --color-border-tertiary: #e8e8e8;
+  --color-border-success: #bbf7d0;
+  --color-border-danger: #fecaca;
+  --border-radius-sm: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+/* Automatico (segue il sistema): si applica SOLO se l'utente non ha forzato "light" a mano */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background-primary: #1a1a1a;
+    --color-background-secondary: #262626;
+    --color-background-tertiary: #333333;
+    --color-background-success: #052e16;
+    --color-background-danger: #2d0a0a;
+    --color-background-warning: #1c1400;
+    --color-text-primary: #f0f0f0;
+    --color-text-secondary: #aaaaaa;
+    --color-text-tertiary: #666666;
+    --color-text-success: #4ade80;
+    --color-text-danger: #f87171;
+    --color-text-warning: #fbbf24;
+    --color-border-primary: #f0f0f0;
+    --color-border-secondary: #3a3a3a;
+    --color-border-tertiary: #2e2e2e;
+    --color-border-success: #166534;
+    --color-border-danger: #7f1d1d;
+  }
+}
+/* Forzato manualmente su "scuro" tramite il toggle, indipendentemente dal sistema */
+:root[data-theme="dark"] {
+  --color-background-primary: #1a1a1a;
+  --color-background-secondary: #262626;
+  --color-background-tertiary: #333333;
+  --color-background-success: #052e16;
+  --color-background-danger: #2d0a0a;
+  --color-background-warning: #1c1400;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #aaaaaa;
+  --color-text-tertiary: #666666;
+  --color-text-success: #4ade80;
+  --color-text-danger: #f87171;
+  --color-text-warning: #fbbf24;
+  --color-border-primary: #f0f0f0;
+  --color-border-secondary: #3a3a3a;
+  --color-border-tertiary: #2e2e2e;
+  --color-border-success: #166534;
+  --color-border-danger: #7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+
+/* IL FIX DELLO SFONDO È QUI: Aggiunto background-color e color al body */
+body{font-family:var(--font-sans); background-color:var(--color-background-primary); color:var(--color-text-primary);width:100%;overflow-x:hidden;}
+
+#app{padding:1rem 1rem 4rem;max-width:600px;margin:0 auto;width:100%;}
+.screen{display:none;}.screen.active{display:block;}
+
+/* ── Modalità orizzontale (landscape) durante il quiz/simulazione ──
+   Sposta la griglia di navigazione in una colonna a destra, sfruttando
+   la larghezza extra dello schermo ruotato invece di impilare tutto
+   verticalmente come su mobile in verticale. */
+@media (orientation: landscape) and (min-width: 700px){
+  #app.is-quiz-screen{
+    max-width: 1000px;
+  }
+  #app.is-quiz-screen .quiz-content-layout{
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+  }
+  #app.is-quiz-screen .quiz-main-col{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #app.is-quiz-screen #nav-grid-container{
+    flex: 0 0 240px;
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: 24px;
+    border-top: none;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  #app.is-quiz-screen #nav-grid-container .nav-grid{
+    max-height: none;
+    overflow-y: visible;
+  }
+  #app.is-risultato-screen{
+    max-width: 1000px;
+  }
+  #app.is-risultato-screen .ris-content-layout{
+    display: flex;
+    flex-direction: row-reverse; /* il DOM ha ris-side-col prima di ris-main-col:
+                                     row-reverse la mostra a destra senza spostare i nodi */
+    align-items: flex-start;
+    gap: 28px;
+  }
+  #app.is-risultato-screen .ris-main-col{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #app.is-risultato-screen .ris-side-col{
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-left: 24px;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  /* Dentro la colonna laterale unificata, il riquadro quadratini non ha più
+     bisogno del proprio bordo/scroll separato: li gestisce ris-side-col. */
+  #app.is-risultato-screen #ris-nav-grid-container{
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: 0;
+    border-top: none;
+    border-left: none;
+    max-height: none;
+    overflow-y: visible;
+  }
+  #app.is-risultato-screen #ris-nav-grid-container .nav-grid{
+    max-height: none;
+    overflow-y: visible;
+  }
+  #app.is-risultato-screen .ris-summary-block .score-box{
+    margin-bottom: 8px;
+  }
+  /* Nella sidebar stretta la griglia a 4 colonne fa sbordare l'ultimo box (%):
+     lo nascondiamo e riflowiamo su 3 colonne, solo in questa vista. */
+  #app.is-risultato-screen .stat-grid-4{
+    grid-template-columns: repeat(3, 1fr);
+  }
+  #app.is-risultato-screen .stat-grid-4 .stat-card:last-child{
+    display: none;
+  }
+  #app.is-risultato-screen #btn-esporta-sessione{
+    margin-bottom: 0;
+  }
+  #app.is-home-screen{
+    max-width: 1000px;
+  }
+  #app.is-home-screen .home-content-layout{
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+  }
+  #app.is-home-screen .home-main-col{
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #app.is-home-screen .home-side-col{
+    flex: 0 0 280px;
+    padding-left: 24px;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  /* ── Gestione domande in orizzontale: elenco a sinistra, editor a destra ──
+     In verticale le due parti restano schermate separate (si alternano);
+     qui invece convivono, come in un file manager con pannello di modifica. */
+  #app.is-gestisci-screen{
+    max-width: 1400px;
+  }
+  #app.is-gestisci-screen .gest-content-layout{
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  #app.is-gestisci-screen .gest-list-col{
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block !important; /* in landscape l'elenco è sempre visibile */
+  }
+  #app.is-gestisci-screen .gest-editor-col{
+    flex: 0 0 420px;
+    display: block !important;
+    padding-left: 24px;
+    border-left: 0.5px solid var(--color-border-secondary);
+    position: sticky;
+    top: 12px;
+    align-self: flex-start;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+  /* In landscape il tasto "torna all'elenco" non serve: le colonne sono affiancate */
+  #app.is-gestisci-screen .gest-editor-back{
+    display: none;
+  }
+  #app.is-gestisci-screen .gest-tabella{
+    display: table;
+  }
+  #app.is-gestisci-screen .gest-card-mobile{
+    display: none;
+  }
+}
+.ris-nav-legend{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--color-text-secondary);margin-bottom:10px;}
+.ris-legend-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;}
+.nav-cell.esito-correct{background:var(--color-text-success);border-color:var(--color-text-success);color:#fff;}
+.nav-cell.esito-wrong{background:var(--color-text-danger);border-color:var(--color-text-danger);color:#fff;}
+.nav-cell.esito-skipped{background:var(--color-text-warning);border-color:var(--color-text-warning);color:#fff;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem;margin-bottom:12px;}
+.btn{display:block;width:100%;padding:14px 16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:15px;font-weight:400;color:var(--color-text-primary);cursor:pointer;text-align:left;transition:background 0.1s;margin-bottom:8px;line-height:1.4;}
+.btn:hover{background:var(--color-background-secondary);}
+.btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);text-align:center;font-weight:500;}
+.btn.primary:hover{opacity:0.88;}
+.btn.correct{background:var(--color-background-success);border-color:var(--color-border-success);color:var(--color-text-success);pointer-events:none;}
+.btn.wrong{background:var(--color-background-danger);border-color:var(--color-border-danger);color:var(--color-text-danger);pointer-events:none;}
+.btn.reveal{background:var(--color-background-warning);border-color:var(--color-text-warning);color:var(--color-text-warning);pointer-events:none;}
+.btn.disabled{opacity:0.45;pointer-events:none;}
+.btn.skip{text-align:center;color:var(--color-text-secondary);border-style:dashed;font-size:14px;padding:10px;margin-top:4px;}
+.btn.selected-sim{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+.tag{display:inline-block;font-size:12px;padding:3px 10px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary);}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.stat-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 10px;text-align:center;}
+.stat-num{font-size:22px;font-weight:500;color:var(--color-text-primary);}
+.stat-lbl{font-size:11px;color:var(--color-text-secondary);margin-top:2px;}
+.progress-bar-bg{background:var(--color-background-secondary);border-radius:99px;height:6px;margin:8px 0;}
+.progress-bar-fill{background:var(--color-text-primary);height:6px;border-radius:99px;transition:width 0.3s;}
+.timer-bar-fill{background:var(--color-text-success);height:6px;border-radius:99px;transition:width 1s linear;}
+.timer-bar-warn{background:#f59e0b;}
+.timer-bar-danger{background:var(--color-text-danger);}
+.section-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;margin-top:1.25rem;text-transform:uppercase;letter-spacing:0.04em;}
+.specialita-btn{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;margin-bottom:8px;}
+.specialita-btn:hover{background:var(--color-background-secondary);}
+.nav-row{display:flex;gap:8px;margin-bottom:1rem;}
+.nav-row button{flex:1;padding:9px;font-size:14px;background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-primary);}
+.nav-row button:hover{background:var(--color-background-secondary);}
+.num-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.pill{padding:7px 16px;border:0.5px solid var(--color-border-secondary);border-radius:99px;font-size:14px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-primary);transition:background 0.1s;}
+.pill:hover{background:var(--color-background-secondary);}
+.pill.selected{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+.custom-num-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+.custom-num-row input{width:80px;padding:7px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:14px;color:var(--color-text-primary);background:var(--color-background-primary);}
+.custom-num-row label{font-size:14px;color:var(--color-text-secondary);}
+.score-box{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;text-align:center;margin-bottom:12px;}
+.score-big{font-size:42px;font-weight:600;}
+.score-sub{font-size:13px;color:var(--color-text-secondary);margin-top:4px;}
+
+/* Navigazione Grid Simulazione */
+.nav-grid-container{margin-top:1.5rem;padding-top:1.5rem;border-top:0.5px solid var(--color-border-secondary);}
+.nav-grid{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto;padding-bottom:10px;}
+.nav-cell{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:4px;border:1px solid var(--color-border-secondary);background:var(--color-background-primary);cursor:pointer;color:var(--color-text-primary);position:relative;transition:all 0.1s;}
+.nav-cell:hover{background:var(--color-background-secondary);}
+.nav-cell.answered{background:var(--color-border-secondary);font-weight:500;border-color:var(--color-border-secondary);}
+.nav-cell.active{border:2px solid var(--color-text-primary);font-weight:bold;background:var(--color-background-primary);}
+.nav-cell.bookmarked::after{content:'';position:absolute;top:-4px;right:-4px;width:12px;height:12px;background:#f59e0b;border-radius:50%;border:2px solid var(--color-background-primary);}
+
+/* Recap */
+.recap-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);margin-bottom:10px;overflow:hidden;}
+.recap-header{padding:12px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;background:var(--color-background-primary);transition:background 0.1s;}
+.recap-header:hover{background:var(--color-background-secondary);}
+.recap-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.recap-dot.correct{background:var(--color-text-success);}
+.recap-dot.wrong{background:var(--color-text-danger);}
+.recap-dot.skipped{background:var(--color-text-secondary);}
+.recap-q{font-size:14px;line-height:1.5;color:var(--color-text-primary);flex:1;}
+.recap-chevron{font-size:12px;color:var(--color-text-secondary);flex-shrink:0;margin-top:3px;transition:transform 0.2s;}
+.recap-body{display:none;padding:0 14px 14px;background:var(--color-background-primary);}
+.recap-body.open{display:block;}
+.recap-opt{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:var(--border-radius-md);font-size:13px;line-height:1.5;margin-bottom:4px;color:var(--color-text-secondary);}
+.recap-opt.opt-correct{background:var(--color-background-success);color:var(--color-text-success);}
+.recap-opt.opt-wrong{background:var(--color-background-danger);color:var(--color-text-danger);}
+.recap-opt .opt-letter{font-weight:600;flex-shrink:0;width:16px;}
+.spiegazione-box{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);border-left:3px solid var(--color-text-primary);font-size:13px;line-height:1.55;color:var(--color-text-primary);}
+.spiegazione-box .spiegazione-icona{flex-shrink:0;font-size:15px;line-height:1.4;}
+.spiegazione-box .spiegazione-testo{flex:1;}
+.spiegazione-box .spiegazione-titolo{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--color-text-secondary);margin-bottom:3px;display:block;}
+.recap-filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.filter-pill{padding:5px 14px;border:0.5px solid var(--color-border-secondary);border-radius:99px;font-size:13px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary);}
+.filter-pill:hover{background:var(--color-background-secondary);}
+.filter-pill.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);}
+
+/* Segnalibro & Pausa */
+.bookmark-btn{background:none;border:none;cursor:pointer;font-size:20px;padding:2px 6px;line-height:1;flex-shrink:0;transition:transform 0.15s;}
+.bookmark-btn:hover{transform:scale(1.2);}
+.pause-btn{background:none;border:none;cursor:pointer;font-size:18px;line-height:1;transition:transform 0.15s;}
+.pause-btn:hover{transform:scale(1.2);}
+/* Ricerca */
+.search-box{display:flex;align-items:center;gap:8px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:12px;}
+.search-box input{flex:1;background:none;border:none;outline:none;font-size:15px;color:var(--color-text-primary);}
+.search-box input::placeholder{color:var(--color-text-secondary);}
+.search-result-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background 0.1s;}
+.search-result-item:hover{background:var(--color-background-secondary);}
+/* ── Editor domande ── */
+/* Colonne: in verticale una alla volta, in orizzontale affiancate (vedi @media) */
+.gest-list-col{display:block;}
+.gest-editor-col{display:none;}
+.gest-content-layout.mostra-editor .gest-list-col{display:none;}
+.gest-content-layout.mostra-editor .gest-editor-col{display:block;}
+
+/* Barra azioni per la selezione multipla */
+.gest-bulk-bar{display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;border:0.5px solid var(--color-border-primary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);}
+.gest-bulk-bar.attiva{display:flex;}
+.gest-bulk-azioni{display:flex;gap:8px;flex-wrap:wrap;}
+.gest-bulk-azioni button{padding:7px 12px;font-size:13px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);cursor:pointer;color:var(--color-text-primary);}
+.gest-bulk-azioni button:hover{background:var(--color-background-tertiary);}
+.gest-bulk-azioni button.del{color:var(--color-text-danger);border-color:var(--color-border-danger);}
+
+/* Tabella (visibile solo in orizzontale) */
+.gest-tabella{display:none;width:100%;border-collapse:collapse;font-size:13px;}
+.gest-tabella th{text-align:left;font-weight:500;font-size:12px;color:var(--color-text-secondary);padding:8px 10px;border-bottom:0.5px solid var(--color-border-secondary);position:sticky;top:0;background:var(--color-background-primary);z-index:1;}
+.gest-tabella td{padding:9px 10px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:top;}
+.gest-tabella tbody tr{cursor:pointer;transition:background 0.1s;}
+.gest-tabella tbody tr:hover{background:var(--color-background-secondary);}
+.gest-tabella tbody tr.riga-attiva{background:var(--color-background-tertiary);}
+.gest-tabella tbody tr.riga-segnalata td:first-child{box-shadow:inset 3px 0 0 var(--color-text-danger);}
+.gest-col-check{width:34px;}
+.gest-col-spec{width:150px;}
+.gest-col-num{width:52px;color:var(--color-text-secondary);}
+.gest-col-seg{width:46px;text-align:center;}
+.gest-tabella input[type="checkbox"]{width:16px;height:16px;accent-color:var(--color-text-primary);cursor:pointer;}
+.gest-testo-cella{line-height:1.45;}
+
+/* Card (visibili solo in verticale) */
+.gest-card-mobile{display:block;}
+.gestisci-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:8px;}
+.gestisci-item-segnalata{border-color:var(--color-border-danger);background:var(--color-background-danger);}
+.gestisci-item-testo{font-size:14px;line-height:1.5;margin:6px 0 8px;}
+.gestisci-item-azioni{display:flex;gap:8px;}
+.gestisci-item-azioni button{flex:1;padding:8px;font-size:13px;background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);cursor:pointer;color:var(--color-text-primary);}
+.gestisci-item-azioni button:hover{background:var(--color-background-secondary);}
+.gestisci-item-azioni button.del{color:var(--color-text-danger);border-color:var(--color-border-danger);}
+.gest-item-check{margin-right:8px;width:16px;height:16px;accent-color:var(--color-text-primary);cursor:pointer;vertical-align:middle;}
+
+/* Form */
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--color-text-secondary);margin:14px 0 6px;}
+.form-label:first-of-type{margin-top:0;}
+.form-input,.form-textarea,.form-select{width:100%;padding:10px 12px;font-size:15px;font-family:var(--font-sans);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);outline:none;}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--color-border-primary);}
+.form-textarea{resize:vertical;min-height:70px;line-height:1.5;}
+.form-opt-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.form-opt-row .form-opt-letter{width:22px;flex-shrink:0;font-weight:600;font-size:14px;text-align:center;}
+.form-opt-row .form-input{flex:1;}
+.form-opt-row .form-opt-radio{flex-shrink:0;width:18px;height:18px;accent-color:var(--color-text-primary);cursor:pointer;}
+.search-highlight{background:rgba(255,200,0,0.35);border-radius:2px;padding:0 1px;}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--color-text-secondary);font-size:14px;}
+/* Storico */
+.storico-item{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px;margin-bottom:10px;}
+.storico-score{font-size:24px;font-weight:600;}
+.storico-meta{font-size:12px;color:var(--color-text-secondary);margin-top:4px;}
+.storico-bar{margin-top:10px;}
+.storico-pills{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.storico-pill{font-size:12px;padding:3px 10px;border-radius:99px;border:0.5px solid;}
+.sp-ok{color:var(--color-text-success);border-color:var(--color-border-success);background:var(--color-background-success);}
+.sp-err{color:var(--color-text-danger);border-color:var(--color-border-danger);background:var(--color-background-danger);}
+.sp-skip{color:var(--color-text-secondary);border-color:var(--color-border-secondary);}
+/* Dettaglio domanda ricerca */
+.detail-opt{display:flex;gap:10px;padding:8px 10px;border-radius:var(--border-radius-md);font-size:14px;line-height:1.5;margin-bottom:4px;}
+.detail-opt.opt-correct{background:var(--color-background-success);color:var(--color-text-success);}
+</style>
+</head>
+<body>
+
+
+<div id="app" class="is-home-screen">
+
+<div id="screen-home" class="screen active">
+  <div class="home-content-layout">
+    <div class="home-main-col">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <p style="font-size:22px;font-weight:500">Quiz medicina</p>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="tag" style="font-size:11px;color:var(--color-text-secondary)" title="Versione dell'app">v2026.08.01</span>
+          <a href="./index.html" title="Torna al menu principale"
+            style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);text-decoration:none;">🏠</a>
+          <button id="btn-toggle-fullscreen" onclick="toggleFullscreen()" title="Schermo intero"
+            style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);">⛶</button>
+          <button id="btn-toggle-tema" onclick="toggleTema()" title="Cambia tema chiaro/scuro"
+            style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);">🌙</button>
+        </div>
+      </div>
+      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.5rem">Specializzazioni – Ministero</p>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num" id="h-tot">—</div><div class="stat-lbl">Domande</div></div>
+        <div class="stat-card"><div class="stat-num" id="h-perc" style="color:var(--color-text-success)">—</div><div class="stat-lbl">% corrette</div></div>
+        <div class="stat-card"><div class="stat-num" id="h-spec">—</div><div class="stat-lbl">Specialità</div></div>
+      </div>
+      <div class="section-title">Domande per sessione</div>
+      <div class="num-pills">
+        <div class="pill selected" data-val="10" onclick="selezionaPill(this)">10</div>
+        <div class="pill" data-val="20" onclick="selezionaPill(this)">20</div>
+        <div class="pill" data-val="40" onclick="selezionaPill(this)">40</div>
+        <div class="pill" data-val="tutti" onclick="selezionaPill(this)">Tutte</div>
+      </div>
+      <div class="custom-num-row">
+        <label>Personalizzato:</label>
+        <input type="number" id="custom-num" min="1" max="9999" placeholder="es. 30" oninput="selezionaCustom(this)">
+      </div>
+      <div onclick="toggleCountdown()" id="countdown-toggle-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:11px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+        <div>
+          <span style="font-size:14px;font-weight:500">⏱ Modalità Countdown</span>
+          <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">90 secondi per domanda · pausa disponibile</span>
+        </div>
+        <div id="countdown-toggle-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+          <div id="countdown-knob-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+        </div>
+      </div>
+      <div onclick="toggleSoloImmagini()" id="solo-immagini-toggle-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:11px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+        <div>
+          <span style="font-size:14px;font-weight:500">🖼 Solo domande con immagine</span>
+          <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">Filtra ogni modalità: ECG, radiografie, dermatologia…</span>
+        </div>
+        <div id="solo-immagini-toggle-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+          <div id="solo-immagini-knob-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+        </div>
+      </div>
+      <div class="section-title">Modalità</div>
+      <button class="btn" onclick="avviaQuiz('tutte')">🃏 Tutte le specialità</button>
+      <button class="btn" onclick="mostraSceltaSpec()">🔍 Scegli specialità</button>
+      <button class="btn" onclick="mostraAnnales()">📅 Annales<span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">Quiz per annata SSM 2014–2025</span></button>
+      <button class="btn" onclick="avviaQuiz('sbagliate')" id="btn-sbagliate" style="display:none">🔁 Ripassa le domande sbagliate</button>
+      <button class="btn" onclick="avviaQuiz('segnalibri')" id="btn-segnalibri" style="display:none">🔖 Ripassa i segnalibri</button>
+      <button class="btn" onclick="mostraConfigSim()" style="border-color:var(--color-border-success);color:var(--color-text-success)">
+        🎯 Simulazione esame
+        <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">140 domande · 210 minuti · navigazione libera</span>
+      </button>
+    </div>
+
+    <div class="home-side-col">
+      <div class="section-title" style="margin-top:0">Strumenti</div>
+      <button class="btn" onclick="showScreen('search')">🔎 Ricerca libera</button>
+      <button class="btn" onclick="mostraStats()">📊 Statistiche dettagliate</button>
+      <button class="btn" onclick="mostraStorico()">📋 Storico simulazioni</button>
+      <button class="btn" onclick="mostraGestisciDomande()">✏️ Crea / modifica domande</button>
+      <button class="btn" id="btn-import">📂 Importa CSV</button>
+      <button class="btn" id="btn-import-img">🖼 Importa immagini (ZIP)</button>
+      <div id="img-count-label" style="font-size:12px;color:var(--color-text-secondary);margin:-4px 0 8px;padding-left:2px;display:none"></div>
+      <button class="btn" onclick="apriImportaSessione()" style="border-color:var(--color-border-success);color:var(--color-text-success)">📥 Importa sessione condivisa</button>
+      <button class="btn" id="btn-remove-db" onclick="resetDB()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi database domande</button>
+      <button class="btn" id="btn-remove-img" onclick="resetImmagini()" style="display:none;color:var(--color-text-danger,#dc2626);border-color:var(--color-border-danger,#fecaca)">🗑 Rimuovi immagini</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-spec" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Scegli specialità</p>
+  <div id="spec-list"></div>
+</div>
+
+<div id="screen-sim-config" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:4px">🎯 Configura simulazione</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">140 domande · 210 minuti · navigazione libera</p>
+
+  <!-- Selezione modalità -->
+  <div style="display:flex;gap:8px;margin-bottom:1.25rem">
+    <div id="sim-tab-random" onclick="simSelTab('random')"
+      style="flex:1;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-text-primary);background:var(--color-text-primary);color:var(--color-background-primary);text-align:center;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.15s">
+      🎲 Casuale
+    </div>
+    <div id="sim-tab-prop" onclick="simSelTab('prop')"
+      style="flex:1;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);text-align:center;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.15s">
+      ⚖️ Proporzionale
+    </div>
+    <div id="sim-tab-custom" onclick="simSelTab('custom')"
+      style="flex:1;padding:10px;border-radius:var(--border-radius-md);border:1.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-primary);text-align:center;cursor:pointer;font-size:14px;font-weight:500;transition:all 0.15s">
+      ✏️ Manuale
+    </div>
+  </div>
+
+  <!-- Descrizione modalità -->
+  <div id="sim-desc-random" style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+    140 domande estratte casualmente da tutte le specialità.
+  </div>
+  <div id="sim-desc-prop" style="display:none;font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+    Le domande vengono ripartite tra le 27 categorie ministeriali nelle percentuali ufficiali del concorso.
+  </div>
+  <div id="sim-desc-custom" style="display:none;font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;padding:10px 12px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">
+    Assegna un peso (0–99) a ogni specialità. Il numero di domande estratte sarà proporzionale al peso. Lascia 0 per escludere una specialità.
+  </div>
+
+  <!-- Pannello pesi manuale -->
+  <div id="sim-panel-custom" style="display:none;margin-bottom:1.25rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="section-title" style="margin:0">Pesi per specialità</span>
+      <div style="display:flex;gap:8px">
+        <button onclick="simResetPesi()" style="font-size:12px;padding:4px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);background:none;color:var(--color-text-secondary);cursor:pointer">Reset</button>
+        <span id="sim-tot-label" style="font-size:12px;color:var(--color-text-secondary);padding:4px 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-sm)">Tot. peso: 0</span>
+      </div>
+    </div>
+    <div id="sim-pesi-list"></div>
+  </div>
+
+  <!-- Anteprima distribuzione -->
+  <div id="sim-preview" style="display:none;margin-bottom:1.25rem">
+    <div class="section-title" style="margin-top:0">Anteprima distribuzione (140 domande)</div>
+    <div id="sim-preview-list"></div>
+  </div>
+
+  <button class="btn primary" id="btn-avvia-sim" onclick="avviaSimDaConfig()" style="background:var(--color-text-success);border-color:var(--color-text-success)">
+    Avvia simulazione
+  </button>
+</div>
+
+<div id="screen-annales" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:4px">📅 Annales</p>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1rem">Scegli un'annata per fare un quiz con le domande reali di quell'anno</p>
+  <div onclick="toggleAnnalesEsame()" id="annales-esame-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding:11px 14px;border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+    <div>
+      <span style="font-size:14px;font-weight:500;color:var(--color-text-success)">🎯 Modalità Esame</span>
+      <span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">140 domande · 210 min · navigazione libera · punteggio ufficiale</span>
+    </div>
+    <div id="annales-esame-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+      <div id="annales-esame-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+    </div>
+  </div>
+  <div id="annales-list"></div>
+</div>
+
+<div id="screen-quiz" class="screen">
+  
+  <div id="timer-box" style="display:none;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:13px;color:var(--color-text-secondary)">⏱ Tempo rimanente</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="pause-btn" id="btn-pause" onclick="togglePausa()" title="Metti in pausa">⏸️</button>
+        <span style="font-size:20px;font-weight:500;font-variant-numeric:tabular-nums" id="timer-display">3:30:00</span>
+      </div>
+    </div>
+    <div class="progress-bar-bg" style="margin:0"><div id="timer-bar" class="timer-bar-fill" style="width:100%"></div></div>
+  </div>
+
+  <div id="quiz-content" class="quiz-content-layout">
+    <div class="quiz-main-col">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button onclick="confermaUscita()" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:14px;padding:0" title="Esci / Consegna">✕</button>
+        <span class="tag" id="q-spec-tag"></span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="gamepad-indicator" style="display:none;font-size:15px" title="Controller collegato">🎮</span>
+          <button class="bookmark-btn" id="btn-fullscreen-quiz" onclick="toggleFullscreen()" title="Schermo intero" style="font-size:16px">⛶</button>
+          <button class="bookmark-btn" id="btn-export-sessione" onclick="apriEsportaSessione()" title="Esporta/Condividi questa sessione" style="opacity:1">📤</button>
+          <button class="bookmark-btn" id="btn-segnala-errore" onclick="toggleSegnalazioneErrore()" title="Segnala errore in questa domanda">🚩</button>
+          <button class="bookmark-btn" id="btn-bookmark" onclick="toggleBookmark()" title="Aggiungi segnalibro">🔖</button>
+          <span style="font-size:13px;color:var(--color-text-secondary)" id="q-counter"></span>
+        </div>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="q-progress" style="width:0%"></div></div>
+
+      <div class="card" style="margin-top:12px">
+        <p style="font-size:17px;line-height:1.7" id="q-text"></p>
+      </div>
+      <div id="q-image-container" style="margin-bottom:12px"></div>
+      <div id="q-options"></div>
+      <div id="q-spiegazione-container" style="display:none;margin-top:8px"></div>
+      <button class="btn skip" id="btn-skip" onclick="sautaDomanda()">— Non rispondo (0 punti) —</button>
+      <button class="btn primary" id="btn-next" style="display:none;margin-top:4px" onclick="prossimaDomanda()">Prossima domanda</button>
+    </div>
+
+    <div id="nav-grid-container" class="nav-grid-container" style="display:none">
+      <div class="section-title" style="margin-top:0">Navigazione Domande</div>
+      <div id="nav-grid" class="nav-grid"></div>
+      <button class="btn primary" id="btn-termina-sim" style="margin-top:1rem;background:var(--color-text-danger);border-color:var(--color-text-danger)" onclick="promptTerminaSimulazione()">Consegna e Termina Simulazione</button>
+    </div>
+  </div>
+
+  <div id="pause-content" style="display:none;text-align:center;padding:3rem 1rem;">
+    <div style="font-size:48px;margin-bottom:16px">⏸️</div>
+    <h2 style="margin-bottom:8px">Pausa</h2>
+    <p style="color:var(--color-text-secondary);margin-bottom:24px;font-size:14px">Il timer è fermo e le domande sono nascoste per evitare sbirciatine.</p>
+    <button class="btn primary" onclick="togglePausa()">▶️ Riprendi simulazione</button>
+    <button class="btn skip" style="margin-top:8px" onclick="abbandonaSim()">✕ Abbandona simulazione</button>
+  </div>
+
+</div>
+
+<div id="screen-risultato" class="screen">
+  <div class="ris-content-layout">
+    <div class="ris-side-col">
+      <div class="ris-summary-block">
+        <p style="font-size:22px;font-weight:500;margin-bottom:4px" id="ris-titolo"></p>
+        <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:1.25rem" id="ris-sub"></p>
+        <div class="score-box">
+          <div class="score-big" id="ris-score"></div>
+          <div class="score-sub" id="ris-score-formula"></div>
+        </div>
+        <div class="stat-grid-4">
+          <div class="stat-card"><div class="stat-num" id="ris-corrette" style="color:var(--color-text-success)"></div><div class="stat-lbl">Corrette<br>+1 pt</div></div>
+          <div class="stat-card"><div class="stat-num" id="ris-sbagliate" style="color:var(--color-text-danger)"></div><div class="stat-lbl">Sbagliate<br>−0.25</div></div>
+          <div class="stat-card"><div class="stat-num" id="ris-saltate" style="color:var(--color-text-secondary)"></div><div class="stat-lbl">Saltate<br>0 pt</div></div>
+          <div class="stat-card"><div class="stat-num" id="ris-perc"></div><div class="stat-lbl">%<br>corrette</div></div>
+        </div>
+        <button class="btn primary" onclick="avviaQuiz(ultimaModalita)" style="margin-bottom:8px">Nuovo quiz</button>
+        <button class="btn" onclick="tornaHome()">Torna alla home</button>
+      </div>
+
+      <div id="ris-nav-grid-container" class="nav-grid-container" style="display:none">
+        <div class="section-title" style="margin-top:0">Riepilogo domande</div>
+        <div class="ris-nav-legend">
+          <span><i class="ris-legend-dot" style="background:var(--color-text-success)"></i>Corretta</span>
+          <span><i class="ris-legend-dot" style="background:var(--color-text-danger)"></i>Sbagliata</span>
+          <span><i class="ris-legend-dot" style="background:var(--color-text-warning)"></i>Non data</span>
+        </div>
+        <div id="ris-nav-grid" class="nav-grid"></div>
+      </div>
+
+      <button class="btn" id="btn-esporta-sessione" onclick="esportaDomandeSessioneCorrente()" style="display:none;border-color:var(--color-border-success);color:var(--color-text-success)">📤 Esporta sbagliate/saltate di questa sessione</button>
+    </div>
+
+    <div class="ris-main-col">
+      <div class="section-title" style="margin-top:0">Recap domande</div>
+      <div class="recap-filter-row">
+        <div class="filter-pill active" data-filter="all" onclick="filtraRecap(this)">Tutte</div>
+        <div class="filter-pill" data-filter="wrong" onclick="filtraRecap(this)">❌ Sbagliate</div>
+        <div class="filter-pill" data-filter="skipped" onclick="filtraRecap(this)">— Saltate</div>
+        <div class="filter-pill" data-filter="correct" onclick="filtraRecap(this)">✓ Corrette</div>
+        <div class="filter-pill" data-filter="bookmarked" onclick="filtraRecap(this)">🔖 Segnalibri</div>
+      </div>
+      <div id="recap-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-search" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Ricerca libera</p>
+  <div class="search-box">
+    <span style="color:var(--color-text-secondary)">🔎</span>
+    <input type="text" id="search-input" placeholder="Cerca nel testo delle domande…" oninput="eseguiRicerca(this.value)" autocomplete="off">
+    <button onclick="document.getElementById('search-input').value='';eseguiRicerca('');" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:16px;padding:0">✕</button>
+  </div>
+  <div id="search-results"></div>
+</div>
+
+<div id="screen-detail" class="screen">
+  <div class="nav-row"><button onclick="showScreen('search')">← Ricerca</button></div>
+  <div id="detail-content"></div>
+</div>
+
+<div id="screen-stats" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Statistiche</p>
+  <div id="stats-content"></div>
+  <button class="btn" onclick="esportaDomandeDaStudiare()" style="margin-top:1rem;border-color:var(--color-border-success);color:var(--color-text-success)">📤 Esporta domande sbagliate/saltate</button>
+  <button class="btn" onclick="resetStats()" style="margin-top:8px;color:var(--color-text-danger);border-color:var(--color-border-danger)">Azzera tutti i progressi</button>
+</div>
+
+<div id="screen-storico" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Storico simulazioni</p>
+  <div id="storico-list"></div>
+</div>
+
+<div id="screen-gestisci" class="screen">
+  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
+
+  <div class="gest-content-layout" id="gest-layout">
+
+    <!-- ── Colonna sinistra: elenco domande con filtri e selezione multipla ── -->
+    <div class="gest-list-col" id="gest-list-col">
+      <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Crea / modifica domande</p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn primary" style="flex:1;min-width:160px;margin:0" onclick="apriEditorDomanda(null)">➕ Nuova domanda</button>
+        <button class="btn" style="flex:1;min-width:160px;margin:0;border-color:var(--color-border-success);color:var(--color-text-success)" onclick="esportaDBCompleto()">💾 Esporta tutte (CSV)</button>
+      </div>
+
+      <!-- Filtri -->
+      <select id="gestisci-filtro-spec" class="form-select" style="margin-bottom:8px" onchange="renderListaGestisci(document.getElementById('gestisci-search-input').value)">
+        <option value="">Tutte le specialità</option>
+      </select>
+
+      <div class="search-box" style="margin-top:0">
+        <span style="color:var(--color-text-secondary)">🔎</span>
+        <input type="text" id="gestisci-search-input" placeholder="Filtra per testo o specialità…" oninput="renderListaGestisci(this.value)" autocomplete="off">
+        <button onclick="document.getElementById('gestisci-search-input').value='';renderListaGestisci('');" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:16px;padding:0">✕</button>
+      </div>
+
+      <div onclick="toggleFiltroSegnalate()" id="gestisci-filtro-segnalate-row" style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:11px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;user-select:none;transition:background 0.1s;" onmouseover="this.style.background='var(--color-background-secondary)'" onmouseout="this.style.background='transparent'">
+        <div>
+          <span style="font-size:14px;font-weight:500">🚩 Mostra solo le domande segnalate</span>
+          <span id="gestisci-filtro-segnalate-count" style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:1px">0 domande segnalate come errate</span>
+        </div>
+        <div id="gestisci-filtro-segnalate-knob" style="width:44px;height:26px;border-radius:99px;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);position:relative;flex-shrink:0;transition:background 0.2s;">
+          <div id="gestisci-filtro-segnalate-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></div>
+        </div>
+      </div>
+
+      <!-- Azioni sulla selezione multipla: compare solo quando c'è almeno una domanda spuntata -->
+      <div class="gest-bulk-bar" id="gest-bulk-bar" style="margin-top:10px">
+        <span style="font-size:13px;font-weight:500" id="gest-bulk-count">0 selezionate</span>
+        <div class="gest-bulk-azioni">
+          <button onclick="segnalaSelezionate()">🚩 Segnala</button>
+          <button onclick="esportaSelezionate()">📤 Esporta selezionate</button>
+          <button class="del" onclick="eliminaSelezionate()">🗑 Elimina selezionate</button>
+          <button onclick="deselezionaTutte()">✕ Deseleziona</button>
+        </div>
+      </div>
+
+      <div id="gestisci-list"></div>
+    </div>
+
+    <!-- ── Colonna destra: editor della domanda ── -->
+    <div class="gest-editor-col" id="gest-editor-col">
+      <div class="nav-row gest-editor-back"><button onclick="chiudiEditorDomanda()">← Elenco domande</button></div>
+      <p id="editor-titolo" style="font-size:18px;font-weight:500;margin-bottom:1rem">Nuova domanda</p>
+
+      <div id="editor-placeholder" class="empty-state" style="display:none">Seleziona una domanda dall'elenco per modificarla,<br>oppure crea una nuova domanda.</div>
+
+      <div id="editor-form">
+        <div id="editor-avviso-segnalata" style="display:none;background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px">
+          <span style="font-size:13px;color:var(--color-text-danger)">🚩 Segnalata come da correggere</span>
+          <button onclick="risolviSegnalazioneEditor()" style="flex-shrink:0;background:none;border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-sm);padding:6px 10px;font-size:12px;color:var(--color-text-danger);cursor:pointer">✅ Segna come risolta</button>
+        </div>
+
+        <label class="form-label">Specialità *</label>
+        <input type="text" id="ed-specialita" class="form-input" list="ed-specialita-list" placeholder="es. Cardiologia">
+        <datalist id="ed-specialita-list"></datalist>
+
+        <label class="form-label">Testo della domanda *</label>
+        <textarea id="ed-domanda" class="form-textarea" placeholder="Scrivi qui il testo della domanda…"></textarea>
+
+        <label class="form-label">Opzioni di risposta (seleziona quella corretta) *</label>
+        <div class="form-opt-row"><span class="form-opt-letter">A</span><input type="text" id="ed-A" class="form-input" placeholder="Opzione A"><input type="radio" name="ed-corretta" value="A" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">B</span><input type="text" id="ed-B" class="form-input" placeholder="Opzione B"><input type="radio" name="ed-corretta" value="B" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">C</span><input type="text" id="ed-C" class="form-input" placeholder="Opzione C (opzionale)"><input type="radio" name="ed-corretta" value="C" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">D</span><input type="text" id="ed-D" class="form-input" placeholder="Opzione D (opzionale)"><input type="radio" name="ed-corretta" value="D" class="form-opt-radio"></div>
+        <div class="form-opt-row"><span class="form-opt-letter">E</span><input type="text" id="ed-E" class="form-input" placeholder="Opzione E (opzionale)"><input type="radio" name="ed-corretta" value="E" class="form-opt-radio"></div>
+
+        <label class="form-label">Spiegazione (opzionale)</label>
+        <textarea id="ed-spiegazione" class="form-textarea" placeholder="Spiegazione della risposta corretta…"></textarea>
+
+        <label class="form-label">Numero domanda (opzionale, per annate/ordine)</label>
+        <input type="text" id="ed-numero" class="form-input" placeholder="es. 12">
+
+        <button class="btn primary" style="margin-top:18px" onclick="salvaDomandaEditor()">💾 Salva domanda</button>
+        <button class="btn" id="btn-elimina-editor" style="display:none;color:var(--color-text-danger);border-color:var(--color-border-danger)" onclick="eliminaDomandaEditor()">🗑 Elimina domanda</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'quiz_med_v5';
+
+/*
+  Caricatore di script esterni "lazy": scarica una libreria da CDN solo
+  quando serve davvero (es. al primo utilizzo dell'import ZIP), invece che
+  ad ogni apertura dell'app. Così l'app resta utilizzabile offline finché
+  non si usa una funzione che richiede davvero internet. Il risultato è
+  cachato: chiamate successive con lo stesso src non ricaricano lo script.
+*/
+const _scriptCache = {};
+function caricaScriptEsterno(src){
+  if(_scriptCache[src]) return _scriptCache[src];
+  _scriptCache[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => { delete _scriptCache[src]; reject(new Error('Impossibile caricare la libreria da '+src)); };
+    document.head.appendChild(s);
+  });
+  return _scriptCache[src];
+}
+
+/*
+  ── Tema chiaro/scuro ──
+  Di default segue il sistema (comportamento invariato). Se l'utente usa il
+  toggle, la scelta viene fissata e ricordata (localStorage), sovrascrivendo
+  la preferenza di sistema finché non viene cambiata di nuovo manualmente.
+*/
+function temaRisolto(){
+  // Il tema "effettivo" visibile in questo momento: preferenza salvata,
+  // altrimenti quella di sistema.
+  const salvato = localStorage.getItem('quiz_med_tema');
+  if(salvato === 'light' || salvato === 'dark') return salvato;
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+function aggiornaIconaTema(){
+  const btn = document.getElementById('btn-toggle-tema');
+  if(!btn) return;
+  btn.textContent = temaRisolto() === 'dark' ? '☀️' : '🌙';
+}
+function toggleTema(){
+  const nuovo = temaRisolto() === 'dark' ? 'light' : 'dark';
+  try{ localStorage.setItem('quiz_med_tema', nuovo); }catch(e){}
+  document.documentElement.setAttribute('data-theme', nuovo);
+  aggiornaIconaTema();
+}
+
+/*
+  ── Schermo intero ──
+  Usa la Fullscreen API standard, con i prefissi vendor per Safari/iOS
+  (supporto parziale: su iPhone Safari non permette il fullscreen di un
+  elemento arbitrario, solo su iPad/desktop; in quel caso il bottone
+  semplicemente non avrà effetto, senza generare errori).
+*/
+function elementoFullscreenAttivo(){
+  return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+}
+function toggleFullscreen(){
+  if(!elementoFullscreenAttivo()){
+    const el = document.documentElement;
+    const richiedi = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if(!richiedi){
+      alert('Il tuo browser non supporta lo schermo intero su questo dispositivo.');
+      return;
+    }
+    richiedi.call(el).catch(()=>{
+      alert('Impossibile attivare lo schermo intero su questo dispositivo/browser.');
+    });
+  } else {
+    const esci = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if(esci) esci.call(document);
+  }
+}
+function aggiornaIconaFullscreen(){
+  const attivo = !!elementoFullscreenAttivo();
+  const icona = attivo ? '⛝' : '⛶';
+  const titolo = attivo ? 'Esci da schermo intero' : 'Schermo intero';
+  ['btn-toggle-fullscreen','btn-fullscreen-quiz'].forEach(id=>{
+    const btn = document.getElementById(id);
+    if(btn){ btn.textContent = icona; btn.title = titolo; }
+  });
+}
+['fullscreenchange','webkitfullscreenchange','MSFullscreenChange'].forEach(ev=>{
+  document.addEventListener(ev, aggiornaIconaFullscreen);
+});
+
+let DB=[], sessione=[];
+let idx=0, n_corrette=0, n_sbagliate=0, n_saltate=0;
+let logRisposte=[];
+let ultimaModalita='tutte', numDomande=10;
+let isSimulazione=false;
+let isCountdown=false;
+let isAnnalesEsame=false;
+const COUNTDOWN_SEC_PER_DOMANDA=90;
+let timerInterval=null, timerSecondi=0, timerTotale=0;
+let isPausa=false;
+let scelteSimulazione=[]; // Salva le scelte provvisorie in mod. Simulazione
+
+/* ── Storage ── */
+function loadStorage(){
+  try{
+    const r=localStorage.getItem(STORAGE_KEY);
+    const parsed=r?JSON.parse(r):{risposte:{},sbagliate:[],segnalibri:[],storico:[]};
+    // Migrazione: rimuovi db da localStorage se ancora presente (ora è in IndexedDB)
+    if(parsed.db){delete parsed.db;localStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));}
+    return parsed;
+  }catch(e){return{risposte:{},sbagliate:[],segnalibri:[],storico:[]};}
+}
+function saveStorage(d){
+  const toSave={...d};delete toSave.db; // non salvare mai il DB in localStorage
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(toSave));}catch(e){}
+}
+function getStorage(){
+  const s=loadStorage();
+  if(!s.segnalibri)s.segnalibri=[];
+  if(!s.storico)s.storico=[];
+  if(!s.saltate)s.saltate=[];
+  if(!s.segnalate)s.segnalate=[];
+  return s;
+}
+
+/* ── IndexedDB per il database domande ── */
+const IDB_NAME='quiz_med_db', IDB_STORE='domande', IDB_KEY='csv_db', IDB_SESSION_KEY='sessione_interrotta';
+const IDB_STORE_IMG='immagini';
+function openIDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(IDB_NAME,2);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE))
+        db.createObjectStore(IDB_STORE);
+      if(!db.objectStoreNames.contains(IDB_STORE_IMG))
+        db.createObjectStore(IDB_STORE_IMG);
+    };
+    req.onsuccess=e=>res(e.target.result);
+    req.onerror=e=>rej(e.target.error);
+  });
+}
+
+/* ── Gestione immagini (IndexedDB, caricate una sola volta dallo ZIP) ── */
+async function saveImageToIDB(nomeFile, blob){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readwrite');
+      tx.objectStore(IDB_STORE_IMG).put(blob, nomeFile);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.error('Errore salvataggio immagine:',e);return false;}
+}
+async function getImageBlobFromIDB(nomeFile){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readonly');
+      const req=tx.objectStore(IDB_STORE_IMG).get(nomeFile);
+      req.onsuccess=e=>res(e.target.result||null);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return null;}
+}
+async function contaImmaginiIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readonly');
+      const req=tx.objectStore(IDB_STORE_IMG).count();
+      req.onsuccess=e=>res(e.target.result||0);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return 0;}
+}
+async function clearImmaginiIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readwrite');
+      tx.objectStore(IDB_STORE_IMG).clear();
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return false;}
+}
+
+/*
+  Cache in-memory delle object URL già create in questa sessione di navigazione,
+  così se la stessa immagine ricompare (es. tornando indietro nella nav-grid della
+  simulazione) non viene riletta da IndexedDB una seconda volta.
+*/
+const cacheImmaginiURL = {}; // nomeFile → object URL
+
+async function ottieniImmagineURL(nomeFile){
+  if(cacheImmaginiURL[nomeFile]) return cacheImmaginiURL[nomeFile];
+  const blob = await getImageBlobFromIDB(nomeFile);
+  if(!blob) return null;
+  const url = URL.createObjectURL(blob);
+  cacheImmaginiURL[nomeFile] = url;
+  return url;
+}
+
+/*
+  Renderizza le immagini di una domanda in un container dato.
+  d.immagini può contenere più nomi file separati da virgola.
+*/
+async function renderizzaImmaginiDomanda(d, containerEl){
+  containerEl.innerHTML = '';
+  if(!d.immagini || !d.immagini.trim()) return;
+  const nomi = d.immagini.split(',').map(s=>s.trim()).filter(Boolean);
+  for(const nome of nomi){
+    const url = await ottieniImmagineURL(nome);
+    if(url){
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Immagine domanda';
+      img.style.cssText = 'max-width:100%;border-radius:var(--border-radius-md);margin-bottom:8px;display:block;cursor:zoom-in;';
+      img.onclick = () => apriImmagineFullscreen(url);
+      containerEl.appendChild(img);
+    } else {
+      const missing = document.createElement('div');
+      missing.style.cssText = 'font-size:12px;color:var(--color-text-secondary);padding:8px;border:1px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);margin-bottom:8px;';
+      missing.textContent = '🖼 Immagine non trovata: ' + nome + ' (importa lo ZIP immagini)';
+      containerEl.appendChild(missing);
+    }
+  }
+}
+
+function apriImmagineFullscreen(url){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;';
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'max-width:100%;max-height:100%;border-radius:8px;';
+  overlay.appendChild(img);
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+}
+async function saveDBToIDB(data){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(data,IDB_KEY);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.error('IDB save error:',e);return false;}
+}
+async function loadDBFromIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readonly');
+      const req=tx.objectStore(IDB_STORE).get(IDB_KEY);
+      req.onsuccess=e=>res(e.target.result||null);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.error('IDB load error:',e);return null;}
+}
+async function clearDBFromIDB(){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_KEY);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return false;}
+}
+
+/* ── Sessione interrotta: salva/carica/cancella ── */
+/*
+  ── Esportazione/condivisione sessione ──
+  Genera un "codice" testuale portabile (base64) che rappresenta la sessione
+  di quiz/simulazione ATTUALMENTE IN CORSO: gli id delle domande selezionate
+  (non le domande intere, per restare leggero: chi importa deve avere lo
+  stesso CSV), la posizione corrente, le risposte già date, ed il tempo
+  residuo/totale del timer se presente. Pensato per essere copiato o
+  scaricato e poi importato da un'altra persona (o sullo stesso account,
+  su un altro dispositivo) per continuare/ripetere esattamente lo stesso set.
+
+  NOTA: la funzione di IMPORT non è ancora implementata (verrà aggiunta
+  in seguito): questo è solo il lato "esporta".
+*/
+const CODICE_SESSIONE_PREFISSO = 'QUIZMED1:';
+
+function costruisciEsportazioneSessione(){
+  if(!sessione || sessione.length===0) return null;
+  const payload = {
+    v: 1,
+    ids: sessione.map(d=>d.id),
+    idx,
+    isSimulazione,
+    isCountdown,
+    ultimaModalita,
+    // In simulazione le risposte sono parallele all'array di id (una per posizione).
+    scelteSimulazione: isSimulazione ? scelteSimulazione : undefined,
+    // In modalità quiz semplice (senza navigazione libera), il progresso è
+    // sequenziale: una voce per ogni domanda già affrontata (0..idx-1).
+    progressoQuiz: !isSimulazione
+      ? logRisposte.map(e=>({id: e.domanda.id, scelta: e.scelta, esito: e.esito}))
+      : undefined,
+    // Tempo residuo/totale del timer, se presente (simulazione o countdown per domanda)
+    timerSecondiRimanenti: (isSimulazione || isCountdown) ? timerSecondi : null,
+    timerTotaleOrig: (isSimulazione || isCountdown) ? timerTotale : null,
+    creato: Date.now(),
+  };
+  const json = JSON.stringify(payload);
+  const base64 = btoa(unescape(encodeURIComponent(json)));
+  return CODICE_SESSIONE_PREFISSO + base64;
+}
+
+function apriEsportaSessione(){
+  const codice = costruisciEsportazioneSessione();
+  if(!codice){
+    alert('Nessuna sessione attiva da esportare.');
+    return;
+  }
+
+  const nDomande = sessione.length;
+  const nRisposte = isSimulazione
+    ? scelteSimulazione.filter(s=>s).length
+    : logRisposte.length;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--color-background-primary);color:var(--color-text-primary);border-radius:var(--border-radius-lg);padding:1.25rem;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;';
+
+  box.innerHTML = `
+    <p style="font-size:17px;font-weight:500;margin-bottom:4px">📤 Esporta questa sessione</p>
+    <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px">
+      ${nDomande} domande · ${nRisposte} già risposte${(isSimulazione||isCountdown) ? ' · timer incluso' : ''}.
+      Chi importa questo codice deve avere caricato lo stesso CSV di domande.
+    </p>
+    <textarea id="export-sessione-textarea" readonly
+      style="width:100%;height:110px;font-size:11px;font-family:monospace;padding:8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);resize:none;margin-bottom:12px;"
+    ></textarea>
+    <button class="btn primary" id="btn-copia-codice-sessione" style="margin-bottom:8px">📋 Copia codice negli appunti</button>
+    <button class="btn" id="btn-scarica-file-sessione" style="margin-bottom:8px">💾 Scarica come file</button>
+    <button class="btn" id="btn-mostra-qr-sessione" style="margin-bottom:8px">📱 Mostra come QR code</button>
+    <div id="qr-sessione-area" style="display:none;text-align:center;margin-bottom:8px;padding:14px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);"></div>
+    <button class="btn" id="btn-chiudi-export-sessione" style="color:var(--color-text-secondary)">Chiudi</button>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const textarea = box.querySelector('#export-sessione-textarea');
+  textarea.value = codice;
+
+  box.querySelector('#btn-copia-codice-sessione').onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(codice);
+      const btn = box.querySelector('#btn-copia-codice-sessione');
+      const testoOriginale = btn.textContent;
+      btn.textContent = '✓ Copiato!';
+      setTimeout(()=>{ btn.textContent = testoOriginale; }, 1800);
+    }catch(e){
+      // Fallback se l'API Clipboard non è disponibile: seleziona il testo per la copia manuale
+      textarea.select();
+      textarea.setSelectionRange(0, 999999);
+      alert('Copia manuale: il testo è selezionato, usa Ctrl+C / Cmd+C.');
+    }
+  };
+
+  box.querySelector('#btn-scarica-file-sessione').onclick = () => {
+    const blob = new Blob([codice], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const data = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    a.href = url;
+    a.download = 'sessione_quiz_'+data+'.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  };
+
+  box.querySelector('#btn-mostra-qr-sessione').onclick = async () => {
+    const btnQr = box.querySelector('#btn-mostra-qr-sessione');
+    const area = box.querySelector('#qr-sessione-area');
+
+    // Un QR code ha una capacità massima pratica: sessioni molto lunghe
+    // (es. simulazioni intere da 140 domande già avanzate) possono superarla.
+    // Meglio avvisare subito che generare un QR illeggibile.
+    const LIMITE_CARATTERI_QR = 1800;
+    if(codice.length > LIMITE_CARATTERI_QR){
+      area.style.display = 'block';
+      area.innerHTML = '<p style="font-size:12px;color:var(--color-text-secondary);margin:0">'
+        + '⚠ Questa sessione è troppo estesa ('+codice.length+' caratteri) per un QR code leggibile in modo affidabile. '
+        + 'Usa "Copia codice" o "Scarica come file" invece.</p>';
+      return;
+    }
+
+    const testoOriginale = btnQr.textContent;
+    btnQr.textContent = '⏳ Genero il QR…';
+    btnQr.style.pointerEvents = 'none';
+    try{
+      if(typeof qrcode === 'undefined'){
+        await caricaScriptEsterno('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js');
+      }
+      const qr = qrcode(0, 'M'); // typeNumber 0 = dimensione automatica in base ai dati
+      qr.addData(codice);
+      qr.make();
+      const dataUrl = qr.createDataURL(6, 8);
+      area.style.display = 'block';
+      area.innerHTML = '<img src="'+dataUrl+'" alt="QR code sessione" style="max-width:220px;width:100%;border-radius:var(--border-radius-md);background:#fff;padding:8px;">'
+        + '<p style="font-size:11px;color:var(--color-text-secondary);margin:8px 0 0">Fai scansionare questo codice dall\'altro dispositivo.</p>';
+      btnQr.textContent = testoOriginale;
+      btnQr.style.pointerEvents = '';
+    }catch(err){
+      btnQr.textContent = testoOriginale;
+      btnQr.style.pointerEvents = '';
+      area.style.display = 'block';
+      area.innerHTML = '<p style="font-size:12px;color:var(--color-text-danger);margin:0">Impossibile generare il QR code: verifica la connessione a internet e riprova. In alternativa usa testo o file.</p>';
+    }
+  };
+
+  box.querySelector('#btn-chiudi-export-sessione').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
+}
+
+/*
+  ── Importazione sessione condivisa ──
+  Decodifica un codice generato da costruisciEsportazioneSessione(), rimappa
+  gli id delle domande sul DB attualmente caricato in questo dispositivo, e
+  ricostruisce una sessione (quiz o simulazione) pronta per essere ripresa
+  esattamente dal punto in cui era stata esportata. Riusa ripristinaSessione()
+  già usata per il ripristino locale automatico, per non duplicare la logica
+  di riavvio del timer e del toggle countdown.
+*/
+function decodificaCodiceSessione(testo){
+  const pulito = (testo || '').trim();
+  if(!pulito) throw new Error('Il codice è vuoto.');
+  const senzaPrefisso = pulito.startsWith(CODICE_SESSIONE_PREFISSO)
+    ? pulito.slice(CODICE_SESSIONE_PREFISSO.length)
+    : pulito;
+  let json;
+  try{
+    json = decodeURIComponent(escape(atob(senzaPrefisso)));
+  }catch(e){
+    throw new Error('Il codice non è valido o è corrotto (non decodificabile).');
+  }
+  let payload;
+  try{
+    payload = JSON.parse(json);
+  }catch(e){
+    throw new Error('Il codice non contiene dati validi.');
+  }
+  if(!payload || !Array.isArray(payload.ids) || payload.ids.length===0){
+    throw new Error('Il codice non contiene domande.');
+  }
+  return payload;
+}
+
+/*
+  Rimappa gli id importati sulle domande effettivamente presenti nel DB
+  locale, e ricostruisce lo "stato" nello stesso formato usato da
+  ripristinaSessione(). Restituisce { stato, mancanti, totaliOriginali }
+  oppure { errore } se non è stato possibile trovare nessuna domanda.
+*/
+function ricostruisciSessioneDaImport(payload){
+  const mappaId = new Map(DB.map(d => [String(d.id), d]));
+  const idsOriginali = payload.ids.map(String);
+  let mancanti = 0;
+
+  if(payload.isSimulazione){
+    const nuovaSessione = [];
+    const nuoveScelte = [];
+    let nuovoIdx = -1;
+
+    idsOriginali.forEach((id, i) => {
+      const d = mappaId.get(id);
+      if(!d){ mancanti++; return; }
+      nuovaSessione.push(d);
+      nuoveScelte.push((payload.scelteSimulazione && payload.scelteSimulazione[i]) || null);
+      if(i === payload.idx) nuovoIdx = nuovaSessione.length - 1;
+    });
+
+    if(nuovaSessione.length === 0){
+      return { errore: 'Nessuna delle domande importate è presente nel tuo database. Importa prima il CSV corrispondente.' };
+    }
+
+    return {
+      stato: {
+        sessione: nuovaSessione,
+        idx: nuovoIdx >= 0 ? nuovoIdx : 0,
+        n_corrette: 0, n_sbagliate: 0, n_saltate: 0,
+        logRisposte: [],
+        ultimaModalita: payload.ultimaModalita || 'sim',
+        isSimulazione: true,
+        isCountdown: !!payload.isCountdown,
+        scelteSimulazione: nuoveScelte,
+        timerSecondiRimanenti: payload.timerSecondiRimanenti,
+        timerTotaleOrig: payload.timerTotaleOrig,
+      },
+      mancanti,
+      totaliOriginali: idsOriginali.length,
+    };
+  }
+
+  // Quiz semplice: progresso lineare (0..idx-1) + resto della sessione da idx in poi
+  const progressoQuiz = payload.progressoQuiz || [];
+  const nuovoLog = [];
+  progressoQuiz.forEach(e => {
+    const d = mappaId.get(String(e.id));
+    if(!d){ mancanti++; return; }
+    nuovoLog.push({ domanda: d, scelta: e.scelta, esito: e.esito });
+  });
+
+  const futuri = [];
+  idsOriginali.slice(payload.idx).forEach(id => {
+    const d = mappaId.get(id);
+    if(!d){ mancanti++; return; }
+    futuri.push(d);
+  });
+
+  const nuovaSessione = nuovoLog.map(e => e.domanda).concat(futuri);
+  if(nuovaSessione.length === 0){
+    return { errore: 'Nessuna delle domande importate è presente nel tuo database. Importa prima il CSV corrispondente.' };
+  }
+
+  return {
+    stato: {
+      sessione: nuovaSessione,
+      idx: nuovoLog.length,
+      n_corrette: nuovoLog.filter(e=>e.esito==='correct').length,
+      n_sbagliate: nuovoLog.filter(e=>e.esito==='wrong').length,
+      n_saltate: nuovoLog.filter(e=>e.esito==='skipped').length,
+      logRisposte: nuovoLog,
+      ultimaModalita: payload.ultimaModalita || 'tutte',
+      isSimulazione: false,
+      isCountdown: !!payload.isCountdown,
+      scelteSimulazione: new Array(nuovaSessione.length).fill(null),
+      timerSecondiRimanenti: payload.timerSecondiRimanenti,
+      timerTotaleOrig: payload.timerTotaleOrig,
+    },
+    mancanti,
+    totaliOriginali: idsOriginali.length,
+  };
+}
+
+function apriImportaSessione(){
+  if(DB.length===0){
+    alert('Carica prima il CSV con le domande, poi importa la sessione condivisa.');
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--color-background-primary);color:var(--color-text-primary);border-radius:var(--border-radius-lg);padding:1.25rem;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;';
+
+  box.innerHTML = `
+    <p style="font-size:17px;font-weight:500;margin-bottom:4px">📥 Importa sessione condivisa</p>
+    <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:14px">
+      Incolla qui il codice ricevuto, oppure carica il file .txt esportato. Devi avere già importato lo stesso CSV di domande.
+    </p>
+    <textarea id="import-sessione-textarea" placeholder="QUIZMED1:...."
+      style="width:100%;height:110px;font-size:11px;font-family:monospace;padding:8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-secondary);color:var(--color-text-primary);resize:none;margin-bottom:10px;"
+    ></textarea>
+    <button class="btn" id="btn-carica-file-sessione" style="margin-bottom:12px">📎 Carica da file</button>
+    <button class="btn primary" id="btn-conferma-import-sessione" style="margin-bottom:8px">Importa e riprendi</button>
+    <button class="btn" id="btn-chiudi-import-sessione" style="color:var(--color-text-secondary)">Annulla</button>
+  `;
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const textarea = box.querySelector('#import-sessione-textarea');
+
+  // Caricamento da file
+  const fileInputSess = document.createElement('input');
+  fileInputSess.type = 'file';
+  fileInputSess.accept = '.txt,.json';
+  fileInputSess.style.display = 'none';
+  fileInputSess.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { textarea.value = ev.target.result.trim(); };
+    reader.readAsText(file, 'utf-8');
+  };
+  document.body.appendChild(fileInputSess);
+  box.querySelector('#btn-carica-file-sessione').onclick = () => fileInputSess.click();
+
+  box.querySelector('#btn-conferma-import-sessione').onclick = () => {
+    let payload;
+    try{
+      payload = decodificaCodiceSessione(textarea.value);
+    }catch(err){
+      alert('Errore: ' + err.message);
+      return;
+    }
+
+    const risultato = ricostruisciSessioneDaImport(payload);
+    if(risultato.errore){
+      alert('Errore: ' + risultato.errore);
+      return;
+    }
+
+    if(risultato.mancanti > 0){
+      const procedi = confirm(
+        '⚠ ' + risultato.mancanti + ' domande su ' + risultato.totaliOriginali +
+        ' non sono presenti nel tuo database (probabilmente hai un CSV diverso o non aggiornato).\n\n' +
+        'Vuoi comunque importare la sessione con le domande trovate (' +
+        (risultato.totaliOriginali - risultato.mancanti) + ')?'
+      );
+      if(!procedi) return;
+    }
+
+    overlay.remove();
+    fileInputSess.remove();
+    cancellaSessioneInterrotta(); // evita conflitti con un eventuale salvataggio locale precedente
+    ripristinaSessione(risultato.stato);
+  };
+
+  box.querySelector('#btn-chiudi-import-sessione').onclick = () => { overlay.remove(); fileInputSess.remove(); };
+  overlay.onclick = (e) => { if(e.target === overlay){ overlay.remove(); fileInputSess.remove(); } };
+}
+
+async function salvaSessioneInterrotta(){
+  if(!sessione||sessione.length===0)return;
+  const stato={
+    sessione, idx, n_corrette, n_sbagliate, n_saltate,
+    logRisposte, ultimaModalita, isSimulazione, isCountdown,
+    scelteSimulazione,
+    timerSecondiRimanenti: isSimulazione||isCountdown ? timerSecondi : null,
+    timerTotaleOrig: timerTotale,
+    ts: Date.now()
+  };
+  try{
+    const db=await openIDB();
+    await new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).put(stato, IDB_SESSION_KEY);
+      tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){console.warn('Salvataggio sessione fallito:',e);}
+}
+async function caricaSessioneInterrotta(){
+  try{
+    const db=await openIDB();
+    return await new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readonly');
+      const req=tx.objectStore(IDB_STORE).get(IDB_SESSION_KEY);
+      req.onsuccess=e=>res(e.target.result||null);
+      req.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return null;}
+}
+async function cancellaSessioneInterrotta(){
+  try{
+    const db=await openIDB();
+    await new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(IDB_SESSION_KEY);
+      tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){}
+}
+
+/* ── Nav ── */
+function showScreen(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+n).classList.add('active');
+  document.getElementById('app').classList.toggle('is-quiz-screen', n==='quiz');
+  document.getElementById('app').classList.toggle('is-risultato-screen', n==='risultato');
+  document.getElementById('app').classList.toggle('is-home-screen', n==='home');
+  document.getElementById('app').classList.toggle('is-gestisci-screen', n==='gestisci');
+}
+
+/* ── Util ── */
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/*
+  shufflePesato: ordina le domande dando priorità a quelle mai viste o sbagliate.
+  Pesi (più alto = più probabile di apparire prima):
+    mai vista      → 6
+    sbagliata      → 4
+    corretta       → 1
+  Algoritmo: ogni domanda viene assegnato un "score" = peso * random(),
+  poi si ordina per score decrescente (simile a weighted shuffle).
+*/
+function shufflePesato(arr){
+  const st=getStorage();
+  const risposte=st.risposte||{};
+  const sbagliate=new Set(st.sbagliate||[]);
+  return arr.map(d=>{
+    let peso;
+    if(risposte[d.id]===undefined)       peso=6; // mai vista
+    else if(sbagliate.has(d.id))         peso=4; // sbagliata
+    else                                 peso=1; // corretta
+    return {d, score: peso * Math.random()};
+  }).sort((a,b)=>b.score-a.score).map(x=>x.d);
+}
+
+/*
+  Estrae il testo del caso clinico da una domanda (se presente).
+  Normalizza spazi/punteggiatura per confronti robusti.
+*/
+function estraiCasoClinco(domanda){
+  const m = domanda.match(/\[CASO CLINICO[:\s]*(.*?)\]/is);
+  if(!m) return null;
+  // Normalizza: lowercase, collassa spazi multipli, rimuove punteggiatura finale
+  return m[1].trim().toLowerCase().replace(/\s+/g,' ').replace(/[.,;:!?]+$/,'');
+}
+
+/*
+  Dato un array di domande, le raggruppa in "blocchi":
+  - Domande con stesso caso clinico formano un blocco (ordinate per numero_domanda)
+  - Le altre sono blocchi da 1
+  Poi mescola i BLOCCHI (con shuffleFn), e appiattisce.
+  Così le domande dello stesso caso clinico rimangono consecutive ma
+  l'ordine dei blocchi è casuale.
+*/
+function raggruppaEMescola(arr, shuffleFn){
+  // Raggruppa per chiave caso clinico
+  const blocchi = [];
+  const mapCaso = {}; // chiave → indice in blocchi
+
+  for(const d of arr){
+    const cc = estraiCasoClinco(d.domanda);
+    if(cc){
+      if(mapCaso[cc] === undefined){
+        mapCaso[cc] = blocchi.length;
+        blocchi.push([d]);
+      } else {
+        blocchi[mapCaso[cc]].push(d);
+      }
+    } else {
+      blocchi.push([d]); // blocco singolo
+    }
+  }
+
+  // Ordina internamente ogni blocco per numero_domanda (mantiene sequenza originale)
+  for(const b of blocchi){
+    if(b.length > 1){
+      b.sort((a,b)=> (parseInt(a.numero_domanda)||0) - (parseInt(b.numero_domanda)||0));
+    }
+  }
+
+  // Mescola i blocchi col shuffleFn scelto
+  // shuffleFn lavora su array flat, quindi estraiamo un rappresentante per blocco,
+  // mescoliamo, poi riespandiamo
+  const rappresentanti = blocchi.map((b,i) => ({...b[0], __bloqIdx: i}));
+  const mescolati = shuffleFn(rappresentanti);
+  return mescolati.flatMap(r => blocchi[r.__bloqIdx]);
+}
+function fmt(n){return n%1===0?n.toString():n.toFixed(2);}
+function fmtTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return(h>0?h+':':'') +String(m).padStart(h>0?2:1,'0')+':'+String(ss).padStart(2,'0');}
+function fmtDate(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function highlightText(text, query){
+  if(!query.trim())return escHtml(text);
+  const re=new RegExp('('+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  return escHtml(text).replace(re,'<mark class="search-highlight">$1</mark>');
+}
+
+/* ── Pill selezione ── */
+function selezionaPill(el){
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('custom-num').value='';
+  numDomande=el.dataset.val==='tutti'?999999:parseInt(el.dataset.val);
+}
+function selezionaCustom(input){
+  const v=parseInt(input.value);
+  if(v>0){document.querySelectorAll('.pill').forEach(p=>p.classList.remove('selected'));numDomande=v;}
+}
+
+/* ── Home ── */
+function aggiornHome(){
+  const st=getStorage();
+  const r=Object.values(st.risposte),g=r.filter(x=>x===true).length;
+  document.getElementById('h-tot').textContent=DB.length||'—';
+  document.getElementById('h-perc').textContent=r.length>0?Math.round(g/r.length*100)+'%':'—';
+  document.getElementById('h-spec').textContent=[...new Set(DB.map(d=>d.specialita))].length||'—';
+  document.getElementById('btn-sbagliate').style.display=(st.sbagliate&&st.sbagliate.length>0)?'block':'none';
+  document.getElementById('btn-segnalibri').style.display=(st.segnalibri&&st.segnalibri.length>0)?'block':'none';
+  const rmBtn=document.getElementById('btn-remove-db');
+  if(rmBtn) rmBtn.style.display=(DB.length>0)?'block':'none';
+}
+
+/* ── Timer & Pausa ── */
+function avviaTimer(sec){
+  fermaTimer(); // evita interval sovrapposti
+  timerTotale=sec;timerSecondi=sec;
+  document.getElementById('timer-box').style.display='block';
+  isPausa=false; ripristinaVistePausa();
+  aggiornaTimer();
+  timerInterval=setInterval(()=>{
+    timerSecondi--;
+    aggiornaTimer();
+    if(timerSecondi<=0){
+      clearInterval(timerInterval);
+      if(isSimulazione) terminaSimulazione(true);
+      else if(isCountdown) saltaDopoCountdown();
+      // se !isCountdown e !isSimulazione il timer non dovrebbe girare: ignora
+    }
+  },1000);
+}
+function fermaTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}}
+function aggiornaTimer(){
+  const p=(timerSecondi/timerTotale)*100;
+  document.getElementById('timer-display').textContent=fmtTime(timerSecondi);
+  const bar=document.getElementById('timer-bar');
+  bar.style.width=p+'%';
+  bar.className='timer-bar-fill'+(p<15?' timer-bar-danger':p<30?' timer-bar-warn':'');
+}
+function togglePausa() {
+  if (isPausa) {
+    isPausa = false; ripristinaVistePausa();
+    timerInterval=setInterval(()=>{
+      timerSecondi--;
+      aggiornaTimer();
+      if(timerSecondi<=0){
+        clearInterval(timerInterval);
+        if(isSimulazione) terminaSimulazione(true);
+        else if(isCountdown) saltaDopoCountdown();
+        // se !isCountdown e !isSimulazione il timer non dovrebbe girare: ignora
+      }
+    },1000);
+  } else {
+    isPausa = true; fermaTimer();
+    document.getElementById('btn-pause').textContent = '▶️';
+    document.getElementById('quiz-content').style.display = 'none';
+    document.getElementById('pause-content').style.display = 'block';
+  }
+}
+function ripristinaVistePausa() {
+  document.getElementById('btn-pause').textContent = '⏸️';
+  // Rimuove lo style inline invece di forzare 'block', così in landscape
+  // il layout a due colonne (CSS flex) non viene sovrascritto.
+  document.getElementById('quiz-content').style.display = '';
+  document.getElementById('pause-content').style.display = 'none';
+}
+
+/* ── Countdown: auto-skip quando il tempo per una domanda scade ── */
+function saltaDopoCountdown(){
+  // Se la domanda non ha ancora ricevuto risposta, la salta automaticamente
+  const btnNext = document.getElementById('btn-next');
+  if(btnNext.style.display === 'block'){
+    // Utente aveva già risposto, vai avanti
+    prossimaDomanda();
+    return;
+  }
+  n_saltate++;
+  const st=getStorage();
+  if(!st.saltate)st.saltate=[];
+  if(!st.saltate.includes(sessione[idx].id))st.saltate.push(sessione[idx].id);
+  saveStorage(st);
+  document.getElementById('btn-skip').style.display='none';
+  document.querySelectorAll('#q-options .btn').forEach(btn=>{
+    btn.classList.add('disabled');
+    if(btn.querySelector('strong').textContent===sessione[idx].risposta_corretta){
+      btn.classList.remove('disabled');btn.classList.add('reveal');
+    }
+  });
+  renderizzaSpiegazione(sessione[idx], document.getElementById('q-spiegazione-container'));
+  logRisposte.push({domanda:sessione[idx],scelta:null,esito:'skipped'});
+  if(idx+1<sessione.length){
+    btnNext.style.display='block';
+    btnNext.textContent='Prossima domanda ▶';
+    // Breve pausa visiva (1.5s) poi avanza automaticamente
+    setTimeout(()=>{prossimaDomanda();},1500);
+  } else {
+    mostraRisultato(false);
+  }
+}
+
+/* ── Segnalibri ── */
+function toggleBookmark(){
+  const d=sessione[idx];const st=getStorage();
+  const i=st.segnalibri.indexOf(d.id);
+  if(i===-1) st.segnalibri.push(d.id); else st.segnalibri.splice(i,1);
+  saveStorage(st);
+  aggiornaIconaSegnalibro();
+  if(isSimulazione) aggiornaNavGrid();
+}
+function aggiornaIconaSegnalibro(){
+  const d=sessione[idx];const st=getStorage();
+  const marked=st.segnalibri.includes(d.id);
+  document.getElementById('btn-bookmark').textContent='🔖';
+  document.getElementById('btn-bookmark').style.opacity=marked?'1':'0.35';
+}
+
+/*
+  ── Segnalazione errori nelle domande ──
+  Indipendente dai segnalibri (quelli servono per il ripasso mirato, questi
+  per marcare una domanda come "ha un errore/refuso da correggere"). L'elenco
+  degli id segnalati vive nello stesso storage locale (st.segnalate), NON
+  dentro l'oggetto domanda: così sopravvive anche a un re-import dello
+  stesso CSV, e nella schermata "Gestisci domande" si può filtrare per
+  vedere solo quelle da correggere.
+*/
+function toggleSegnalazioneErrore(){
+  const d=sessione[idx];
+  toggleSegnalazioneById(d.id);
+  aggiornaIconaSegnalazione();
+}
+function toggleSegnalazioneById(id){
+  const st=getStorage();
+  const i=st.segnalate.indexOf(id);
+  if(i===-1) st.segnalate.push(id); else st.segnalate.splice(i,1);
+  saveStorage(st);
+  return st.segnalate.includes(id);
+}
+function aggiornaIconaSegnalazione(){
+  const d=sessione[idx];const st=getStorage();
+  const segnalata=st.segnalate.includes(d.id);
+  const btn=document.getElementById('btn-segnala-errore');
+  if(!btn) return;
+  btn.style.opacity=segnalata?'1':'0.35';
+  btn.title=segnalata?'Rimuovi segnalazione errore':'Segnala errore in questa domanda';
+}
+
+/* ── Distribuzione ministeriale ── */
+
+// Categorie ministeriali con percentuali ufficiali
+const CATEGORIE_MINISTERIALI = [
+  { cat: 'Cardiologia, cardiochirurgia e chirurgia vascolare', perc: 18.67 },
+  { cat: 'Chirurgia generale e gastroenterologia',            perc: 17.33 },
+  { cat: 'Neurologia e neurochirurgia',                       perc: 10.56 },
+  { cat: 'Pneumologia e chirurgia toracica',                  perc:  8.67 },
+  { cat: 'Ginecologia e ostetricia',                          perc:  8.56 },
+  { cat: 'Urologia e nefrologia',                             perc:  7.78 },
+  { cat: 'Pediatria e genetica',                              perc:  7.44 },
+  { cat: 'Ortopedia',                                         perc:  7.22 },
+  { cat: 'Endocrinologia',                                    perc:  7.11 },
+  { cat: 'Ematologia',                                        perc:  6.00 },
+  { cat: 'Anestesia, rianimazione e medicina del dolore',     perc:  4.67 },
+  { cat: 'Immunologia clinica e reumatologia',                perc:  4.22 },
+  { cat: 'Malattie infettive',                                perc:  4.22 },
+  { cat: 'Dermatologia e venereologia',                       perc:  3.78 },
+  { cat: 'Igiene, epidemiologia e statistica',                perc:  3.67 },
+  { cat: 'Otorinolaringoiatria',                              perc:  3.00 },
+  { cat: 'Oftalmologia',                                      perc:  2.78 },
+  { cat: 'Psichiatria',                                       perc:  2.67 },
+  { cat: 'Medicina del lavoro',                               perc:  2.22 },
+  { cat: 'Medicina legale',                                   perc:  2.11 },
+  { cat: 'Radiodiagnostica e medicina nucleare',              perc:  2.00 },
+  { cat: 'Medicina interna e geriatria',                      perc:  2.00 },
+  { cat: 'Oncologia',                                         perc:  1.44 },
+  { cat: 'Nutrizione clinica',                                perc:  1.00 },
+  { cat: 'Farmacologia e tossicologia',                       perc:  0.44 },
+  { cat: 'Chirurgia plastica',                                perc:  0.33 },
+  { cat: 'Anatomia patologica',                               perc:  0.11 },
+];
+
+/*
+  Mapping ESATTO specialità CSV → categoria ministeriale.
+  Le chiavi sono i valori esatti del campo "specialita" nel CSV (trim, case-insensitive).
+  Le specialità "Abilitazione" vengono distribuite tra le categorie di appartenenza.
+  Le categorie generiche (Generale, SSM *anni*, Medicina Specialistica, ecc.)
+  vengono marcate come __pool_generico__ e usate come riserva proporzionale.
+*/
+const MAPPING_SPECIALITA = {
+  // ── CARDIOLOGIA, CARDIOCHIRURGIA E CHIRURGIA VASCOLARE ──
+  'malattie dellapparato cardiovascolare': 'Cardiologia, cardiochirurgia e chirurgia vascolare',
+  'cardiochirurgia':                        'Cardiologia, cardiochirurgia e chirurgia vascolare',
+  'chirurgia vascolare':                    'Cardiologia, cardiochirurgia e chirurgia vascolare',
+
+  // ── CHIRURGIA GENERALE E GASTROENTEROLOGIA ──
+  'chirurgia generale':                     'Chirurgia generale e gastroenterologia',
+  'chirurgia generale - abilitazione':      'Chirurgia generale e gastroenterologia',
+  'gastroenterologia':                      'Chirurgia generale e gastroenterologia',
+  'chirurgia maxillo facciale':             'Chirurgia generale e gastroenterologia',
+  'chirurgia specialistica - abilitazione': 'Chirurgia generale e gastroenterologia',
+
+  // ── NEUROLOGIA E NEUROCHIRURGIA ──
+  'neurologia':                             'Neurologia e neurochirurgia',
+  'neurochirurgia':                         'Neurologia e neurochirurgia',
+  'neuropsichiatria infantile':             'Neurologia e neurochirurgia',
+
+  // ── PNEUMOLOGIA E CHIRURGIA TORACICA ──
+  'malattie dellapparato respiratorio':     'Pneumologia e chirurgia toracica',
+  'chirurgia toracica':                     'Pneumologia e chirurgia toracica',
+
+  // ── GINECOLOGIA E OSTETRICIA ──
+  'ginecologia e ostetricia':               'Ginecologia e ostetricia',
+  'ostetricia e ginecologia - abilitazione':'Ginecologia e ostetricia',
+
+  // ── UROLOGIA E NEFROLOGIA ──
+  'urologia':                               'Urologia e nefrologia',
+  'nefrologia':                             'Urologia e nefrologia',
+
+  // ── PEDIATRIA E GENETICA ──
+  'pediatria':                              'Pediatria e genetica',
+  'pediatria - abilitazione':               'Pediatria e genetica',
+  'chirurgia pediatrica':                   'Pediatria e genetica',
+  'genetica medica':                        'Pediatria e genetica',
+
+  // ── ORTOPEDIA ──
+  'ortopedia e traumatologia':              'Ortopedia',
+
+  // ── ENDOCRINOLOGIA ──
+  'endocrinologia e malattie del metabolismo': 'Endocrinologia',
+  'medicina dello sport':                   'Endocrinologia',
+  'scienza dellalimentazione':              'Endocrinologia',  // nutrizione → mappata qui + nutrizione clinica
+  'medicina termale':                       'Endocrinologia',
+
+  // ── EMATOLOGIA ──
+  'ematologia':                             'Ematologia',
+  'patologia clinica':                      'Ematologia',
+  'microbiologia e virologia':              'Ematologia',
+
+  // ── ANESTESIA, RIANIMAZIONE E MEDICINA DEL DOLORE ──
+  'anestesia e rianimazione e terapia intensiva': 'Anestesia, rianimazione e medicina del dolore',
+  'medicina demergenza urgenza':            'Anestesia, rianimazione e medicina del dolore',
+
+  // ── IMMUNOLOGIA CLINICA E REUMATOLOGIA ──
+  'allergologia e immunologia clinica':     'Immunologia clinica e reumatologia',
+  'reumatologia':                           'Immunologia clinica e reumatologia',
+
+  // ── MALATTIE INFETTIVE ──
+  'malattie infettive':                     'Malattie infettive',
+
+  // ── DERMATOLOGIA E VENEREOLOGIA ──
+  'dermatologia e venereologia':            'Dermatologia e venereologia',
+
+  // ── IGIENE, EPIDEMIOLOGIA E STATISTICA ──
+  'igiene e medicina preventiva':           'Igiene, epidemiologia e statistica',
+  'statistica sanitaria e biometria':       'Igiene, epidemiologia e statistica',
+
+  // ── OTORINOLARINGOIATRIA ──
+  'otorinolaringoiatria':                   'Otorinolaringoiatria',
+  'audiologia e foniatria':                 'Otorinolaringoiatria',
+  'organi di senso - abilitazione':         'Otorinolaringoiatria',  // comprende ORL + oftalmo: si split 50/50 in campionamento
+
+  // ── OFTALMOLOGIA ──
+  'oftalmologia':                           'Oftalmologia',
+
+  // ── PSICHIATRIA ──
+  'psichiatria':                            'Psichiatria',
+
+  // ── MEDICINA DEL LAVORO ──
+  'medicina del lavoro':                    'Medicina del lavoro',
+
+  // ── MEDICINA LEGALE ──
+  'medicina legale':                        'Medicina legale',
+  'medicina legale e sanità pubblica - abilitaizone': 'Medicina legale',
+
+  // ── RADIODIAGNOSTICA E MEDICINA NUCLEARE ──
+  'radiodiagnostica':                       'Radiodiagnostica e medicina nucleare',
+  'medicina nucleare':                      'Radiodiagnostica e medicina nucleare',
+  'radioterapia':                           'Radiodiagnostica e medicina nucleare',
+  'radiologia e diagnostica - abilitazione':'Radiodiagnostica e medicina nucleare',
+
+  // ── MEDICINA INTERNA E GERIATRIA ──
+  'medicina interna':                       'Medicina interna e geriatria',
+  'medicina interna - abilitazione':        'Medicina interna e geriatria',
+  'geriatria':                              'Medicina interna e geriatria',
+  'medicina fisica e riabilitativa':        'Medicina interna e geriatria',
+
+  // ── ONCOLOGIA ──
+  'oncologia':                              'Oncologia',
+
+  // ── NUTRIZIONE CLINICA ──
+  // 'scienza dellalimentazione' già in Endocrinologia; qui non duplicato
+
+  // ── FARMACOLOGIA E TOSSICOLOGIA ──
+  'farmacologia':                           'Farmacologia e tossicologia',
+  'tossicologia medica':                    'Farmacologia e tossicologia',
+
+  // ── CHIRURGIA PLASTICA ──
+  'chirurgia plastica ricostruttiva ed estetica': 'Chirurgia plastica',
+
+  // ── ANATOMIA PATOLOGICA ──
+  'anatomia patologica':                    'Anatomia patologica',
+
+  // ── POOL GENERICO (usato come riserva) ──
+  'generale':                               '__pool_generico__',
+  'ssm 2014':                              '__pool_generico__',
+  'ssm 2015':                              '__pool_generico__',
+  'ssm 2016':                              '__pool_generico__',
+  'ssm 2019':                              '__pool_generico__',
+  'ssm 2020':                              '__pool_generico__',
+  'ssm 2021':                              '__pool_generico__',
+  'ssm 2022':                              '__pool_generico__',
+  'ssm 2023':                              '__pool_generico__',
+  'ssm 2024':                              '__pool_generico__',
+  'ssm 2025':                              '__pool_generico__',
+  'medicina specialistica - abilitazione': '__pool_generico__',
+};
+
+function categorizzaSpecialita(specialita) {
+  const s = (specialita || '').trim().toLowerCase();
+  return MAPPING_SPECIALITA[s] || '__pool_generico__';
+}
+
+function campionaProportionale(tot, dbSorgente) {
+  const fonte = dbSorgente || DB;
+  // 1. Raggruppa per categoria ministeriale
+  const gruppi = {};
+  for (const d of fonte) {
+    const cat = categorizzaSpecialita(d.specialita);
+    if (!gruppi[cat]) gruppi[cat] = [];
+    gruppi[cat].push(d);
+  }
+
+  // 2. Calcola le quote con arrotondamento "Largest Remainder"
+  const quote = CATEGORIE_MINISTERIALI.map(e => ({
+    cat: e.cat,
+    intero: Math.floor(tot * e.perc / 100),
+    residuo: (tot * e.perc / 100) % 1,
+  }));
+  let assegnate = quote.reduce((s, q) => s + q.intero, 0);
+  const mancanti = tot - assegnate;
+  quote.sort((a, b) => b.residuo - a.residuo);
+  for (let i = 0; i < mancanti; i++) quote[i].intero++;
+  // Ripristina ordine originale
+  quote.sort((a, b) =>
+    CATEGORIE_MINISTERIALI.findIndex(e => e.cat === a.cat) -
+    CATEGORIE_MINISTERIALI.findIndex(e => e.cat === b.cat)
+  );
+
+  // 3. Campiona da ogni gruppo; i posti scoperti vengono raccolti
+  const risultato = [];
+  const usati = new Set();
+  let postiScoperti = 0;
+
+  for (const q of quote) {
+    if (q.intero === 0) continue;
+    const pool = shufflePesato((gruppi[q.cat] || []).filter(d => !usati.has(d.id)));
+    const presi = pool.slice(0, q.intero);
+    presi.forEach(d => { risultato.push(d); usati.add(d.id); });
+    postiScoperti += (q.intero - presi.length);
+  }
+
+  // 4. Fallback: riempi i posti scoperti attingendo al pool generico,
+  //    poi (se ancora mancano) da qualsiasi domanda non ancora usata.
+  if (postiScoperti > 0) {
+    const fonti = [
+      ...(gruppi['__pool_generico__'] || []),
+      ...fonte,
+    ];
+    const extra = shuffle(fonti.filter(d => !usati.has(d.id)));
+    extra.slice(0, postiScoperti).forEach(d => { risultato.push(d); usati.add(d.id); });
+  }
+
+  // Raggruppa i casi clinici consecutivi prima di restituire
+  return raggruppaEMescola(risultato.slice(0, tot), shuffle);
+}
+
+/* ── Toggle Countdown ── */
+function toggleCountdown(){
+  isCountdown=!isCountdown;
+  const knob=document.getElementById('countdown-toggle-knob');
+  const dot=document.getElementById('countdown-knob-dot');
+  if(isCountdown){
+    knob.style.background='var(--color-text-primary)';
+    dot.style.left='22px';
+  } else {
+    // Se si disattiva mentre un quiz countdown è in corso, ferma e nasconde il timer
+    fermaTimer();
+    const timerBox=document.getElementById('timer-box');
+    if(timerBox && !isSimulazione) timerBox.style.display='none';
+    knob.style.background='var(--color-background-tertiary)';
+    dot.style.left='2px';
+  }
+}
+
+/* ── Countdown per domanda: riparte ad ogni nuova domanda ── */
+function avviaTimerDomanda(){
+  fermaTimer();
+  avviaTimer(COUNTDOWN_SEC_PER_DOMANDA);
+}
+
+/* ── Avvio quiz ── */
+/* ── Configurazione Simulazione ── */
+let simTab = 'random'; // 'random' | 'prop' | 'custom'
+let simPesi = {}; // specialita → peso (intero)
+
+function mostraConfigSim(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  simTab='random';
+  simSelTab('random');
+  costruisciPesiList();
+  aggiornaPreview();
+  showScreen('sim-config');
+}
+
+function simSelTab(tab){
+  simTab=tab;
+  ['random','prop','custom'].forEach(t=>{
+    const el=document.getElementById('sim-tab-'+t);
+    const desc=document.getElementById('sim-desc-'+t);
+    const isActive=(t===tab);
+    el.style.background=isActive?'var(--color-text-primary)':'transparent';
+    el.style.color=isActive?'var(--color-background-primary)':'var(--color-text-primary)';
+    el.style.borderColor=isActive?'var(--color-text-primary)':'var(--color-border-secondary)';
+    desc.style.display=isActive?'block':'none';
+  });
+  document.getElementById('sim-panel-custom').style.display=(tab==='custom')?'block':'none';
+  document.getElementById('sim-preview').style.display=(tab==='custom')?'block':'none';
+}
+
+function costruisciPesiList(){
+  // Ottieni specialità disponibili (escluse SSM e escluse da random)
+  const annateLower=ANNATE_SSM.map(a=>a.toLowerCase());
+  const specs=[...new Set(DB.map(d=>d.specialita))]
+    .filter(s=>!annateLower.includes(s.trim().toLowerCase()) && !isEsclusa({specialita:s}))
+    .sort();
+  // Inizializza pesi a 0 se non esistono
+  specs.forEach(s=>{ if(simPesi[s]===undefined) simPesi[s]=0; });
+
+  const list=document.getElementById('sim-pesi-list');
+  list.innerHTML='';
+  specs.forEach(s=>{
+    const count=DB.filter(d=>d.specialita===s).length;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);margin-bottom:6px;background:var(--color-background-primary)';
+    row.innerHTML=`
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(s)}</div>
+        <div style="font-size:11px;color:var(--color-text-secondary)">${count} domande disponibili</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <button onclick="simCambiaPeso('${escHtml(s)}',-1)" style="width:28px;height:28px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);background:none;color:var(--color-text-primary);cursor:pointer;font-size:16px;line-height:1">−</button>
+        <input type="number" min="0" max="99" value="${simPesi[s]||0}"
+          style="width:46px;text-align:center;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);padding:4px;font-size:14px;color:var(--color-text-primary);background:var(--color-background-primary)"
+          oninput="simSetPeso('${escHtml(s)}',this.value)"
+          id="peso-input-${escHtml(s).replace(/[^a-zA-Z0-9]/g,'_')}">
+        <button onclick="simCambiaPeso('${escHtml(s)}',1)" style="width:28px;height:28px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);background:none;color:var(--color-text-primary);cursor:pointer;font-size:16px;line-height:1">+</button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function simCambiaPeso(spec, delta){
+  simPesi[spec]=Math.max(0, Math.min(99,(simPesi[spec]||0)+delta));
+  const id='peso-input-'+spec.replace(/[^a-zA-Z0-9]/g,'_');
+  const el=document.getElementById(id);
+  if(el) el.value=simPesi[spec];
+  aggiornaPreview();
+}
+
+function simSetPeso(spec, val){
+  simPesi[spec]=Math.max(0,Math.min(99,parseInt(val)||0));
+  aggiornaPreview();
+}
+
+function simResetPesi(){
+  Object.keys(simPesi).forEach(k=>simPesi[k]=0);
+  costruisciPesiList();
+  aggiornaPreview();
+}
+
+function aggiornaPreview(){
+  const tot=140;
+  const totPeso=Object.values(simPesi).reduce((s,v)=>s+(v||0),0);
+  document.getElementById('sim-tot-label').textContent='Tot. peso: '+totPeso;
+  const list=document.getElementById('sim-preview-list');
+  list.innerHTML='';
+  if(totPeso===0){
+    list.innerHTML='<div style="font-size:13px;color:var(--color-text-secondary);padding:8px 0">Assegna almeno un peso per vedere l\'anteprima.</div>';
+    return;
+  }
+  // Calcola quote con Largest Remainder
+  const voci=Object.entries(simPesi).filter(([,v])=>v>0).map(([s,p])=>({
+    s, p,
+    esatte: tot*p/totPeso,
+    intero: Math.floor(tot*p/totPeso),
+    residuo: (tot*p/totPeso)%1,
+  }));
+  let assegnate=voci.reduce((s,v)=>s+v.intero,0);
+  voci.sort((a,b)=>b.residuo-a.residuo);
+  for(let i=0;i<tot-assegnate;i++) voci[i].intero++;
+  voci.sort((a,b)=>b.intero-a.intero);
+  voci.forEach(v=>{
+    if(v.intero===0) return;
+    const disp=DB.filter(d=>d.specialita===v.s).length;
+    const warn=v.intero>disp;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    row.innerHTML=`
+      <div style="flex:1;font-size:13px;${warn?'color:var(--color-text-warning)':''}">${escHtml(v.s)}</div>
+      <div style="font-size:13px;font-weight:500;flex-shrink:0;${warn?'color:var(--color-text-warning)':''}">${v.intero} dom.${warn?' ⚠':''}
+        ${warn?'<span style="font-size:11px;font-weight:400"> (max '+disp+')</span>':''}
+      </div>
+      <div style="width:80px;background:var(--color-background-secondary);border-radius:99px;height:5px;flex-shrink:0">
+        <div style="height:5px;border-radius:99px;background:${warn?'var(--color-text-warning)':'var(--color-text-primary)'};width:${Math.min(100,Math.round(v.intero/disp*100))}%"></div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function avviaSimDaConfig(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  if(simTab==='random'){
+    avviaSimulazione(false); return;
+  }
+  if(simTab==='prop'){
+    avviaSimulazione(true); return;
+  }
+  // Custom
+  const totPeso=Object.values(simPesi).reduce((s,v)=>s+(v||0),0);
+  if(totPeso===0){alert('Assegna almeno un peso a una specialità.');return;}
+  const tot=140;
+  const voci=Object.entries(simPesi).filter(([,v])=>v>0).map(([s,p])=>({
+    s, p,
+    intero: Math.floor(tot*p/totPeso),
+    residuo: (tot*p/totPeso)%1,
+  }));
+  let assegnate=voci.reduce((s,v)=>s+v.intero,0);
+  voci.sort((a,b)=>b.residuo-a.residuo);
+  for(let i=0;i<tot-assegnate;i++) voci[i].intero++;
+
+  // Campiona
+  const usati=new Set();
+  const risultato=[];
+  const nonSoddisfatte=[];
+  for(const v of voci){
+    if(v.intero===0) continue;
+    const pool=shufflePesato(DB.filter(d=>d.specialita===v.s&&!usati.has(d.id)&&passaFiltroImmagini(d)));
+    const presi=pool.slice(0,v.intero);
+    presi.forEach(d=>{risultato.push(d);usati.add(d.id);});
+    if(presi.length<v.intero) nonSoddisfatte.push({s:v.s, mancanti:v.intero-presi.length});
+  }
+  // Fallback
+  if(nonSoddisfatte.length>0){
+    const extra=shufflePesato(DB.filter(d=>!isEsclusa(d)&&!usati.has(d.id)&&passaFiltroImmagini(d)));
+    let ei=0;
+    for(const ns of nonSoddisfatte){
+      for(let i=0;i<ns.mancanti&&ei<extra.length;i++,ei++) risultato.push(extra[ei]);
+    }
+  }
+  if(risultato.length===0){alert('Nessuna domanda'+(soloImmagini?' con immagine':'')+' disponibile con questi pesi.');return;}
+  isSimulazione=true; ultimaModalita='sim';
+  sessione=raggruppaEMescola(risultato.slice(0,tot), shuffle);
+  iniziaSessione(); avviaTimer(210*60);
+}
+
+function avviaSimulazione(proporzionale){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  isSimulazione=true;ultimaModalita='sim';
+  const DBfiltrato=DB.filter(d=>!isEsclusa(d)&&passaFiltroImmagini(d));
+  if(DBfiltrato.length===0){alert('Nessuna domanda'+(soloImmagini?' con immagine':'')+' disponibile per la simulazione.');return;}
+  if(proporzionale){
+    sessione=campionaProportionale(Math.min(DBfiltrato.length,140), DBfiltrato);
+  } else {
+    sessione=raggruppaEMescola([...DBfiltrato], shuffle).slice(0,Math.min(DBfiltrato.length,140));
+  }
+  iniziaSessione();avviaTimer(210*60);
+}
+/*
+  Specialità che compaiono SOLO se scelte esplicitamente da "Scegli specialità".
+  Escluse da: tutte le specialità, sbagliate, segnalibri, simulazioni (normale e proporzionale).
+*/
+const SPECIALITA_ESCLUSE_DA_RANDOM = [
+  'area pre clinica - abilitazione',
+];
+function isEsclusa(d){
+  return SPECIALITA_ESCLUSE_DA_RANDOM.includes((d.specialita||'').trim().toLowerCase());
+}
+
+/*
+  ── Filtro "Solo domande con immagine" ──
+  Toggle globale (persistito in localStorage): se attivo, ogni pool di
+  domande costruito da qualunque modalità (quiz, ripasso, simulazioni,
+  annales) viene ristretto alle sole domande che hanno un'immagine
+  associata. Utile per allenarsi mirato su ECG, radiografie, dermatologia.
+*/
+let soloImmagini = false;
+function haImmagineValida(d){
+  return !!(d.immagini && d.immagini.trim());
+}
+function passaFiltroImmagini(d){
+  return !soloImmagini || haImmagineValida(d);
+}
+function toggleSoloImmagini(){
+  soloImmagini = !soloImmagini;
+  try{ localStorage.setItem('quiz_med_solo_immagini', soloImmagini ? '1' : '0'); }catch(e){}
+  const knob = document.getElementById('solo-immagini-toggle-knob');
+  const dot = document.getElementById('solo-immagini-knob-dot');
+  if(knob && dot){
+    knob.style.background = soloImmagini ? 'var(--color-text-primary)' : 'var(--color-background-tertiary)';
+    dot.style.left = soloImmagini ? '22px' : '2px';
+  }
+}
+
+function avviaQuiz(modalita){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+  isSimulazione=false;ultimaModalita=modalita;fermaTimer();
+  const st=getStorage();let pool=[];
+  if(modalita.startsWith('annales_')){
+    const annate=modalita.replace('annales_','').split(',');
+    const nomiLower=annate.map(a=>a.toLowerCase());
+    pool=shuffle(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())&&passaFiltroImmagini(d)));
+    if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate'+(soloImmagini?' con immagine':'')+'.');return;}
+  } else if(modalita==='tutte'){
+    pool=raggruppaEMescola(DB.filter(d=>!isEsclusa(d)&&passaFiltroImmagini(d)), shufflePesato);
+  } else if(modalita==='sbagliate'){
+    const ids=new Set(st.sbagliate||[]);
+    pool=raggruppaEMescola(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)&&passaFiltroImmagini(d)), shufflePesato);
+    if(pool.length===0){alert('Nessuna domanda sbagliata salvata'+(soloImmagini?' con immagine':'')+'.');return;}
+  } else if(modalita==='segnalibri'){
+    const ids=new Set(st.segnalibri||[]);
+    pool=raggruppaEMescola(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)&&passaFiltroImmagini(d)), shufflePesato);
+    if(pool.length===0){alert('Nessun segnalibro salvato'+(soloImmagini?' con immagine':'')+'.');return;}
+  } else {
+    // Selezione specifica per specialità: rispetta comunque il filtro "solo immagine" se attivo
+    pool=raggruppaEMescola(DB.filter(d=>d.specialita===modalita&&passaFiltroImmagini(d)), shufflePesato);
+    if(pool.length===0){alert('Nessuna domanda'+(soloImmagini?' con immagine':'')+' trovata per questa specialità.');return;}
+  }
+  sessione=pool.slice(0,Math.min(pool.length,numDomande));
+  iniziaSessione();
+  if(isCountdown){
+    avviaTimer(COUNTDOWN_SEC_PER_DOMANDA);
+  } else {
+    document.getElementById('timer-box').style.display='none';
+  }
+}
+function iniziaSessione(){
+  idx=0;n_corrette=0;n_sbagliate=0;n_saltate=0;logRisposte=[];
+  scelteSimulazione = new Array(sessione.length).fill(null);
+  isPausa=false; ripristinaVistePausa();
+  cancellaSessioneInterrotta(); // nuova sessione → pulisce la vecchia
+  showScreen('quiz');mostraDomanda();
+}
+
+/* ── Navigazione Grid Simulazione ── */
+function aggiornaNavGrid() {
+  const grid = document.getElementById('nav-grid');
+  grid.innerHTML = '';
+  const st = getStorage();
+  sessione.forEach((d, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'nav-cell';
+    if(i === idx) cell.classList.add('active');
+    if(scelteSimulazione[i]) cell.classList.add('answered');
+    if(st.segnalibri.includes(d.id)) cell.classList.add('bookmarked');
+    cell.textContent = i + 1;
+    cell.onclick = () => { idx = i; mostraDomanda(); };
+    grid.appendChild(cell);
+  });
+}
+
+/* ── Formattazione testo domanda (caso clinico) ── */
+function formattaDomanda(testo) {
+  // Cerca [CASO CLINICO: ...] oppure [CASO CLINICO ...] (con o senza i due punti)
+  const re = /\[CASO CLINICO[:\s]*(.*?)\]/gis;
+  let risultato = testo;
+  let match;
+  // Raccogliamo tutti i casi clinici e li sostituiamo
+  const parti = [];
+  let ultimo = 0;
+  re.lastIndex = 0;
+  while ((match = re.exec(testo)) !== null) {
+    // Testo prima del caso clinico
+    if (match.index > ultimo) {
+      parti.push({ tipo: 'testo', val: testo.slice(ultimo, match.index).trim() });
+    }
+    parti.push({ tipo: 'caso', val: match[1].trim() });
+    ultimo = match.index + match[0].length;
+  }
+  // Testo dopo l'ultimo caso clinico
+  if (ultimo < testo.length) {
+    const resto = testo.slice(ultimo).trim();
+    if (resto) parti.push({ tipo: 'testo', val: resto });
+  }
+  // Se non c'è nessun caso clinico, ritorna il testo escaped normalmente
+  if (parti.length === 0 || !parti.some(p => p.tipo === 'caso')) {
+    return escHtml(testo);
+  }
+  // Costruisci HTML: caso clinico in corsivo + testo normale su riga separata
+  return parti.map(p => {
+    if (p.tipo === 'caso') {
+      return '<em style="color:var(--color-text-secondary);font-size:15px;line-height:1.7;display:block;margin-bottom:0.75rem">' + escHtml(p.val) + '</em>';
+    } else {
+      return '<span style="display:block;margin-top:0.5rem">' + escHtml(p.val) + '</span>';
+    }
+  }).join('');
+}
+
+/*
+  ── Spiegazione della risposta ──
+  Se la domanda ha una colonna "spiegazione" valorizzata nel CSV, la mostra
+  in un riquadro dedicato. Usata sia nel quiz (dopo che la risposta corretta
+  viene rivelata) sia nel recap di fine sessione/simulazione.
+*/
+function haSpiegazione(d){
+  return !!(d && d.spiegazione && d.spiegazione.trim());
+}
+function spiegazioneHTML(d){
+  return '<div class="spiegazione-box">'
+    + '<span class="spiegazione-icona">💡</span>'
+    + '<span class="spiegazione-testo"><span class="spiegazione-titolo">Spiegazione</span>' + escHtml(d.spiegazione.trim()) + '</span>'
+    + '</div>';
+}
+function renderizzaSpiegazione(d, containerEl){
+  if(!containerEl) return;
+  if(haSpiegazione(d)){
+    containerEl.innerHTML = spiegazioneHTML(d);
+    containerEl.style.display = 'block';
+  } else {
+    containerEl.innerHTML = '';
+    containerEl.style.display = 'none';
+  }
+}
+
+/* ── Domanda ── */
+function mostraDomanda(){
+  const d=sessione[idx];
+  document.getElementById('q-spec-tag').textContent=d.specialita;
+  document.getElementById('q-counter').textContent=(idx+1)+' / '+sessione.length;
+  document.getElementById('q-progress').style.width=Math.round((idx/sessione.length)*100)+'%';
+  document.getElementById('q-text').innerHTML = formattaDomanda(d.domanda);
+  renderizzaImmaginiDomanda(d, document.getElementById('q-image-container'));
+  // Nasconde la spiegazione della domanda precedente finché non si risponde a questa
+  const spiegDiv = document.getElementById('q-spiegazione-container');
+  if(spiegDiv){ spiegDiv.innerHTML=''; spiegDiv.style.display='none'; }
+  aggiornaIconaSegnalibro();
+  aggiornaIconaSegnalazione();
+  // Riavvia il countdown ad ogni nuova domanda (non in simulazione)
+  if(isCountdown && !isSimulazione){ avviaTimerDomanda(); }
+  
+  const opzDiv=document.getElementById('q-options');opzDiv.innerHTML='';
+  ['A','B','C','D','E'].forEach(l=>{
+    if(!d[l])return;
+    const btn=document.createElement('button');btn.className='btn';
+    btn.innerHTML='<strong style="margin-right:8px">'+l+'</strong>'+d[l];
+    // Se siamo in simulazione e questa è la scelta salvata, evidenziala
+    if(isSimulazione && scelteSimulazione[idx] === l) btn.classList.add('selected-sim');
+    btn.onclick=()=>rispondi(l,d.risposta_corretta,d.id);
+    opzDiv.appendChild(btn);
+  });
+
+  const btnSkip = document.getElementById('btn-skip');
+  const btnNext = document.getElementById('btn-next');
+
+  if (isSimulazione) {
+    btnSkip.textContent = '— Svuota selezione —';
+    btnSkip.style.display = 'block';
+    btnNext.style.display = 'block';
+    btnNext.textContent = idx + 1 < sessione.length ? 'Prossima domanda' : 'Termina Simulazione';
+    document.getElementById('nav-grid-container').style.display = 'block';
+    aggiornaNavGrid();
+  } else {
+    btnSkip.textContent = '— Non rispondo (0 punti) —';
+    btnSkip.style.display = 'block';
+    btnNext.style.display = 'none';
+    document.getElementById('nav-grid-container').style.display = 'none';
+  }
+}
+
+function rispondi(scelta,corretta_let,id){
+  if (isSimulazione) {
+    // Modalità esame: salva scelta ma non mostra risultato
+    scelteSimulazione[idx] = scelta;
+    document.querySelectorAll('#q-options .btn').forEach(btn => {
+      btn.classList.remove('selected-sim');
+      if (btn.querySelector('strong').textContent === scelta) btn.classList.add('selected-sim');
+    });
+    aggiornaNavGrid();
+  } else {
+    // Modalità ripasso: mostra subito risultato
+    fermaTimer(); // Countdown: ferma il timer quando si risponde
+    const st=getStorage(),giusta=scelta===corretta_let;
+    document.querySelectorAll('#q-options .btn').forEach(btn=>{
+      const l=btn.querySelector('strong').textContent;
+      if(l===corretta_let)btn.classList.add(giusta?'correct':'reveal');
+      else if(l===scelta&&!giusta)btn.classList.add('wrong');
+      else btn.classList.add('disabled');
+    });
+    document.getElementById('btn-skip').style.display='none';
+    renderizzaSpiegazione(sessione[idx], document.getElementById('q-spiegazione-container'));
+    if(giusta){n_corrette++;st.risposte[id]=true;st.sbagliate=(st.sbagliate||[]).filter(i=>i!==id);st.saltate=(st.saltate||[]).filter(i=>i!==id);}
+    else{n_sbagliate++;st.risposte[id]=false;if(!st.sbagliate)st.sbagliate=[];if(!st.sbagliate.includes(id))st.sbagliate.push(id);st.saltate=(st.saltate||[]).filter(i=>i!==id);}
+    saveStorage(st);
+    logRisposte.push({domanda:sessione[idx],scelta,esito:giusta?'correct':'wrong'});
+    const bn=document.getElementById('btn-next');
+    bn.style.display='block';
+    bn.textContent=idx+1<sessione.length?'Prossima domanda':'Vedi risultato';
+  }
+}
+
+function sautaDomanda(){
+  if (isSimulazione) {
+    // Svuota la scelta e aggiorna griglia
+    scelteSimulazione[idx] = null;
+    document.querySelectorAll('#q-options .btn').forEach(btn => btn.classList.remove('selected-sim'));
+    aggiornaNavGrid();
+    prossimaDomanda();
+  } else {
+    fermaTimer(); // Countdown: ferma il timer allo skip manuale
+    n_saltate++;
+    const st=getStorage();
+    if(!st.saltate)st.saltate=[];
+    if(!st.saltate.includes(sessione[idx].id))st.saltate.push(sessione[idx].id);
+    saveStorage(st);
+    document.getElementById('btn-skip').style.display='none';
+    document.querySelectorAll('#q-options .btn').forEach(btn=>{
+      btn.classList.add('disabled');
+      if(btn.querySelector('strong').textContent===sessione[idx].risposta_corretta){btn.classList.remove('disabled');btn.classList.add('reveal');}
+    });
+    renderizzaSpiegazione(sessione[idx], document.getElementById('q-spiegazione-container'));
+    logRisposte.push({domanda:sessione[idx],scelta:null,esito:'skipped'});
+    const bn=document.getElementById('btn-next');
+    bn.style.display='block';
+    bn.textContent=idx+1<sessione.length?'Prossima domanda':'Vedi risultato';
+  }
+}
+
+function prossimaDomanda(){
+  if(idx+1<sessione.length){
+    idx++; mostraDomanda();
+  } else {
+    if(isSimulazione) promptTerminaSimulazione();
+    else mostraRisultato(false);
+  }
+}
+
+function promptTerminaSimulazione() {
+  const nonRisposte = scelteSimulazione.filter(x => !x).length;
+  const msg = nonRisposte > 0
+    ? `⚠️ Attenzione! Hai ancora ${nonRisposte} domande lasciate in bianco.\n\nSei sicuro di voler consegnare la simulazione?`
+    : `Sei all'ultima domanda. Vuoi consegnare e terminare la simulazione?`;
+  if(confirm(msg)) terminaSimulazione(false);
+}
+
+function terminaSimulazione(timeout) {
+  // Processa le scelte accumulate a fine simulazione
+  n_corrette = 0; n_sbagliate = 0; n_saltate = 0; logRisposte = [];
+  const st = getStorage();
+
+  sessione.forEach((d, i) => {
+    const scelta = scelteSimulazione[i];
+    const giusta = (scelta === d.risposta_corretta);
+    let esito = '';
+
+    if (!scelta) {
+      n_saltate++; esito = 'skipped';
+      if (!st.saltate) st.saltate = [];
+      if (!st.saltate.includes(d.id)) st.saltate.push(d.id);
+    } else if (giusta) {
+      n_corrette++; esito = 'correct';
+      st.risposte[d.id] = true;
+      st.sbagliate = (st.sbagliate || []).filter(id => id !== d.id);
+      st.saltate = (st.saltate || []).filter(id => id !== d.id);
+    } else {
+      n_sbagliate++; esito = 'wrong';
+      st.risposte[d.id] = false;
+      if (!st.sbagliate) st.sbagliate = [];
+      if (!st.sbagliate.includes(d.id)) st.sbagliate.push(d.id);
+      st.saltate = (st.saltate || []).filter(id => id !== d.id);
+    }
+    logRisposte.push({ domanda: d, scelta: scelta, esito: esito });
+  });
+  saveStorage(st);
+  mostraRisultato(timeout);
+}
+
+/* ── Risultato ── */
+function mostraRisultato(timeout){
+  fermaTimer();
+  cancellaSessioneInterrotta(); // sessione completata, non serve più
+  const score=n_corrette-n_sbagliate*0.25;
+  const perc=sessione.length>0?Math.round(n_corrette/sessione.length*100):0;
+  let titolo='';
+  if(timeout)titolo='⏰ Tempo scaduto!';
+  else if(isSimulazione)titolo=score>=84?'🎉 Ottimo risultato!':score>=56?'👍 Buona simulazione':'📚 Continua ad allenarti';
+  else titolo=perc>=70?'🎉 Ottimo lavoro!':perc>=50?'👍 Buona prova':'📚 Continua ad allenarti';
+  
+  document.getElementById('ris-titolo').textContent=titolo;
+  document.getElementById('ris-sub').textContent=isSimulazione?'Simulazione completata':'Quiz completato';
+  document.getElementById('ris-score').textContent=fmt(score);
+  document.getElementById('ris-score').style.color=score>0?'var(--color-text-success)':score<0?'var(--color-text-danger)':'var(--color-text-primary)';
+  document.getElementById('ris-score-formula').textContent=n_corrette+'×1 − '+n_sbagliate+'×0.25 = '+fmt(score)+' punti';
+  document.getElementById('ris-corrette').textContent=n_corrette;
+  document.getElementById('ris-sbagliate').textContent=n_sbagliate;
+  document.getElementById('ris-saltate').textContent=n_saltate;
+  document.getElementById('ris-perc').textContent=perc+'%';
+  
+  if(isSimulazione){
+    const st=getStorage();
+    if(!st.storico)st.storico=[];
+    st.storico.unshift({ts:Date.now(),score:score,corrette:n_corrette,sbagliate:n_sbagliate,saltate:n_saltate,tot:sessione.length,timeout});
+    if(st.storico.length>50)st.storico=st.storico.slice(0,50);
+    saveStorage(st);
+  }
+  costruisciRecap();
+  costruisciRisNavGrid();
+  const btnEsportaSess = document.getElementById('btn-esporta-sessione');
+  const nDaSpiegare = logRisposte.filter(e=>e.esito==='wrong'||e.esito==='skipped').length;
+  btnEsportaSess.style.display = nDaSpiegare>0 ? 'block' : 'none';
+  btnEsportaSess.textContent = '📤 Esporta sbagliate/saltate di questa sessione ('+nDaSpiegare+')';
+  showScreen('risultato');
+}
+
+/*
+  Griglia colorata dei risultati (visibile come sidebar in modalità landscape):
+  un quadratino per ogni domanda della sessione, colorato in base all'esito
+  (verde=corretta, rosso=sbagliata, giallo=non data), per capire a colpo
+  d'occhio l'andamento senza scorrere tutto il recap. Cliccando un quadratino
+  si salta e si apre la relativa voce nel recap dettagliato.
+*/
+function costruisciRisNavGrid(){
+  const container = document.getElementById('ris-nav-grid-container');
+  const grid = document.getElementById('ris-nav-grid');
+  if(!container || !grid) return;
+  grid.innerHTML = '';
+
+  if(logRisposte.length === 0){
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+
+  logRisposte.forEach((entry, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'nav-cell esito-' + entry.esito;
+    cell.textContent = i + 1;
+    cell.title = entry.esito === 'correct' ? 'Corretta' : entry.esito === 'wrong' ? 'Sbagliata' : 'Non data';
+    cell.onclick = () => {
+      const target = document.getElementById('recap-item-' + i);
+      if(!target) return;
+      // Assicura che il filtro attivo non nasconda l'item target
+      const filtroAttivo = document.querySelector('.filter-pill.active');
+      if(filtroAttivo && filtroAttivo.dataset.filter !== 'all'){
+        document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+        document.querySelector('[data-filter="all"]').classList.add('active');
+        document.querySelectorAll('.recap-item').forEach(it=>it.style.display='block');
+      }
+      target.scrollIntoView({behavior:'smooth', block:'center'});
+      const body = target.querySelector('.recap-body');
+      const chev = target.querySelector('.recap-chevron');
+      if(body && !body.classList.contains('open')){
+        body.classList.add('open');
+        if(chev) chev.style.transform = 'rotate(180deg)';
+      }
+    };
+    grid.appendChild(cell);
+  });
+}
+
+/* ── Recap ── */
+function costruisciRecap(){
+  const list=document.getElementById('recap-list');list.innerHTML='';
+  const st=getStorage();
+  logRisposte.forEach((entry,i)=>{
+    const d=entry.domanda,esito=entry.esito;
+    const isBookmarked=st.segnalibri.includes(d.id);
+    const item=document.createElement('div');item.className='recap-item';item.id='recap-item-'+i;item.dataset.esito=esito;item.dataset.bookmarked=isBookmarked?'1':'0';
+    const header=document.createElement('div');header.className='recap-header';
+    const dot=document.createElement('div');dot.className='recap-dot '+esito;
+    const qText=document.createElement('div');qText.className='recap-q';qText.innerHTML=escHtml((i+1)+'. ')+formattaDomanda(d.domanda);
+    const bmBtn=document.createElement('button');
+    bmBtn.className='bookmark-btn';
+    bmBtn.style.cssText='font-size:16px;padding:0 2px;flex-shrink:0;';
+    bmBtn.title='Aggiungi/rimuovi segnalibro';
+    bmBtn.textContent='🔖';
+    bmBtn.style.opacity=isBookmarked?'1':'0.3';
+    bmBtn.onclick=(ev)=>{
+      ev.stopPropagation(); // non aprire/chiudere l'item cliccando il segnalibro
+      toggleBookmarkRecap(d.id, item, bmBtn);
+    };
+    const chev=document.createElement('div');chev.className='recap-chevron';chev.textContent='▼';
+    header.appendChild(dot);header.appendChild(qText);header.appendChild(bmBtn);header.appendChild(chev);
+    const body=document.createElement('div');body.className='recap-body';
+    ['A','B','C','D','E'].forEach(l=>{
+      if(!d[l])return;
+      const opt=document.createElement('div');opt.className='recap-opt';
+      const isC=(l===d.risposta_corretta),isS=(l===entry.scelta);
+      if(isC)opt.classList.add('opt-correct');
+      else if(isS&&!isC)opt.classList.add('opt-wrong');
+      const letter=document.createElement('span');letter.className='opt-letter';letter.textContent=l;
+      const testo=document.createElement('span');
+      let nota='';
+      if(isS&&isC)nota=' ✓ (tua risposta)';
+      else if(isC)nota=' ✓ risposta corretta';
+      else if(isS)nota=' ✗ (tua risposta)';
+      testo.textContent=d[l]+nota;
+      opt.appendChild(letter);opt.appendChild(testo);
+      body.appendChild(opt);
+    });
+    if(esito==='skipped'){
+      const nota=document.createElement('div');
+      nota.style.cssText='font-size:12px;color:var(--color-text-secondary);padding:6px 0 0';
+      nota.textContent='Non hai risposto a questa domanda.';
+      body.appendChild(nota);
+    }
+    if(haSpiegazione(d)){
+      const spiegWrap=document.createElement('div');
+      spiegWrap.style.cssText='margin-top:8px';
+      spiegWrap.innerHTML=spiegazioneHTML(d);
+      body.appendChild(spiegWrap);
+    }
+    header.onclick=()=>{const o=body.classList.toggle('open');chev.style.transform=o?'rotate(180deg)':'';}
+    item.appendChild(header);item.appendChild(body);list.appendChild(item);
+  });
+}
+
+function toggleBookmarkRecap(id, itemEl, btnEl){
+  const st=getStorage();
+  const i=st.segnalibri.indexOf(id);
+  if(i===-1) st.segnalibri.push(id); else st.segnalibri.splice(i,1);
+  saveStorage(st);
+  const isBm=st.segnalibri.includes(id);
+  itemEl.dataset.bookmarked=isBm?'1':'0';
+  btnEl.style.opacity=isBm?'1':'0.3';
+  // Se il filtro attivo è "solo segnalibri" e l'item è stato appena rimosso, nascondilo
+  const filtroAttivo=document.querySelector('.filter-pill.active');
+  if(filtroAttivo && filtroAttivo.dataset.filter==='bookmarked'){
+    itemEl.style.display=isBm?'block':'none';
+  }
+}
+
+function filtraRecap(el){
+  document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');
+  const f=el.dataset.filter;
+  document.querySelectorAll('.recap-item').forEach(item=>{
+    if(f==='all') item.style.display='block';
+    else if(f==='bookmarked') item.style.display=(item.dataset.bookmarked==='1')?'block':'none';
+    else item.style.display=(item.dataset.esito===f)?'block':'none';
+  });
+}
+
+/* ── Ricerca ── */
+function eseguiRicerca(query){
+  const cont=document.getElementById('search-results');
+  const q=query.trim().toLowerCase();
+  if(q.length<2){cont.innerHTML='<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';return;}
+  if(DB.length===0){cont.innerHTML='<div class="empty-state">Carica prima il CSV con le domande</div>';return;}
+  const risultati=DB.filter(d=>
+    d.domanda.toLowerCase().includes(q)||
+    ['A','B','C','D','E'].some(l=>d[l]&&d[l].toLowerCase().includes(q))
+  ).slice(0,50);
+  if(risultati.length===0){cont.innerHTML='<div class="empty-state">Nessuna domanda trovata per "<strong>'+escHtml(query)+'</strong>"</div>';return;}
+  cont.innerHTML='<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:10px">'+risultati.length+(risultati.length===50?' (primi 50)':'')+' risultati</p>';
+  risultati.forEach(d=>{
+    const div=document.createElement('div');div.className='search-result-item';
+    const tag='<span class="tag" style="font-size:11px;margin-bottom:6px;display:inline-block">'+escHtml(d.specialita)+'</span>';
+    const testoRicerca=d.domanda.replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
+    const qHtml=highlightText(testoRicerca,query);
+    let opzHtml='';
+    ['A','B','C','D','E'].forEach(l=>{
+      if(d[l]&&d[l].toLowerCase().includes(q)){
+        opzHtml+='<div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px"><strong>'+l+'</strong> '+highlightText(d[l],query)+'</div>';
+      }
+    });
+    div.innerHTML=tag+'<div style="font-size:14px;line-height:1.5">'+qHtml+'</div>'+opzHtml;
+    div.onclick=()=>mostraDettaglioDomanda(d,query);
+    cont.appendChild(div);
+  });
+}
+function mostraDettaglioDomanda(d, query){
+  const cont=document.getElementById('detail-content');
+  let html='<span class="tag" style="margin-bottom:12px;display:inline-block">'+escHtml(d.specialita)+'</span>';
+  html+='<div class="card"><p style="font-size:15px;line-height:1.6">'+formattaDomanda(d.domanda)+'</p></div>';
+  html+='<div id="detail-image-container" style="margin-bottom:12px"></div>';
+  ['A','B','C','D','E'].forEach(l=>{
+    if(!d[l])return;
+    const isC=(l===d.risposta_corretta);
+    const cls=isC?'detail-opt opt-correct':'detail-opt';
+    html+='<div class="'+cls+'"><span style="font-weight:600;width:16px;flex-shrink:0">'+l+'</span><span>'+highlightText(d[l],query||'')+(isC?' ✓':'')+'</span></div>';
+  });
+  if(haSpiegazione(d)){
+    html+='<div style="margin-top:10px">'+spiegazioneHTML(d)+'</div>';
+  }
+  const st=getStorage();
+  const isBm=st.segnalibri.includes(d.id);
+  const isSeg=st.segnalate.includes(d.id);
+  html+='<button onclick="toggleBookmarkDiretto(\''+d.id+'\')" id="bm-detail-btn" class="btn" style="margin-top:16px">'+(isBm?'🔖 Rimuovi segnalibro':'🔖 Aggiungi segnalibro')+'</button>';
+  html+='<button onclick="toggleSegnalazioneDiretta(\''+d.id+'\')" id="seg-detail-btn" class="btn" style="margin-top:8px'+(isSeg?';color:var(--color-text-danger);border-color:var(--color-border-danger)':'')+'">'+(isSeg?'🚩 Rimuovi segnalazione errore':'🚩 Segnala errore in questa domanda')+'</button>';
+  cont.innerHTML=html;
+  renderizzaImmaginiDomanda(d, document.getElementById('detail-image-container'));
+  showScreen('detail');
+  window._detailDomandaId=d.id;
+}
+function toggleBookmarkDiretto(id){
+  const st=getStorage();
+  const i=st.segnalibri.indexOf(id);
+  if(i===-1)st.segnalibri.push(id);else st.segnalibri.splice(i,1);
+  saveStorage(st);
+  const isBm=st.segnalibri.includes(id);
+  document.getElementById('bm-detail-btn').textContent=isBm?'🔖 Rimuovi segnalibro':'🔖 Aggiungi segnalibro';
+}
+function toggleSegnalazioneDiretta(id){
+  const segnalata = toggleSegnalazioneById(id);
+  const btn = document.getElementById('seg-detail-btn');
+  btn.textContent = segnalata?'🚩 Rimuovi segnalazione errore':'🚩 Segnala errore in questa domanda';
+  btn.style.color = segnalata?'var(--color-text-danger)':'';
+  btn.style.borderColor = segnalata?'var(--color-border-danger)':'';
+}
+
+/* ── Gestione domande (crea / modifica / elimina / esporta) ── */
+let gestisciSoloSegnalate = false;
+let gestisciSelezione = new Set();   // id delle domande spuntate
+let gestisciIdVisibili = [];         // id attualmente mostrati (per "seleziona tutte")
+
+function mostraGestisciDomande(){
+  resetFiltriGestisci();
+  renderListaGestisci('');
+  chiudiEditorDomanda();
+  showScreen('gestisci');
+}
+function mostraGestisciSegnalate(){
+  resetFiltriGestisci();
+  gestisciSoloSegnalate = true;
+  aggiornaKnobFiltroSegnalate();
+  renderListaGestisci('');
+  chiudiEditorDomanda();
+  showScreen('gestisci');
+}
+function resetFiltriGestisci(){
+  const inp = document.getElementById('gestisci-search-input');
+  if(inp) inp.value = '';
+  gestisciSoloSegnalate = false;
+  gestisciSelezione.clear();
+  aggiornaKnobFiltroSegnalate();
+  popolaFiltroSpecialita();
+}
+
+/* Riempie la tendina delle specialità con quelle presenti nel DB */
+function popolaFiltroSpecialita(){
+  const sel = document.getElementById('gestisci-filtro-spec');
+  if(!sel) return;
+  const precedente = sel.value;
+  const specs = [...new Set(DB.map(d=>d.specialita).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Tutte le specialità</option>'
+    + specs.map(s=>'<option value="'+escHtml(s)+'">'+escHtml(s)+'</option>').join('');
+  if(specs.includes(precedente)) sel.value = precedente;
+}
+
+function toggleFiltroSegnalate(){
+  gestisciSoloSegnalate = !gestisciSoloSegnalate;
+  aggiornaKnobFiltroSegnalate();
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+function aggiornaKnobFiltroSegnalate(){
+  const knob=document.getElementById('gestisci-filtro-segnalate-knob');
+  const dot=document.getElementById('gestisci-filtro-segnalate-dot');
+  if(knob&&dot){
+    knob.style.background=gestisciSoloSegnalate?'var(--color-text-danger)':'var(--color-background-tertiary)';
+    dot.style.left=gestisciSoloSegnalate?'22px':'2px';
+  }
+}
+
+/*
+  Applica tutti i filtri attivi (specialità + testo + solo segnalate) e
+  restituisce l'elenco completo delle domande corrispondenti.
+*/
+function filtraDomandeGestisci(query){
+  const q = (query||'').trim().toLowerCase();
+  const st = getStorage();
+  const segnalate = new Set(st.segnalate||[]);
+  const selSpec = (document.getElementById('gestisci-filtro-spec')||{}).value || '';
+
+  let elenco = DB;
+  if(selSpec) elenco = elenco.filter(d=>d.specialita===selSpec);
+  if(gestisciSoloSegnalate) elenco = elenco.filter(d=>segnalate.has(d.id));
+  if(q.length>=2){
+    elenco = elenco.filter(d =>
+      (d.domanda||'').toLowerCase().includes(q) ||
+      (d.specialita||'').toLowerCase().includes(q)
+    );
+  }
+  return {elenco, segnalate};
+}
+
+function renderListaGestisci(query){
+  const cont = document.getElementById('gestisci-list');
+  const {elenco, segnalate} = filtraDomandeGestisci(query);
+
+  const countLbl = document.getElementById('gestisci-filtro-segnalate-count');
+  if(countLbl) countLbl.textContent = segnalate.size+' domand'+(segnalate.size===1?'a segnalata':'e segnalate')+' come errate';
+
+  popolaFiltroSpecialita();
+
+  if(DB.length===0){
+    cont.innerHTML = '<div class="empty-state">Nessuna domanda ancora presente.<br>Crea la prima con "➕ Nuova domanda" oppure importa un CSV.</div>';
+    gestisciIdVisibili = [];
+    aggiornaBarraSelezione();
+    return;
+  }
+
+  const totale = elenco.length;
+  const mostrate = elenco.slice(0,150);
+  gestisciIdVisibili = mostrate.map(d=>d.id);
+
+  if(mostrate.length===0){
+    cont.innerHTML = '<div class="empty-state">'+(gestisciSoloSegnalate
+      ? 'Nessuna domanda segnalata con questi filtri. 🎉'
+      : 'Nessuna domanda trovata con questi filtri.')+'</div>';
+    aggiornaBarraSelezione();
+    return;
+  }
+
+  const attivo = window._editorDomandaId;
+  const tutteSpuntate = mostrate.every(d=>gestisciSelezione.has(d.id));
+
+  let html = '<p style="font-size:13px;color:var(--color-text-secondary);margin:10px 0">'
+    + totale + (totale>150?' domande (prime 150 mostrate)':' domande') + '</p>';
+
+  /* ── Tabella: usata in orizzontale ── */
+  html += '<table class="gest-tabella"><thead><tr>'
+    + '<th class="gest-col-check"><input type="checkbox" '+(tutteSpuntate?'checked':'')+' onclick="toggleSelezionaTutte(this.checked)" title="Seleziona tutte le domande mostrate"></th>'
+    + '<th class="gest-col-spec">Specialità</th>'
+    + '<th class="gest-col-num">N°</th>'
+    + '<th>Testo</th>'
+    + '<th class="gest-col-seg">🚩</th>'
+    + '</tr></thead><tbody>';
+  mostrate.forEach(d=>{
+    const testo = (d.domanda||'').replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
+    const isSeg = segnalate.has(d.id);
+    const isSel = gestisciSelezione.has(d.id);
+    html += '<tr class="'+(isSeg?'riga-segnalata ':'')+(d.id===attivo?'riga-attiva':'')+'" onclick="apriEditorDomanda(\''+d.id+'\')">'
+      + '<td class="gest-col-check" onclick="event.stopPropagation()"><input type="checkbox" '+(isSel?'checked':'')+' onclick="toggleSelezioneDomanda(\''+d.id+'\',this.checked)"></td>'
+      + '<td class="gest-col-spec">'+escHtml(d.specialita||'—')+'</td>'
+      + '<td class="gest-col-num">'+escHtml(d.numero_domanda||'—')+'</td>'
+      + '<td class="gest-testo-cella">'+escHtml(testo.length>170?testo.slice(0,170)+'…':testo)+'</td>'
+      + '<td class="gest-col-seg">'+(isSeg?'🚩':'')+'</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  /* ── Card: usate in verticale ── */
+  html += '<div class="gest-card-mobile">';
+  mostrate.forEach(d=>{
+    const testo = (d.domanda||'').replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
+    const isSeg = segnalate.has(d.id);
+    const isSel = gestisciSelezione.has(d.id);
+    html += '<div class="gestisci-item'+(isSeg?' gestisci-item-segnalata':'')+'">'
+      + '<input type="checkbox" class="gest-item-check" '+(isSel?'checked':'')+' onclick="toggleSelezioneDomanda(\''+d.id+'\',this.checked)">'
+      + '<span class="tag" style="font-size:11px">'+escHtml(d.specialita||'—')+'</span>'
+      + (d.numero_domanda?' <span class="tag" style="font-size:11px">n° '+escHtml(d.numero_domanda)+'</span>':'')
+      + (isSeg?' <span class="tag" style="font-size:11px;color:var(--color-text-danger);border-color:var(--color-border-danger)">🚩 da correggere</span>':'')
+      + '<div class="gestisci-item-testo">'+escHtml(testo.length>140?testo.slice(0,140)+'…':testo)+'</div>'
+      + '<div class="gestisci-item-azioni">'
+      + '<button onclick="apriEditorDomanda(\''+d.id+'\')">✏️ Modifica</button>'
+      + '<button onclick="toggleSegnalazioneGestisci(\''+d.id+'\')">'+(isSeg?'✅ Risolta':'🚩 Segnala')+'</button>'
+      + '<button class="del" onclick="eliminaDomandaGestisci(\''+d.id+'\')">🗑 Elimina</button>'
+      + '</div></div>';
+  });
+  html += '</div>';
+
+  cont.innerHTML = html;
+  aggiornaBarraSelezione();
+}
+
+/* ── Selezione multipla ── */
+function toggleSelezioneDomanda(id, spuntata){
+  if(spuntata) gestisciSelezione.add(id); else gestisciSelezione.delete(id);
+  aggiornaBarraSelezione();
+}
+function toggleSelezionaTutte(spuntata){
+  gestisciIdVisibili.forEach(id=>{ if(spuntata) gestisciSelezione.add(id); else gestisciSelezione.delete(id); });
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+function deselezionaTutte(){
+  gestisciSelezione.clear();
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+function aggiornaBarraSelezione(){
+  const bar = document.getElementById('gest-bulk-bar');
+  const lbl = document.getElementById('gest-bulk-count');
+  if(!bar||!lbl) return;
+  const n = gestisciSelezione.size;
+  bar.classList.toggle('attiva', n>0);
+  lbl.textContent = n+' selezionat'+(n===1?'a':'e');
+}
+
+function eliminaSelezionate(){
+  const n = gestisciSelezione.size;
+  if(n===0) return;
+  if(!confirm('Eliminare definitivamente '+n+' domand'+(n===1?'a':'e')+'?\n\nL\'operazione non può essere annullata.')) return;
+  DB = DB.filter(d=>!gestisciSelezione.has(d.id));
+  gestisciSelezione.clear();
+  // Se la domanda aperta nell'editor è stata eliminata, chiudi l'editor
+  if(window._editorDomandaId && !DB.some(d=>d.id===window._editorDomandaId)) chiudiEditorDomanda();
+  saveDBToIDB(DB).finally(()=>{
+    aggiornHome();
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  });
+}
+
+function segnalaSelezionate(){
+  if(gestisciSelezione.size===0) return;
+  const st = getStorage();
+  // Se sono già tutte segnalate, il pulsante funziona al contrario (rimuove le segnalazioni)
+  const tutteGiaSegnalate = [...gestisciSelezione].every(id=>st.segnalate.includes(id));
+  gestisciSelezione.forEach(id=>{
+    const i = st.segnalate.indexOf(id);
+    if(tutteGiaSegnalate){ if(i!==-1) st.segnalate.splice(i,1); }
+    else { if(i===-1) st.segnalate.push(id); }
+  });
+  saveStorage(st);
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+
+function esportaSelezionate(){
+  if(gestisciSelezione.size===0) return;
+  const sottoinsieme = DB.filter(d=>gestisciSelezione.has(d.id));
+  esportaDomandeCSV(sottoinsieme, 'domande_selezionate');
+}
+
+function toggleSegnalazioneGestisci(id){
+  toggleSegnalazioneById(id);
+  renderListaGestisci(document.getElementById('gestisci-search-input').value);
+}
+
+function eliminaDomandaGestisci(id){
+  const d = DB.find(x=>x.id===id);
+  if(!d) return;
+  if(!confirm('Eliminare definitivamente questa domanda?\n\n"'+(d.domanda||'').slice(0,80)+'…"')) return;
+  DB = DB.filter(x=>x.id!==id);
+  gestisciSelezione.delete(id);
+  if(window._editorDomandaId===id) chiudiEditorDomanda();
+  saveDBToIDB(DB).finally(()=>{
+    aggiornHome();
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  });
+}
+
+/*
+  Genera un id univoco per le domande create manualmente dall'app
+  (prefisso "manuale_" per distinguerle a colpo d'occhio da quelle
+  importate da CSV, che di solito hanno id numerici o "gen_...").
+*/
+function generaIdDomandaManuale(){
+  let id;
+  do{
+    id = 'manuale_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+  } while(DB.some(d=>d.id===id));
+  return id;
+}
+
+/*
+  Apre l'editor. In orizzontale è la colonna di destra sempre visibile;
+  in verticale prende il posto dell'elenco (classe "mostra-editor").
+*/
+function apriEditorDomanda(id){
+  window._editorDomandaId = id;
+  const titolo = document.getElementById('editor-titolo');
+  const btnElimina = document.getElementById('btn-elimina-editor');
+
+  document.getElementById('editor-placeholder').style.display = 'none';
+  document.getElementById('editor-form').style.display = 'block';
+
+  // Popola il datalist delle specialità già esistenti, per coerenza col resto del DB
+  const specs = [...new Set(DB.map(d=>d.specialita).filter(Boolean))].sort();
+  document.getElementById('ed-specialita-list').innerHTML = specs.map(s=>'<option value="'+escHtml(s)+'">').join('');
+
+  ['A','B','C','D','E'].forEach(l=>{ document.getElementById('ed-'+l).value=''; });
+  document.querySelectorAll('input[name="ed-corretta"]').forEach(r=>r.checked=false);
+
+  if(id){
+    const d = DB.find(x=>x.id===id);
+    if(!d){ chiudiEditorDomanda(); return; }
+    titolo.textContent = 'Modifica domanda';
+    btnElimina.style.display = 'block';
+    document.getElementById('ed-specialita').value = d.specialita||'';
+    document.getElementById('ed-domanda').value = d.domanda||'';
+    ['A','B','C','D','E'].forEach(l=>{ document.getElementById('ed-'+l).value = d[l]||''; });
+    document.getElementById('ed-spiegazione').value = d.spiegazione||'';
+    document.getElementById('ed-numero').value = d.numero_domanda||'';
+    const radio = document.querySelector('input[name="ed-corretta"][value="'+d.risposta_corretta+'"]');
+    if(radio) radio.checked = true;
+    const st = getStorage();
+    document.getElementById('editor-avviso-segnalata').style.display = st.segnalate.includes(id) ? 'flex' : 'none';
+  } else {
+    titolo.textContent = 'Nuova domanda';
+    btnElimina.style.display = 'none';
+    document.getElementById('ed-specialita').value = '';
+    document.getElementById('ed-domanda').value = '';
+    document.getElementById('ed-spiegazione').value = '';
+    document.getElementById('ed-numero').value = '';
+    document.getElementById('editor-avviso-segnalata').style.display = 'none';
+  }
+
+  document.getElementById('gest-layout').classList.add('mostra-editor');
+  // Evidenzia nella tabella la riga corrispondente
+  if(document.getElementById('screen-gestisci').classList.contains('active')){
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  }
+}
+
+/* Chiude l'editor: in verticale torna all'elenco, in orizzontale mostra il placeholder */
+function chiudiEditorDomanda(){
+  window._editorDomandaId = null;
+  document.getElementById('gest-layout').classList.remove('mostra-editor');
+  document.getElementById('editor-form').style.display = 'none';
+  document.getElementById('editor-placeholder').style.display = 'block';
+  document.getElementById('editor-titolo').textContent = 'Modifica domanda';
+  if(document.getElementById('screen-gestisci').classList.contains('active')){
+    renderListaGestisci(document.getElementById('gestisci-search-input').value);
+  }
+}
+
+function risolviSegnalazioneEditor(){
+  const id = window._editorDomandaId;
+  if(!id) return;
+  toggleSegnalazioneById(id); // era segnalata, quindi questo la rimuove
+  document.getElementById('editor-avviso-segnalata').style.display = 'none';
+}
+
+function salvaDomandaEditor(){
+  const specialita = document.getElementById('ed-specialita').value.trim();
+  const domanda = document.getElementById('ed-domanda').value.trim();
+  const opzioni = {};
+  ['A','B','C','D','E'].forEach(l=>{ opzioni[l] = document.getElementById('ed-'+l).value.trim(); });
+  const correttaEl = document.querySelector('input[name="ed-corretta"]:checked');
+  const risposta_corretta = correttaEl ? correttaEl.value : '';
+  const spiegazione = document.getElementById('ed-spiegazione').value.trim();
+  const numero_domanda = document.getElementById('ed-numero').value.trim();
+
+  if(!specialita){ alert('Inserisci la specialità.'); return; }
+  if(!domanda){ alert('Inserisci il testo della domanda.'); return; }
+  if(!opzioni.A || !opzioni.B){ alert('Servono almeno le opzioni A e B.'); return; }
+  if(!risposta_corretta){ alert('Seleziona quale opzione è quella corretta.'); return; }
+  if(!opzioni[risposta_corretta]){ alert('La risposta corretta selezionata ('+risposta_corretta+') non ha un testo: compilala oppure scegline un\'altra.'); return; }
+
+  const id = window._editorDomandaId;
+  if(id){
+    const idx = DB.findIndex(x=>x.id===id);
+    if(idx===-1){ alert('Questa domanda non esiste più nel database.'); showScreen('gestisci'); return; }
+    const aggiornata = { ...DB[idx], specialita, domanda, ...opzioni, risposta_corretta, spiegazione, numero_domanda };
+    // Rimuove le opzioni vuote (es. E non compilata) per non lasciare campi fantasma
+    ['A','B','C','D','E'].forEach(l=>{ if(!aggiornata[l]) delete aggiornata[l]; });
+    if(!spiegazione) delete aggiornata.spiegazione;
+    if(!numero_domanda) delete aggiornata.numero_domanda;
+    DB[idx] = aggiornata;
+  } else {
+    const nuova = { id: generaIdDomandaManuale(), specialita, domanda, ...opzioni, risposta_corretta, spiegazione, numero_domanda };
+    ['A','B','C','D','E'].forEach(l=>{ if(!nuova[l]) delete nuova[l]; });
+    if(!spiegazione) delete nuova.spiegazione;
+    if(!numero_domanda) delete nuova.numero_domanda;
+    DB.push(nuova);
+  }
+
+  const idSalvato = id || DB[DB.length-1].id;
+  saveDBToIDB(DB).then(()=>{
+    aggiornHome();
+    popolaFiltroSpecialita();
+    // Resta sulla domanda appena salvata, così in orizzontale si vede subito il risultato
+    apriEditorDomanda(idSalvato);
+  }).catch(()=>{
+    aggiornHome();
+    alert('⚠ Domanda salvata in memoria, ma il salvataggio permanente non è riuscito: potrebbe non essere ricordata al prossimo accesso.');
+    apriEditorDomanda(idSalvato);
+  });
+}
+
+function eliminaDomandaEditor(){
+  const id = window._editorDomandaId;
+  if(!id) return;
+  eliminaDomandaGestisci(id); // si occupa anche di chiudere l'editor
+}
+
+/*
+  Costruisce e scarica un CSV a partire da un elenco di domande, includendo
+  tutte le colonne effettivamente usate da almeno una di esse. Condiviso fra
+  l'export completo e quello delle sole domande selezionate.
+*/
+function esportaDomandeCSV(elenco, nomeBase){
+  if(!elenco || elenco.length===0){ alert('Nessuna domanda da esportare.'); return; }
+
+  const ordinePreferito = ['id','specialita','numero_domanda','domanda','immagini','A','B','C','D','E','risposta_corretta','spiegazione'];
+  const colonneViste = new Set();
+  elenco.forEach(d=>{ Object.keys(d).forEach(k=>{ if(!k.startsWith('__')) colonneViste.add(k); }); });
+  const colonneOrdinate = ordinePreferito.filter(c=>colonneViste.has(c));
+  const colonneExtra = [...colonneViste].filter(c=>!ordinePreferito.includes(c)).sort();
+  const colonneFinali = [...colonneOrdinate, ...colonneExtra];
+
+  const righe = [colonneFinali.map(csvEscape).join(';')];
+  elenco.forEach(d=>{ righe.push(colonneFinali.map(c=>csvEscape(d[c])).join(';')); });
+
+  const blob = new Blob([righe.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeBase+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  return elenco.length;
+}
+
+/*
+  Esporta l'INTERO database domande (comprese quelle create/modificate
+  in-app) in un unico file CSV. Pensato per sostituire/aggiornare il CSV
+  master tenuto sul proprio computer.
+*/
+function esportaDBCompleto(){
+  const n = esportaDomandeCSV(DB, 'domande_complete');
+  if(!n) return;
+  alert('✓ Esportate '+n+' domande in un unico file CSV.\n\n'+
+    'Questo file contiene TUTTE le domande attualmente nel database (quelle originarie + quelle create/modificate qui dentro). '+
+    'Puoi usarlo per sostituire il tuo vecchio CSV come nuova versione master.');
+}
+
+/* ── Storico ── */
+function mostraSceltaSpec(){
+  const annateLower=ANNATE_SSM.map(a=>a.toLowerCase());
+  const specs=[...new Set(DB.map(d=>d.specialita))].filter(s=>!annateLower.includes(s.trim().toLowerCase())).sort();
+  const list=document.getElementById('spec-list'); list.innerHTML='';
+  if(!specs.length){alert('Nessuna specialità disponibile. Carica prima il CSV.');return;}
+  specs.forEach(s=>{
+    const count=DB.filter(d=>d.specialita===s).length;
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:8px;transition:background 0.1s;';
+    div.innerHTML='<span style="font-size:15px">'+s+'</span><span style="font-size:13px;color:var(--color-text-secondary)">'+count+' domande</span>';
+    div.onmouseover=()=>div.style.background='var(--color-background-secondary)';
+    div.onmouseout=()=>div.style.background='var(--color-background-primary)';
+    div.onclick=()=>avviaQuiz(s);
+    list.appendChild(div);
+  });
+  showScreen('spec');
+}
+
+/* ── Annales ── */
+// Tutte le annate SSM riconosciute (ordine cronologico inverso = più recenti prima)
+const ANNATE_SSM = [
+  'SSM 2026','SSM 2025','SSM 2024','SSM 2023','SSM 2022','SSM 2021',
+  'SSM 2020','SSM 2019','SSM 2018','SSM 2017','SSM 2016','SSM 2015','SSM 2014',
+];
+
+function mostraAnnales(){
+  if(DB.length===0){alert('Carica prima il CSV.');return;}
+
+  // Calcola quante domande ci sono per ogni annata nel DB caricato
+  const conteggioPerAnnata = {};
+  for(const d of DB){
+    const s = (d.specialita||'').trim();
+    if(ANNATE_SSM.map(a=>a.toLowerCase()).includes(s.toLowerCase())){
+      const chiave = s.toUpperCase().replace('SSM ','SSM '); // normalizza
+      // Trova l'annata canonica
+      const canonica = ANNATE_SSM.find(a=>a.toLowerCase()===s.toLowerCase());
+      if(canonica) conteggioPerAnnata[canonica]=(conteggioPerAnnata[canonica]||0)+1;
+    }
+  }
+
+  const list=document.getElementById('annales-list');
+  list.innerHTML='';
+
+  // Anni presenti nel DB
+  const annatePresenti = ANNATE_SSM.filter(a => (conteggioPerAnnata[a]||0)>0);
+
+  if(annatePresenti.length===0){
+    list.innerHTML='<div class="empty-state">Nessuna annata SSM trovata nel database.<br>Importa un CSV che contenga specialità come "SSM 2024".</div>';
+    showScreen('annales');
+    return;
+  }
+
+  // Bottone "Tutte le annate"
+  const totSSM = annatePresenti.reduce((s,a)=>s+(conteggioPerAnnata[a]||0),0);
+  const divTutte=document.createElement('div');
+  divTutte.className='section-title';divTutte.style.marginTop='0';
+  divTutte.textContent='Tutte le annate';
+  list.appendChild(divTutte);
+
+  const btnTutte=document.createElement('div');
+  btnTutte.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:16px;transition:background 0.1s;';
+  btnTutte.innerHTML='<div><span style="font-size:15px">📅 Annales completo</span><span style="font-size:12px;color:var(--color-text-secondary);display:block;margin-top:2px">Tutte le annate mescolate</span></div><span style="font-size:13px;color:var(--color-text-secondary)">'+totSSM+' domande</span>';
+  btnTutte.onmouseover=()=>btnTutte.style.background='var(--color-background-secondary)';
+  btnTutte.onmouseout=()=>btnTutte.style.background='var(--color-background-primary)';
+  btnTutte.onclick=()=>avviaQuizAnnales(annatePresenti);
+  list.appendChild(btnTutte);
+
+  // Una riga per ogni annata
+  const divPerAnno=document.createElement('div');
+  divPerAnno.className='section-title';
+  divPerAnno.textContent='Per annata';
+  list.appendChild(divPerAnno);
+
+  // Mappa anno → emoji stagionale (puramente estetico)
+  const emoji={'2026':'🆕','2025':'✨','2024':'⭐','2023':'📗','2022':'📘','2021':'📙','2020':'📕','2019':'📓','2018':'📑','2017':'📰','2016':'📒','2015':'📔','2014':'📃'};
+
+  annatePresenti.forEach(annata=>{
+    const count=conteggioPerAnnata[annata]||0;
+    const anno=annata.replace('SSM ','');
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:8px;transition:background 0.1s;';
+    div.innerHTML='<div><span style="font-size:15px">'+(emoji[anno]||'📄')+' SSM '+anno+'</span></div><span style="font-size:13px;color:var(--color-text-secondary)">'+count+' domande</span>';
+    div.onmouseover=()=>div.style.background='var(--color-background-secondary)';
+    div.onmouseout=()=>div.style.background='var(--color-background-primary)';
+    div.onclick=()=>avviaQuizAnnales([annata]);
+    list.appendChild(div);
+  });
+
+  showScreen('annales');
+}
+
+function avviaQuizAnnales(annate){
+  if(DB.length===0)return;
+  if(isAnnalesEsame){
+    avviaSimulazioneAnnales(annate);
+    return;
+  }
+  isSimulazione=false;
+  ultimaModalita='annales_'+annate.join(',');
+  fermaTimer();
+  const nomiLower=annate.map(a=>a.toLowerCase());
+  const pool=raggruppaEMescola(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())&&passaFiltroImmagini(d)), shuffle);
+  if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate'+(soloImmagini?' con immagine':'')+'.');return;}
+  sessione=pool.slice(0,Math.min(pool.length,numDomande));
+  iniziaSessione();
+  if(isCountdown){
+    avviaTimer(COUNTDOWN_SEC_PER_DOMANDA);
+  } else {
+    document.getElementById('timer-box').style.display='none';
+  }
+}
+
+function toggleAnnalesEsame(){
+  isAnnalesEsame=!isAnnalesEsame;
+  const knob=document.getElementById('annales-esame-knob');
+  const dot=document.getElementById('annales-esame-dot');
+  if(isAnnalesEsame){
+    knob.style.background='var(--color-text-success)';
+    dot.style.left='22px';
+  } else {
+    knob.style.background='var(--color-background-tertiary)';
+    dot.style.left='2px';
+  }
+}
+
+function avviaSimulazioneAnnales(annate){
+  if(DB.length===0)return;
+  const nomiLower=annate.map(a=>a.toLowerCase());
+  const pool=raggruppaEMescola(DB.filter(d=>nomiLower.includes((d.specialita||'').trim().toLowerCase())&&passaFiltroImmagini(d)), shuffle);
+  if(pool.length===0){alert('Nessuna domanda trovata per le annate selezionate'+(soloImmagini?' con immagine':'')+'.');return;}
+  isSimulazione=true;
+  ultimaModalita='annales_'+annate.join(',');
+  // Usa tutte le domande disponibili fino a 140
+  sessione=pool.slice(0,Math.min(pool.length,140));
+  iniziaSessione();
+  avviaTimer(210*60);
+}
+
+function mostraStorico(){
+  const st=getStorage();
+  const list=document.getElementById('storico-list');list.innerHTML='';
+  if(!st.storico||st.storico.length===0){
+    list.innerHTML='<div class="empty-state">Nessuna simulazione completata ancora.<br>Fai la tua prima simulazione!</div>';
+    showScreen('storico');return;
+  }
+  const scores=st.storico.map(s=>s.score).reverse();
+  const maxS=Math.max(...scores,1);
+  let trendHtml='<div style="margin-bottom:16px"><div class="section-title" style="margin-top:0">Andamento punteggio</div><div style="display:flex;align-items:flex-end;gap:3px;height:48px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px">';
+  scores.slice(-20).forEach(s=>{
+    const h=Math.max(4,Math.round((s/maxS)*32));
+    const col=s>=84?'var(--color-text-success)':s>=56?'#f59e0b':'var(--color-text-danger)';
+    trendHtml+='<div style="flex:1;height:'+h+'px;background:'+col+';border-radius:2px;min-width:6px" title="'+fmt(s)+'"></div>';
+  });
+  trendHtml+='</div></div>';
+  list.innerHTML=trendHtml;
+
+  st.storico.forEach((sim,i)=>{
+    const score=sim.score,perc=Math.round(sim.corrette/sim.tot*100);
+    const scoreCol=score>=84?'var(--color-text-success)':score>=56?'#f59e0b':'var(--color-text-danger)';
+    const div=document.createElement('div');div.className='storico-item';
+    div.innerHTML=
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div>'+
+          '<div class="storico-score" style="color:'+scoreCol+'">'+fmt(score)+'<span style="font-size:16px;font-weight:400;color:var(--color-text-secondary)"> / '+sim.tot+'</span></div>'+
+          '<div class="storico-meta">'+fmtDate(sim.ts)+(sim.timeout?' · ⏰ tempo scaduto':'')+'</div>'+
+        '</div>'+
+        '<div style="font-size:22px;font-weight:500;color:var(--color-text-secondary)">'+perc+'%</div>'+
+      '</div>'+
+      '<div class="progress-bar-bg" style="margin:10px 0 8px"><div class="progress-bar-fill" style="width:'+perc+'%;background:'+scoreCol+'"></div></div>'+
+      '<div class="storico-pills">'+
+        '<span class="storico-pill sp-ok">✓ '+sim.corrette+' corrette</span>'+
+        '<span class="storico-pill sp-err">✗ '+sim.sbagliate+' sbagliate</span>'+
+        '<span class="storico-pill sp-skip">— '+sim.saltate+' saltate</span>'+
+      '</div>';
+    list.appendChild(div);
+  });
+  const btnDel=document.createElement('button');
+  btnDel.className='btn';btnDel.style.cssText='margin-top:1rem;color:var(--color-text-danger);border-color:var(--color-border-danger)';
+  btnDel.textContent='Cancella storico simulazioni';
+  btnDel.onclick=()=>{if(!confirm('Cancellare tutto lo storico?'))return;const st2=getStorage();st2.storico=[];saveStorage(st2);mostraStorico();};
+  list.appendChild(btnDel);
+  showScreen('storico');
+}
+
+/* ── Statistiche ── */
+/* ── Esporta domande sbagliate/saltate per generare spiegazioni con un'AI ── */
+function csvEscape(v){
+  const s = (v===undefined||v===null) ? '' : String(v);
+  return '"' + s.replace(/"/g,'""') + '"';
+}
+
+function esportaDomandeDaStudiare(){
+  const st = getStorage();
+  const idSbagliate = new Set(st.sbagliate || []);
+  const idSaltate = new Set(st.saltate || []);
+  const idUnione = new Set([...idSbagliate, ...idSaltate]);
+
+  if(idUnione.size === 0){
+    alert('Nessuna domanda sbagliata o saltata da esportare.\n\nFai qualche quiz o simulazione, poi torna qui.');
+    return;
+  }
+
+  const righe = [];
+  righe.push(['id','specialita','domanda','A','B','C','D','E','risposta_corretta','esito'].map(csvEscape).join(';'));
+
+  let trovate = 0;
+  idUnione.forEach(id=>{
+    const d = DB.find(x=>x.id===id);
+    if(!d) return; // domanda non più presente nel DB corrente
+    trovate++;
+    let esito;
+    if(idSbagliate.has(id) && idSaltate.has(id)) esito='sbagliata_e_saltata';
+    else if(idSbagliate.has(id)) esito='sbagliata';
+    else esito='saltata';
+    righe.push([
+      d.id, d.specialita, d.domanda, d.A, d.B, d.C, d.D, d.E, d.risposta_corretta, esito
+    ].map(csvEscape).join(';'));
+  });
+
+  if(trovate === 0){
+    alert('Le domande sbagliate/saltate salvate non corrispondono più al database domande attualmente caricato.\n\nSe hai cambiato CSV, i vecchi progressi potrebbero riferirsi a id diversi.');
+    return;
+  }
+
+  const csvText = righe.join('\n');
+  const blob = new Blob([csvText], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const data = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = 'domande_da_studiare_'+data+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+
+  alert('✓ Esportate '+trovate+' domande (sbagliate: '+idSbagliate.size+', saltate: '+idSaltate.size+').\n\n'+
+    'Come procedere:\n'+
+    '1. Carica questo file su un\'AI (es. Claude) e chiedi di aggiungere una spiegazione per ogni domanda\n'+
+    '2. Fatti restituire un file con colonne "id" e "spiegazione" (stesso delimitatore ";")\n'+
+    '3. Usa lo script Python "unisci_spiegazioni.py" per integrare le spiegazioni nel CSV principale');
+}
+
+/*
+  Esporta le domande sbagliate/saltate della SIMULAZIONE/QUIZ APPENA CONCLUSO
+  (non l'intero storico), con TUTTE le colonne disponibili nel CSV per ogni
+  domanda (id, specialita, numero_domanda, domanda, immagini, A-E,
+  risposta_corretta, spiegazione se già presente, ed eventuali colonne extra),
+  più la scelta data dall'utente e l'esito. Pronto per essere caricato su un'AI.
+*/
+function esportaDomandeSessioneCorrente(){
+  const daEsportare = logRisposte.filter(e=>e.esito==='wrong'||e.esito==='skipped');
+  if(daEsportare.length===0){
+    alert('Nessuna domanda sbagliata o saltata in questa sessione.');
+    return;
+  }
+
+  // Ordine preferito delle colonne note; eventuali colonne extra nel CSV
+  // (es. "spiegazione" già presente, o altre) vengono aggiunte in coda.
+  const ordinePreferito = ['id','specialita','numero_domanda','domanda','immagini','A','B','C','D','E','risposta_corretta','spiegazione'];
+  const colonneViste = new Set();
+  daEsportare.forEach(e=>{
+    Object.keys(e.domanda).forEach(k=>{
+      if(!k.startsWith('__')) colonneViste.add(k);
+    });
+  });
+  const colonneOrdinate = ordinePreferito.filter(c=>colonneViste.has(c));
+  const colonneExtra = [...colonneViste].filter(c=>!ordinePreferito.includes(c)).sort();
+  const colonneFinali = [...colonneOrdinate, ...colonneExtra, 'scelta_utente', 'esito'];
+
+  const righe = [];
+  righe.push(colonneFinali.map(csvEscape).join(';'));
+  daEsportare.forEach(e=>{
+    const riga = colonneFinali.map(c=>{
+      if(c==='scelta_utente') return csvEscape(e.scelta || '(nessuna risposta)');
+      if(c==='esito') return csvEscape(e.esito==='wrong'?'sbagliata':'saltata');
+      return csvEscape(e.domanda[c]);
+    });
+    righe.push(riga.join(';'));
+  });
+
+  const csvText = righe.join('\n');
+  const blob = new Blob([csvText], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const data = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href = url;
+  a.download = 'sessione_da_studiare_'+data+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+
+  alert('✓ Esportate '+daEsportare.length+' domande di questa sessione (con tutte le colonne del CSV).\n\n'+
+    'Carica il file su un\'AI chiedendo una spiegazione per ogni domanda (colonne "id" + "spiegazione"), '+
+    'poi usa lo script Python "unisci_spiegazioni.py" per integrarle nel CSV principale.');
+}
+
+function mostraStats(){
+  const st=getStorage(),specs=[...new Set(DB.map(d=>d.specialita))].sort();
+  const cont=document.getElementById('stats-content');cont.innerHTML='';
+  const tot=Object.values(st.risposte).length,g=Object.values(st.risposte).filter(r=>r).length;
+  const p=tot>0?Math.round(g/tot*100):0;
+  const bm=(st.segnalibri||[]).length;
+  const nSbagliate=(st.sbagliate||[]).length, nSaltate=(st.saltate||[]).length;
+  const nSegnalate=(st.segnalate||[]).length;
+  cont.innerHTML='<div class="card"><p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:8px">Statistiche globali</p><p style="font-size:28px;font-weight:500">'+p+'%</p><p style="font-size:13px;color:var(--color-text-secondary)">'+g+' corrette su '+tot+' risposte · 🔖 '+bm+' segnalibri · ❌ '+nSbagliate+' sbagliate · — '+nSaltate+' saltate</p><div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:'+p+'%"></div></div></div>'
+    +(nSegnalate>0 ? '<button class="btn" onclick="mostraGestisciSegnalate()" style="color:var(--color-text-danger);border-color:var(--color-border-danger)">🚩 '+nSegnalate+' domand'+(nSegnalate===1?'a segnalata':'e segnalate')+' da correggere</button>' : '')
+    +'<div class="section-title">Per specialità</div>';
+  specs.forEach(s=>{
+    const ids=DB.filter(d=>d.specialita===s).map(d=>d.id);
+    const r=ids.map(id=>st.risposte[id]).filter(x=>x!==undefined);
+    const gg=r.filter(x=>x).length,pp=r.length>0?Math.round(gg/r.length*100):null;
+    const div=document.createElement('div');div.className='card';div.style.marginBottom='8px';
+    div.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:14px">'+s+'</span><span style="font-size:14px;font-weight:500">'+(pp!==null?pp+'%':'—')+'</span></div><div class="progress-bar-bg" style="margin:0"><div class="progress-bar-fill" style="width:'+(pp||0)+'%"></div></div><p style="font-size:12px;color:var(--color-text-secondary);margin-top:6px">'+r.length+' / '+ids.length+' domande affrontate</p>';
+    cont.appendChild(div);
+  });
+  showScreen('stats');
+}
+function resetStats(){
+  const msg = 'Sei sicuro?\n\n- Tutti i progressi, segnalibri e storico verranno cancellati.\n- Il database domande rimarrà salvato.\n\nSe vuoi cancellare anche le domande, usa "Rimuovi database domande".'
+  if(!confirm(msg))return;
+  saveStorage({risposte:{},sbagliate:[],segnalibri:[],storico:[],saltate:[]});
+  aggiornHome();showScreen('home');
+}
+function resetDB(){
+  if(!confirm('Rimuovere il database delle domande? Dovrai reimportare il CSV.'))return;
+  clearDBFromIDB();
+  DB=[];
+  initDemoData();
+  showScreen('home');
+}
+
+function resetImmagini(){
+  if(!confirm('Rimuovere tutte le immagini importate? Dovrai reimportare lo ZIP.'))return;
+  clearImmaginiIDB().then(()=>{
+    // Svuota anche la cache in memoria
+    Object.values(cacheImmaginiURL).forEach(url=>URL.revokeObjectURL(url));
+    Object.keys(cacheImmaginiURL).forEach(k=>delete cacheImmaginiURL[k]);
+    aggiornaLabelImmagini();
+  });
+}
+
+async function aggiornaLabelImmagini(){
+  const n = await contaImmaginiIDB();
+  const lbl = document.getElementById('img-count-label');
+  const rmBtn = document.getElementById('btn-remove-img');
+  if(n>0){
+    lbl.textContent = '🖼 ' + n + ' immagini caricate';
+    lbl.style.display = 'block';
+    rmBtn.style.display = 'block';
+  } else {
+    lbl.style.display = 'none';
+    rmBtn.style.display = 'none';
+  }
+}
+
+/* ── Uscita ── */
+function confermaUscita(){
+  if(isSimulazione){
+    const scelta = confirm('Vuoi CONSEGNARE la simulazione e vedere il risultato?\n\nOK = Consegna e vedi risultato\nAnnulla = Torna alla home abbandonando la simulazione');
+    if(scelta){
+      terminaSimulazione(false);
+    } else {
+      if(confirm('Sei sicuro di voler abbandonare? Il risultato NON verrà salvato.'))tornaHome();
+    }
+  } else {
+    tornaHome();
+  }
+}
+function tornaHome(){
+  fermaTimer();
+  // Salva sessione interrotta se era in corso e non è finita
+  if(sessione&&sessione.length>0&&idx<sessione.length){
+    salvaSessioneInterrotta();
+  }
+  aggiornHome();showScreen('home');
+}
+function abbandonaSim(){
+  if(confirm('Sei sicuro di voler abbandonare la simulazione?\nIl risultato NON verrà salvato.'))tornaHome();
+  // tornaHome() si occupa già di salvare la sessione interrotta
+}
+
+/* ── CSV ── */
+/*
+  Parser CSV completo (rispetta le virgolette): a differenza di un semplice
+  split(';'), gestisce correttamente:
+    - delimitatori dentro campi tra virgolette (es. "Qual è la terapia; in questo caso?")
+    - virgolette doppie escapate ("" dentro un campo tra virgolette → " letterale)
+    - ritorni a capo dentro un campo tra virgolette
+  Senza questo, una colonna aggiunta in fondo (es. "immagini") rischia di
+  ricevere valori disallineati ogni volta che un testo precedente contiene
+  accidentalmente il carattere delimitatore.
+*/
+function parseCSVCompleto(testo, delimitatore){
+  const righe = [];
+  let riga = [];
+  let campo = '';
+  let dentroVirgolette = false;
+  let i = 0;
+  const n = testo.length;
+
+  while(i < n){
+    const c = testo[i];
+
+    if(dentroVirgolette){
+      if(c === '"'){
+        if(testo[i+1] === '"'){
+          campo += '"'; // virgoletta escapata
+          i += 2;
+          continue;
+        } else {
+          dentroVirgolette = false;
+          i++;
+          continue;
+        }
+      } else {
+        campo += c;
+        i++;
+        continue;
+      }
+    } else {
+      if(c === '"'){
+        dentroVirgolette = true;
+        i++;
+        continue;
+      } else if(c === delimitatore){
+        riga.push(campo);
+        campo = '';
+        i++;
+        continue;
+      } else if(c === '\r'){
+        i++; // ignora, gestito da \n o fine campo
+        continue;
+      } else if(c === '\n'){
+        riga.push(campo);
+        righe.push(riga);
+        riga = [];
+        campo = '';
+        i++;
+        continue;
+      } else {
+        campo += c;
+        i++;
+        continue;
+      }
+    }
+  }
+  // Ultimo campo/riga se il testo non termina con \n
+  if(campo.length > 0 || riga.length > 0){
+    riga.push(campo);
+    righe.push(riga);
+  }
+  return righe.filter(r => !(r.length===1 && r[0].trim()===''));
+}
+
+function caricaCSV(testo){
+  const delimitatore = ';';
+  const righeParsed = parseCSVCompleto(testo, delimitatore);
+  if(righeParsed.length < 2) return [];
+
+  const header = righeParsed[0].map(h => h.trim());
+  const domande = [];
+  for(let i=1; i<righeParsed.length; i++){
+    const cols = righeParsed[i].map(c => c.trim());
+    if(cols.length < header.length) continue;
+    const obj = {};
+    header.forEach((h,j) => obj[h] = cols[j] || '');
+    // Normalizza il nome colonna: il codice usa internamente "immagini" (plurale),
+    // ma il CSV potrebbe averla chiamata "immagine" (singolare) o con maiuscole diverse.
+    if(obj.immagini === undefined){
+      const chiaveImg = Object.keys(obj).find(k => k.toLowerCase() === 'immagine' || k.toLowerCase() === 'immagini');
+      if(chiaveImg){
+        obj.immagini = obj[chiaveImg];
+        if(chiaveImg !== 'immagini') delete obj[chiaveImg]; // evita colonna duplicata negli export
+      }
+    }
+    if(obj.domanda) domande.push(obj);
+  }
+  window._idGeneratiUltimoImport = ripristinaIdMancanti(domande);
+  return domande;
+}
+
+/*
+  Garantisce che ogni domanda abbia un id univoco e stabile.
+  Se il CSV ha righe con id vuoto o duplicato (es. domande annales
+  aggiunte senza passare dallo script Python che assegna gli id
+  sequenziali), un id condiviso da più domande rompe segnalibri e
+  progressi: toccarne una sembra toccarle tutte contemporaneamente.
+  Qui si genera un id deterministico basato su specialità + numero
+  domanda, così resta stabile anche re-importando lo stesso CSV in
+  futuro (segnalibri e progressi salvati restano coerenti).
+*/
+function ripristinaIdMancanti(domande){
+  const idVisti = new Set();
+  let generati = 0;
+  domande.forEach(d=>{
+    if(d.id && d.id.trim() !== '' && !idVisti.has(d.id)){
+      idVisti.add(d.id);
+      return;
+    }
+    const base = 'gen_' + (d.specialita||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_')
+               + '_' + (d.numero_domanda||'').toString().trim();
+    let candidato = base, n = 2;
+    while(idVisti.has(candidato)){ candidato = base+'_'+n; n++; }
+    d.id = candidato;
+    idVisti.add(candidato);
+    generati++;
+  });
+  if(generati>0) console.warn('⚠ '+generati+' domande avevano id mancante o duplicato: generato id automatico stabile.');
+  return generati;
+}
+
+function initDemoData(){
+  DB=[
+    {id:'1',specialita:'Chirurgia generale',domanda:"La sindrome di Peutz-Jeghers è costituita dall'associazione di:",A:'Poliposi del tenue e pigmentazione melanica del viso',B:'Poliposi dello stomaco ed epiteliomi diffusi',C:'Carcinoma del tenue ed obliterazione dei seni paranasali',D:'Leiomioma del tenue e litiasi della colecisti',E:'Poliposi dello stomaco e litiasi della colecisti',risposta_corretta:'A'},
+    {id:'2',specialita:'Chirurgia generale',domanda:'Cosa significa Xenotrapianto:',A:'Trapianto tra consanguinei',B:'Trapianto tra esseri umani di sesso diverso',C:'Trapianto tra esseri umani di razza diversa',D:'Trapianto tra individui di specie diversa',E:'Trapianto di organo artificiale',risposta_corretta:'D'},
+    {id:'3',specialita:'Chirurgia generale',domanda:"L'ernia inguinale diretta è:",A:"Un'ernia che fuoriesce medialmente ai vasi epigastrici",B:"Un'ernia che fuoriesce lateralmente ai vasi epigastrici",C:"Un'ernia che fuoriesce al di sotto del leg. inguinale",D:"Un'ernia che attraversa il canale otturatorio",E:"Un'ernia che attraversa l'anello inguinale interno",risposta_corretta:'A'},
+    {id:'4',specialita:'Cardiologia',domanda:"Quale farmaco è di prima scelta nell'infarto miocardico acuto?",A:'Warfarin',B:'Digossina',C:'Aspirina',D:'Furosemide',E:'Metoprololo',risposta_corretta:'C'},
+    {id:'5',specialita:'Cardiologia',domanda:'La fibrillazione atriale è caratterizzata da:',A:'Onde P regolari e ritmo ventricolare irregolare',B:'Assenza di onde P e ritmo ventricolare irregolare',C:'Onde P invertite e QRS allargato',D:'Onde delta e PR corto',E:'QT allungato e torsione di punta',risposta_corretta:'B'},
+  ];
+  aggiornHome();
+  document.getElementById('search-results').innerHTML='<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
+}
+
+const fileInput=document.createElement('input');
+fileInput.type='file';fileInput.accept='.csv';fileInput.style.display='none';
+fileInput.onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const d=caricaCSV(ev.target.result);
+    if(d.length===0){alert('Nessuna domanda trovata.');return;}
+    DB=d;
+    const nGenerati = window._idGeneratiUltimoImport || 0;
+    const suffissoAvviso = nGenerati>0
+      ? '\n\n⚠ '+nGenerati+' domande avevano un id mancante o duplicato nel CSV: è stato generato automaticamente un id stabile per ciascuna (basato su specialità + numero domanda), così segnalibri e progressi funzionano correttamente.'
+      : '';
+    // Salva il DB in IndexedDB (nessun limite di dimensione)
+    saveDBToIDB(d).then(ok=>{
+      aggiornHome();
+      alert('✓ Caricate '+d.length+' domande! Saranno ricordate anche al prossimo accesso.'+suffissoAvviso);
+    }).catch(()=>{
+      aggiornHome();
+      alert('✓ Caricate '+d.length+' domande! (Attenzione: salvataggio permanente non riuscito, potrebbe essere necessario ricaricare il CSV al prossimo accesso.)'+suffissoAvviso);
+    });
+  };
+  reader.readAsText(file,'utf-8');
+};
+document.body.appendChild(fileInput);
+document.getElementById('btn-import').onclick=()=>fileInput.click();
+
+/* ── Import ZIP immagini ── */
+const fileInputImg=document.createElement('input');
+fileInputImg.type='file';fileInputImg.accept='.zip';fileInputImg.style.display='none';
+fileInputImg.onchange=async e=>{
+  const file=e.target.files[0];if(!file)return;
+  const btnImg=document.getElementById('btn-import-img');
+  const testoOriginale=btnImg.textContent;
+  if(typeof JSZip==='undefined'){
+    btnImg.textContent='⏳ Carico libreria ZIP…';
+    btnImg.style.pointerEvents='none';
+    try{
+      await caricaScriptEsterno('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    }catch(err){
+      alert('Impossibile caricare la libreria ZIP: verifica la connessione a internet e riprova.');
+      btnImg.textContent=testoOriginale;
+      btnImg.style.pointerEvents='';
+      return;
+    }
+  }
+  btnImg.textContent='⏳ Importazione in corso…';
+  btnImg.style.pointerEvents='none';
+  try{
+    const zip = await JSZip.loadAsync(file);
+    const estensioniValide = ['.png','.jpg','.jpeg','.gif','.webp','.svg'];
+    const entries = Object.values(zip.files).filter(f=>{
+      if(f.dir) return false;
+      const nomeLower = f.name.toLowerCase();
+      return estensioniValide.some(ext=>nomeLower.endsWith(ext));
+    });
+    if(entries.length===0){
+      alert('Nessuna immagine trovata nello ZIP (formati supportati: png, jpg, jpeg, gif, webp, svg).');
+      btnImg.textContent=testoOriginale;
+      btnImg.style.pointerEvents='';
+      return;
+    }
+    let salvate=0;
+    for(const entry of entries){
+      // Usa solo il nome file (senza percorso cartelle) come chiave,
+      // così corrisponde a quanto scritto nella colonna "immagini" del CSV
+      const nomeFile = entry.name.split('/').pop();
+      const blob = await entry.async('blob');
+      const ok = await saveImageToIDB(nomeFile, blob);
+      if(ok) salvate++;
+      btnImg.textContent='⏳ '+salvate+' / '+entries.length+'…';
+    }
+    btnImg.textContent=testoOriginale;
+    btnImg.style.pointerEvents='';
+    await aggiornaLabelImmagini();
+    alert('✓ Importate '+salvate+' immagini su '+entries.length+' trovate nello ZIP.\n\nSaranno ricordate anche al prossimo accesso, non serve reimportarle.');
+  }catch(err){
+    console.error('Errore import ZIP:', err);
+    btnImg.textContent=testoOriginale;
+    btnImg.style.pointerEvents='';
+    alert('Errore durante l\'importazione dello ZIP: '+err.message);
+  }
+};
+document.body.appendChild(fileInputImg);
+document.getElementById('btn-import-img').onclick=()=>fileInputImg.click();
+
+/* ── Salva sessione su chiusura/refresh pagina ── */
+window.addEventListener('beforeunload', ()=>{
+  if(sessione && sessione.length>0 && idx<sessione.length){
+    salvaSessioneInterrotta();
+  }
+});
+
+/* ── Azioni quiz condivise (tastiera + gamepad) ── */
+function eseguiAzioneQuiz(azione){
+  // Esegui solo se la schermata quiz è attiva e non in pausa
+  const quizScreen = document.getElementById('screen-quiz');
+  if (!quizScreen.classList.contains('active') || isPausa) return;
+
+  const d = sessione[idx];
+  if (!d) return;
+
+  const btnNext = document.getElementById('btn-next');
+  const isNextVisible = btnNext.style.display === 'block';
+
+  if (['A','B','C','D','E'].includes(azione)) {
+    if (d[azione]) {
+      // In modalità ripasso, blocca la selezione se l'utente ha già risposto
+      if (!isSimulazione && isNextVisible) return;
+      rispondi(azione, d.risposta_corretta, d.id);
+    }
+  } else if (azione === 'skip') {
+    // Salta domanda: funziona sia in simulazione sia in modalità ripasso normale.
+    // Se la domanda è già stata risposta/saltata (btn-next visibile), il tasto
+    // skip non fa nulla — per avanzare in quel caso si usa il tasto 'next'.
+    const btnSkipEl = document.getElementById('btn-skip');
+    const isSkipVisible = btnSkipEl.style.display !== 'none';
+    if (isSkipVisible) {
+      sautaDomanda();
+    }
+  } else if (azione === 'next') {
+    if (isNextVisible) prossimaDomanda();
+  } else if (azione === 'skipOrNext') {
+    // Usato dalla tastiera (tasto 0): salta se non risposto, altrimenti avanza
+    if (isNextVisible) {
+      prossimaDomanda();
+    } else {
+      sautaDomanda();
+    }
+  } else if (azione === 'pausa') {
+    // Pausa disponibile solo se il timer-box è visibile (simulazione o countdown)
+    if (document.getElementById('timer-box').style.display !== 'none') togglePausa();
+  } else if (azione === 'bookmark') {
+    toggleBookmark();
+  }
+}
+
+/* ── SHORTCUTS TASTIERA (1-5 e 0) ── */
+document.addEventListener('keydown', (e) => {
+  // Ignora se l'utente sta scrivendo da qualche parte
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+  const keyMap = {'1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E'};
+  if (keyMap[e.key]) {
+    eseguiAzioneQuiz(keyMap[e.key]);
+  } else if (e.key === '0') {
+    eseguiAzioneQuiz('skipOrNext');
+  }
+});
+
+/* ── SUPPORTO JOY-CON / GAMEPAD (Bluetooth) ──
+   Mappatura pulsanti standard (W3C Gamepad API):
+     0,1,2,3  → Risposte A, B, C, D  (i quattro pulsanti frontali)
+     10 o 11  → Risposta E            (pressione stick sinistro/destro, L3/R3)
+     5 o 7    → Prossima domanda      (R / ZR)
+     4 o 6    → Salta domanda         (L / ZL)
+     9        → Pausa                 (+)
+     8        → Segnalibro            (−)
+*/
+let gamepadPollAttivo = false;
+let gamepadPrevState = {}; // indice gamepad → array booleani pulsanti premuti al frame precedente
+
+const GAMEPAD_MAPPA = {
+  0: 'A', 1: 'B', 2: 'C', 3: 'D',
+  10: 'E', 11: 'E',   // L3 / R3
+  5: 'next', 7: 'next',   // R / ZR
+  4: 'skip', 6: 'skip',   // L / ZL
+  9: 'pausa',   // +
+  8: 'bookmark' // −
+};
+
+function pollGamepads(){
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for(let i=0;i<pads.length;i++){
+    const pad = pads[i];
+    if(!pad) continue;
+    const prev = gamepadPrevState[i] || [];
+    pad.buttons.forEach((btn, idxBtn) => {
+      const premuto = btn.pressed || btn.value > 0.5;
+      const eraPremuto = prev[idxBtn] || false;
+      if(premuto && !eraPremuto){
+        // Fronte di salita: pulsante appena premuto
+        const azione = GAMEPAD_MAPPA[idxBtn];
+        if(azione) eseguiAzioneQuiz(azione);
+      }
+    });
+    gamepadPrevState[i] = pad.buttons.map(b => b.pressed || b.value > 0.5);
+  }
+  if(gamepadPollAttivo) requestAnimationFrame(pollGamepads);
+}
+
+function mostraToastGamepad(msg){
+  let toast = document.getElementById('gamepad-toast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'gamepad-toast';
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--color-text-primary);color:var(--color-background-primary);padding:10px 18px;border-radius:99px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.2);opacity:0;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  requestAnimationFrame(()=>{ toast.style.opacity='1'; });
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(()=>{ toast.style.opacity='0'; }, 2500);
+}
+
+window.addEventListener('gamepadconnected', (e) => {
+  console.log('🎮 Controller connesso: ' + e.gamepad.id);
+  mostraToastGamepad('🎮 Controller collegato');
+  const ind=document.getElementById('gamepad-indicator');
+  if(ind) ind.style.display='inline';
+  if(!gamepadPollAttivo){
+    gamepadPollAttivo = true;
+    requestAnimationFrame(pollGamepads);
+  }
+});
+window.addEventListener('gamepaddisconnected', (e) => {
+  console.log('🎮 Controller disconnesso: ' + e.gamepad.id);
+  mostraToastGamepad('🎮 Controller scollegato');
+  delete gamepadPrevState[e.gamepad.index];
+  // Ferma il polling se non ci sono più controller collegati
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  if(![...pads].some(p=>p)){
+    gamepadPollAttivo = false;
+    const ind=document.getElementById('gamepad-indicator');
+    if(ind) ind.style.display='none';
+  }
+});
+
+/* ── Ripristina sessione interrotta ── */
+function ripristinaSessione(stato){
+  sessione       = stato.sessione;
+  idx            = stato.idx;
+  n_corrette     = stato.n_corrette;
+  n_sbagliate    = stato.n_sbagliate;
+  n_saltate      = stato.n_saltate;
+  logRisposte    = stato.logRisposte;
+  ultimaModalita = stato.ultimaModalita;
+  isSimulazione  = stato.isSimulazione;
+  isCountdown    = stato.isCountdown;
+  scelteSimulazione = stato.scelteSimulazione || new Array(sessione.length).fill(null);
+  // Ripristina toggle countdown visivo
+  const knob=document.getElementById('countdown-toggle-knob');
+  const dot=document.getElementById('countdown-knob-dot');
+  if(knob&&dot){
+    knob.style.background=isCountdown?'var(--color-text-primary)':'var(--color-background-tertiary)';
+    dot.style.left=isCountdown?'22px':'2px';
+  }
+  isPausa=false; ripristinaVistePausa();
+  showScreen('quiz');
+  mostraDomanda();
+  // Riavvia timer se serviva
+  if(stato.timerSecondiRimanenti!==null && stato.timerSecondiRimanenti>0){
+    timerTotale=stato.timerTotaleOrig;
+    timerSecondi=stato.timerSecondiRimanenti;
+    document.getElementById('timer-box').style.display='block';
+    aggiornaTimer();
+    timerInterval=setInterval(()=>{
+      timerSecondi--;
+      aggiornaTimer();
+      if(timerSecondi<=0){
+        clearInterval(timerInterval);
+        if(isSimulazione) terminaSimulazione(true);
+        else if(isCountdown) saltaDopoCountdown();
+      }
+    },1000);
+  }
+}
+
+/*
+  ── Registrazione Service Worker (PWA) ──
+  Abilita funzionamento offline e installazione come app. Se il file
+  sw.js non è raggiungibile (es. aperto come file locale invece che da
+  un server/GitHub Pages), fallisce silenziosamente e l'app continua a
+  funzionare normalmente come pagina web.
+*/
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => {
+      console.warn('Service worker non registrato (normale se aperto da file locale):', e);
+    });
+  });
+}
+
+// All'avvio: carica il DB da IndexedDB (asincrono)
+(async function init() {
+  aggiornaIconaTema(); // riflette il tema effettivamente applicato (salvato o di sistema)
+  // Ripristina la preferenza "solo domande con immagine" salvata
+  try{
+    if(localStorage.getItem('quiz_med_solo_immagini') === '1'){
+      soloImmagini = true;
+      const knob = document.getElementById('solo-immagini-toggle-knob');
+      const dot = document.getElementById('solo-immagini-knob-dot');
+      if(knob && dot){ knob.style.background='var(--color-text-primary)'; dot.style.left='22px'; }
+    }
+  }catch(e){}
+  // Nasconde i bottoni schermo intero se il dispositivo/browser non lo supporta affatto
+  // (es. iPhone Safari non espone requestFullscreen su elementi generici)
+  const fullscreenSupportato = !!(document.documentElement.requestFullscreen
+    || document.documentElement.webkitRequestFullscreen
+    || document.documentElement.msRequestFullscreen);
+  if(!fullscreenSupportato){
+    ['btn-toggle-fullscreen','btn-fullscreen-quiz'].forEach(id=>{
+      const btn = document.getElementById(id);
+      if(btn) btn.style.display = 'none';
+    });
+  }
+  aggiornaLabelImmagini(); // mostra subito quante immagini sono già salvate
+  try{
+    const saved = await loadDBFromIDB();
+    if(saved && saved.length > 0){
+      DB = saved;
+      aggiornHome();
+      const srchEl = document.getElementById('search-results');
+      if(srchEl) srchEl.innerHTML = '<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
+      console.log('✓ DB caricato da IndexedDB: ' + DB.length + ' domande');
+      // Controlla sessione interrotta
+      const sess = await caricaSessioneInterrotta();
+      if(sess && sess.sessione && sess.sessione.length > 0){
+        const minFa = Math.round((Date.now()-sess.ts)/60000);
+        const label = minFa<2?'poco fa':minFa<60?minFa+' minuti fa':Math.round(minFa/60)+' ore fa';
+        const tipo = sess.isSimulazione?'Simulazione':'Quiz';
+        if(confirm('📂 Hai una sessione interrotta ('+tipo+', '+label+').\n\nDomanda '+(sess.idx+1)+' di '+sess.sessione.length+'.\n\nVuoi riprendere da dove avevi lasciato?')){
+          ripristinaSessione(sess);
+          return;
+        } else {
+          cancellaSessioneInterrotta();
+        }
+      }
+    } else {
+      initDemoData();
+    }
+  }catch(e){
+    console.warn('IDB non disponibile, uso dati demo:', e);
+    initDemoData();
+  }
+})();
+</script>
+</body>
+</html>

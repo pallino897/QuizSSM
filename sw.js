@@ -1,74 +1,66 @@
-/*
-  Service Worker per Quiz Medicina.
+/* Service Worker condiviso — Studio Medicina (Quiz SSM + Allenamento ECG)
+   Strategia: cache-first con aggiornamento in background ("stale-while-revalidate").
+   Ogni file richiesto con successo viene aggiunto alla cache, quindi anche
+   ecg_pack.json e le eventuali immagini vengono salvati offline dopo il primo
+   caricamento, senza doverli elencare qui a mano. */
 
-  ── COME AGGIORNARE L'APP IN FUTURO ──
-  CACHE_VERSION segue la STESSA data mostrata nel tag "v2026.07.25" in
-  home (index.html, vicino al titolo "Quiz medicina"). Ogni volta che si
-  aggiunge/modifica una feature, aggiorna la data in ENTRAMBI i punti
-  (qui sotto e quel tag), nel formato vAAAA.MM.GG. Senza questo passaggio,
-  i telefoni che hanno già installato l'app potrebbero continuare a vedere
-  la versione vecchia dalla cache anche dopo aver aggiornato il repository
-  GitHub.
-*/
-const CACHE_VERSION = 'v2026.08.01';
-const CACHE_NAME = 'quiz-medicina-' + CACHE_VERSION;
+const CACHE_NAME = "studio-medicina-v1";
 
-const ASSET_DA_CACHARE = [
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+const CORE_ASSETS = [
+  "./",
+  "./index.html",
+  "./quiz.html",
+  "./ecg.html",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
-/* ── Installazione: precarica l'app shell ── */
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSET_DA_CACHARE))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        CORE_ASSETS.map((url) =>
+          cache.add(url).catch(() => {
+            /* Se un file non esiste ancora (es. icon-512.png non creata),
+               non blocchiamo l'installazione del service worker. */
+          })
+        )
+      )
+    )
   );
-  self.skipWaiting(); // attiva subito la nuova versione, senza aspettare la chiusura di tutte le schede
+  self.skipWaiting();
 });
 
-/* ── Attivazione: elimina le cache delle versioni precedenti ── */
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((nomi) =>
+    caches.keys().then((names) =>
       Promise.all(
-        nomi
-          .filter((n) => n.startsWith('quiz-medicina-') && n !== CACHE_NAME)
-          .map((n) => caches.delete(n))
+        names
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
       )
     )
   );
   self.clients.claim();
 });
 
-/*
-  ── Strategia di risposta ──
-  Per la pagina HTML principale: "network first" — prova sempre a scaricare
-  la versione più recente da internet; se non c'è connessione, usa la copia
-  in cache (così l'app resta utilizzabile offline).
-  Per tutto il resto (manifest, icone): "cache first" — più veloce, e questi
-  file cambiano raramente.
-*/
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
 
-  const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
-
-  if (isHTML) {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copia = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copia));
-          return res;
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      const network = fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match('./index.html')))
-    );
-  } else {
-    event.respondWith(
-      caches.match(req).then((r) => r || fetch(req))
-    );
-  }
+        .catch(() => cached);
+
+      return cached || network;
+    })
+  );
 });
