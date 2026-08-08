@@ -360,6 +360,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .gest-tabella tbody tr.riga-segnalata td:first-child{box-shadow:inset 3px 0 0 var(--color-text-danger);}
 .gest-col-check{width:34px;}
 .gest-col-spec{width:150px;}
+.gest-col-area{width:150px;color:var(--color-text-secondary);}
 .gest-col-num{width:52px;color:var(--color-text-secondary);}
 .gest-col-seg{width:46px;text-align:center;}
 .gest-tabella input[type="checkbox"]{width:16px;height:16px;accent-color:var(--color-text-primary);cursor:pointer;}
@@ -377,6 +378,19 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 .gest-item-check{margin-right:8px;width:16px;height:16px;accent-color:var(--color-text-primary);cursor:pointer;vertical-align:middle;}
 
 /* Form */
+/* Gestione immagini nell'editor */
+.ed-img-riga{display:flex;gap:10px;align-items:flex-start;padding:8px;margin-bottom:8px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);}
+.ed-img-thumb{width:64px;height:64px;flex-shrink:0;object-fit:cover;border-radius:var(--border-radius-sm);cursor:zoom-in;background:var(--color-background-secondary);}
+.ed-img-thumb-manca{width:64px;height:64px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:var(--border-radius-sm);background:var(--color-background-secondary);border:1px dashed var(--color-border-secondary);}
+.ed-img-info{flex:1;min-width:0;}
+.ed-img-nome{font-size:12px;word-break:break-all;line-height:1.4;margin-bottom:6px;}
+.ed-img-avviso{font-size:11px;color:var(--color-text-danger);display:block;margin-bottom:6px;}
+.ed-img-azioni{display:flex;gap:6px;flex-wrap:wrap;}
+.ed-img-azioni button{padding:5px 9px;font-size:12px;background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);cursor:pointer;color:var(--color-text-primary);}
+.ed-img-azioni button:hover{background:var(--color-background-secondary);}
+.ed-img-azioni button.del{color:var(--color-text-danger);border-color:var(--color-border-danger);}
+.ed-img-add{width:100%;padding:9px;font-size:13px;background:none;border:0.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-secondary);}
+.ed-img-add:hover{background:var(--color-background-secondary);}
 .form-label{display:block;font-size:13px;font-weight:500;color:var(--color-text-secondary);margin:14px 0 6px;}
 .form-label:first-of-type{margin-top:0;}
 .form-input,.form-textarea,.form-select{width:100%;padding:10px 12px;font-size:15px;font-family:var(--font-sans);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);outline:none;}
@@ -414,9 +428,7 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <p style="font-size:22px;font-weight:500">Quiz medicina</p>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="tag" style="font-size:11px;color:var(--color-text-secondary)" title="Versione dell'app">v2026.08.01</span>
-          <a href="./index.html" title="Torna al menu principale"
-            style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);text-decoration:none;">🏠</a>
+          <span class="tag" style="font-size:11px;color:var(--color-text-secondary)" title="Versione dell'app">v2026.08.08b</span>
           <button id="btn-toggle-fullscreen" onclick="toggleFullscreen()" title="Schermo intero"
             style="background:none;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-sm);width:28px;height:28px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-primary);">⛶</button>
           <button id="btn-toggle-tema" onclick="toggleTema()" title="Cambia tema chiaro/scuro"
@@ -487,8 +499,10 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
 </div>
 
 <div id="screen-spec" class="screen">
-  <div class="nav-row"><button onclick="showScreen('home')">← Indietro</button></div>
-  <p style="font-size:18px;font-weight:500;margin-bottom:1rem">Scegli specialità</p>
+  <div class="nav-row"><button id="spec-back-btn" onclick="indietroSpec()">← Indietro</button></div>
+  <p id="spec-titolo" style="font-size:18px;font-weight:500;margin-bottom:4px">Scegli area</p>
+  <p id="spec-sottotitolo" style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px"></p>
+  <button class="btn" id="spec-toggle-vista" onclick="toggleVistaSpecialita()" style="margin-bottom:12px;font-size:13px;padding:9px">📋 Mostra le specialità originali del CSV</button>
   <div id="spec-list"></div>
 </div>
 
@@ -765,6 +779,12 @@ body{font-family:var(--font-sans); background-color:var(--color-background-prima
         <label class="form-label">Testo della domanda *</label>
         <textarea id="ed-domanda" class="form-textarea" placeholder="Scrivi qui il testo della domanda…"></textarea>
 
+        <label class="form-label">Immagini associate</label>
+        <div id="ed-immagini-lista"></div>
+        <button type="button" class="ed-img-add" onclick="document.getElementById('ed-img-input').click()">➕ Aggiungi immagine</button>
+        <input type="file" id="ed-img-input" accept="image/*" multiple style="display:none" onchange="aggiungiImmaginiEditor(this.files); this.value='';">
+        <input type="file" id="ed-img-replace-input" accept="image/*" style="display:none" onchange="confermaSostituzioneImmagine(this.files); this.value='';">
+
         <label class="form-label">Opzioni di risposta (seleziona quella corretta) *</label>
         <div class="form-opt-row"><span class="form-opt-letter">A</span><input type="text" id="ed-A" class="form-input" placeholder="Opzione A"><input type="radio" name="ed-corretta" value="A" class="form-opt-radio"></div>
         <div class="form-opt-row"><span class="form-opt-letter">B</span><input type="text" id="ed-B" class="form-input" placeholder="Opzione B"><input type="radio" name="ed-corretta" value="B" class="form-opt-radio"></div>
@@ -962,6 +982,20 @@ async function contaImmaginiIDB(){
     });
   }catch(e){return 0;}
 }
+async function deleteImageFromIDB(nomeFile){
+  try{
+    const db=await openIDB();
+    return new Promise((res,rej)=>{
+      const tx=db.transaction(IDB_STORE_IMG,'readwrite');
+      tx.objectStore(IDB_STORE_IMG).delete(nomeFile);
+      tx.oncomplete=()=>res(true);
+      tx.onerror=e=>rej(e.target.error);
+    });
+  }catch(e){return false;}
+}
+async function esisteImmagineIDB(nomeFile){
+  return (await getImageBlobFromIDB(nomeFile)) !== null;
+}
 async function clearImmaginiIDB(){
   try{
     const db=await openIDB();
@@ -988,6 +1022,18 @@ async function ottieniImmagineURL(nomeFile){
   const url = URL.createObjectURL(blob);
   cacheImmaginiURL[nomeFile] = url;
   return url;
+}
+
+/*
+  Invalida la object URL cachata di un'immagine. Va chiamata ogni volta che
+  il contenuto salvato sotto quel nome cambia (sostituzione o rimozione),
+  altrimenti l'app continuerebbe a mostrare la vecchia immagine.
+*/
+function invalidaCacheImmagine(nomeFile){
+  if(cacheImmaginiURL[nomeFile]){
+    URL.revokeObjectURL(cacheImmaginiURL[nomeFile]);
+    delete cacheImmaginiURL[nomeFile];
+  }
 }
 
 /*
@@ -2194,6 +2240,16 @@ function avviaQuiz(modalita){
     const ids=new Set(st.segnalibri||[]);
     pool=raggruppaEMescola(DB.filter(d=>ids.has(d.id)&&!isEsclusa(d)&&passaFiltroImmagini(d)), shufflePesato);
     if(pool.length===0){alert('Nessun segnalibro salvato'+(soloImmagini?' con immagine':'')+'.');return;}
+  } else if(modalita.startsWith('macro:')){
+    // Tutta una macroarea (es. "Chirurgia specialistica")
+    const macro = modalita.slice(6);
+    pool=raggruppaEMescola(DB.filter(d=>d.__macroarea===macro&&passaFiltroImmagini(d)), shufflePesato);
+    if(pool.length===0){alert('Nessuna domanda'+(soloImmagini?' con immagine':'')+' trovata per quest\'area.');return;}
+  } else if(modalita.startsWith('canon:')){
+    // Una specialità canonica, che può raggruppare più etichette del CSV
+    const canonica = modalita.slice(6);
+    pool=raggruppaEMescola(DB.filter(d=>d.__canonica===canonica&&passaFiltroImmagini(d)), shufflePesato);
+    if(pool.length===0){alert('Nessuna domanda'+(soloImmagini?' con immagine':'')+' trovata per questa specialità.');return;}
   } else {
     // Selezione specifica per specialità: rispetta comunque il filtro "solo immagine" se attivo
     pool=raggruppaEMescola(DB.filter(d=>d.specialita===modalita&&passaFiltroImmagini(d)), shufflePesato);
@@ -2708,15 +2764,28 @@ function resetFiltriGestisci(){
   popolaFiltroSpecialita();
 }
 
-/* Riempie la tendina delle specialità con quelle presenti nel DB */
+/*
+  Riempie la tendina dei filtri con la struttura a due livelli: per ogni
+  macroarea un'opzione "tutta l'area" e sotto le specialità canoniche.
+  I valori usano i prefissi macro:/canon: come nella scelta quiz.
+*/
 function popolaFiltroSpecialita(){
   const sel = document.getElementById('gestisci-filtro-spec');
   if(!sel) return;
   const precedente = sel.value;
-  const specs = [...new Set(DB.map(d=>d.specialita).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">Tutte le specialità</option>'
-    + specs.map(s=>'<option value="'+escHtml(s)+'">'+escHtml(s)+'</option>').join('');
-  if(specs.includes(precedente)) sel.value = precedente;
+  let html = '<option value="">Tutte le specialità</option>';
+  conteggioMacroaree().forEach(area=>{
+    const specs = conteggioSpecialita(area.nome);
+    html += '<optgroup label="'+escHtml((ICONE_MACRO[area.nome]||'')+' '+area.nome)+'">';
+    html += '<option value="macro:'+escHtml(area.nome)+'">Tutta l\'area ('+area.count+')</option>';
+    specs.forEach(sp=>{
+      html += '<option value="canon:'+escHtml(sp.nome)+'">'+escHtml(sp.nome)+' ('+sp.count+')</option>';
+    });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+  // Ripristina la selezione precedente se l'opzione esiste ancora
+  if(precedente && [...sel.options].some(o=>o.value===precedente)) sel.value = precedente;
 }
 
 function toggleFiltroSegnalate(){
@@ -2744,7 +2813,9 @@ function filtraDomandeGestisci(query){
   const selSpec = (document.getElementById('gestisci-filtro-spec')||{}).value || '';
 
   let elenco = DB;
-  if(selSpec) elenco = elenco.filter(d=>d.specialita===selSpec);
+  if(selSpec.startsWith('macro:'))      elenco = elenco.filter(d=>d.__macroarea===selSpec.slice(6));
+  else if(selSpec.startsWith('canon:')) elenco = elenco.filter(d=>d.__canonica===selSpec.slice(6));
+  else if(selSpec)                      elenco = elenco.filter(d=>d.specialita===selSpec);
   if(gestisciSoloSegnalate) elenco = elenco.filter(d=>segnalate.has(d.id));
   if(q.length>=2){
     elenco = elenco.filter(d =>
@@ -2793,19 +2864,24 @@ function renderListaGestisci(query){
   html += '<table class="gest-tabella"><thead><tr>'
     + '<th class="gest-col-check"><input type="checkbox" '+(tutteSpuntate?'checked':'')+' onclick="toggleSelezionaTutte(this.checked)" title="Seleziona tutte le domande mostrate"></th>'
     + '<th class="gest-col-spec">Specialità</th>'
+    + '<th class="gest-col-area">Area</th>'
     + '<th class="gest-col-num">N°</th>'
     + '<th>Testo</th>'
+    + '<th class="gest-col-seg">🖼</th>'
     + '<th class="gest-col-seg">🚩</th>'
     + '</tr></thead><tbody>';
   mostrate.forEach(d=>{
     const testo = (d.domanda||'').replace(/\[CASO CLINICO[:\s]*.*?\]/gis,'[Caso clinico]');
     const isSeg = segnalate.has(d.id);
     const isSel = gestisciSelezione.has(d.id);
+    const nImg = (d.immagini||'').split(',').filter(x=>x.trim()).length;
     html += '<tr class="'+(isSeg?'riga-segnalata ':'')+(d.id===attivo?'riga-attiva':'')+'" onclick="apriEditorDomanda(\''+d.id+'\')">'
       + '<td class="gest-col-check" onclick="event.stopPropagation()"><input type="checkbox" '+(isSel?'checked':'')+' onclick="toggleSelezioneDomanda(\''+d.id+'\',this.checked)"></td>'
       + '<td class="gest-col-spec">'+escHtml(d.specialita||'—')+'</td>'
+      + '<td class="gest-col-area">'+escHtml(d.__canonica||'—')+'</td>'
       + '<td class="gest-col-num">'+escHtml(d.numero_domanda||'—')+'</td>'
       + '<td class="gest-testo-cella">'+escHtml(testo.length>170?testo.slice(0,170)+'…':testo)+'</td>'
+      + '<td class="gest-col-seg">'+(nImg?(nImg>1?nImg:'🖼'):'')+'</td>'
       + '<td class="gest-col-seg">'+(isSeg?'🚩':'')+'</td>'
       + '</tr>';
   });
@@ -2821,6 +2897,7 @@ function renderListaGestisci(query){
       + '<input type="checkbox" class="gest-item-check" '+(isSel?'checked':'')+' onclick="toggleSelezioneDomanda(\''+d.id+'\',this.checked)">'
       + '<span class="tag" style="font-size:11px">'+escHtml(d.specialita||'—')+'</span>'
       + (d.numero_domanda?' <span class="tag" style="font-size:11px">n° '+escHtml(d.numero_domanda)+'</span>':'')
+      + ((d.immagini||'').trim()?' <span class="tag" style="font-size:11px">🖼 '+(d.immagini.split(',').filter(x=>x.trim()).length)+'</span>':'')
       + (isSeg?' <span class="tag" style="font-size:11px;color:var(--color-text-danger);border-color:var(--color-border-danger)">🚩 da correggere</span>':'')
       + '<div class="gestisci-item-testo">'+escHtml(testo.length>140?testo.slice(0,140)+'…':testo)+'</div>'
       + '<div class="gestisci-item-azioni">'
@@ -2923,9 +3000,131 @@ function generaIdDomandaManuale(){
 }
 
 /*
-  Apre l'editor. In orizzontale è la colonna di destra sempre visibile;
-  in verticale prende il posto dell'elenco (classe "mostra-editor").
+  ── Immagini nell'editor ─────────────────────────────────────────────────
+  Le immagini vivono in IndexedDB (store "immagini"), indicizzate per nome
+  file; la domanda ne conserva solo i nomi, separati da virgola, nel campo
+  `immagini`. Qui teniamo l'elenco in una variabile di lavoro: i file nuovi
+  vengono scritti subito in IndexedDB (servono per l'anteprima), mentre il
+  campo della domanda viene aggiornato solo al salvataggio, così annullare
+  la modifica non altera la domanda.
+
+  Attenzione: lo stesso file può essere usato da più domande, quindi la
+  rimozione toglie il riferimento e cancella il file solo se nessun'altra
+  domanda lo utilizza (vedi pulisciImmaginiOrfane).
 */
+let editorImmagini = [];          // nomi file dell'immagine in lavorazione
+let _indiceImgDaSostituire = null;
+
+/* Evita di sovrascrivere un file già presente con lo stesso nome ma contenuto diverso */
+async function nomeFileUnivoco(nome){
+  if(!(await esisteImmagineIDB(nome))) return nome;
+  const punto = nome.lastIndexOf('.');
+  const base = punto>0 ? nome.slice(0,punto) : nome;
+  const est  = punto>0 ? nome.slice(punto)   : '';
+  let i = 2;
+  while(await esisteImmagineIDB(base+'_'+i+est)) i++;
+  return base+'_'+i+est;
+}
+
+async function renderImmaginiEditor(){
+  const cont = document.getElementById('ed-immagini-lista');
+  if(!cont) return;
+  cont.innerHTML = '';
+  if(editorImmagini.length === 0){
+    cont.innerHTML = '<p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:8px">Nessuna immagine associata a questa domanda.</p>';
+    return;
+  }
+  for(let i=0;i<editorImmagini.length;i++){
+    const nome = editorImmagini[i];
+    const url = await ottieniImmagineURL(nome);
+    const riga = document.createElement('div');
+    riga.className = 'ed-img-riga';
+    riga.innerHTML =
+      (url
+        ? '<img class="ed-img-thumb" src="'+url+'" alt="Anteprima">'
+        : '<div class="ed-img-thumb-manca">🖼</div>')
+      + '<div class="ed-img-info">'
+      +   '<div class="ed-img-nome">'+escHtml(nome)+'</div>'
+      +   (url ? '' : '<span class="ed-img-avviso">File non presente nell\'archivio: importa lo ZIP o sostituiscilo.</span>')
+      +   '<div class="ed-img-azioni">'
+      +     (url ? '<button type="button" onclick="apriImmagineFullscreen(\''+url+'\')">🔍 Ingrandisci</button>' : '')
+      +     '<button type="button" onclick="sostituisciImmagineEditor('+i+')">🔄 Sostituisci</button>'
+      +     '<button type="button" class="del" onclick="rimuoviImmagineEditor('+i+')">✕ Rimuovi</button>'
+      +   '</div>'
+      + '</div>';
+    cont.appendChild(riga);
+  }
+}
+
+async function aggiungiImmaginiEditor(files){
+  if(!files || files.length===0) return;
+  for(const file of files){
+    if(!file.type.startsWith('image/')){
+      alert('"'+file.name+'" non è un\'immagine: ignorato.');
+      continue;
+    }
+    const nome = await nomeFileUnivoco(file.name);
+    const ok = await saveImageToIDB(nome, file);
+    if(ok===false){ alert('Salvataggio di "'+file.name+'" non riuscito.'); continue; }
+    invalidaCacheImmagine(nome);
+    editorImmagini.push(nome);
+  }
+  await renderImmaginiEditor();
+  aggiornaLabelImmagini();
+}
+
+function sostituisciImmagineEditor(i){
+  _indiceImgDaSostituire = i;
+  document.getElementById('ed-img-replace-input').click();
+}
+
+async function confermaSostituzioneImmagine(files){
+  const i = _indiceImgDaSostituire;
+  _indiceImgDaSostituire = null;
+  if(i===null || !files || files.length===0) return;
+  const file = files[0];
+  if(!file.type.startsWith('image/')){ alert('Il file scelto non è un\'immagine.'); return; }
+
+  const vecchio = editorImmagini[i];
+  const nome = await nomeFileUnivoco(file.name);
+  const ok = await saveImageToIDB(nome, file);
+  if(ok===false){ alert('Sostituzione non riuscita.'); return; }
+  invalidaCacheImmagine(nome);
+  editorImmagini[i] = nome;
+  // Il vecchio file resta finché non si salva: la pulizia avviene al salvataggio
+  await renderImmaginiEditor();
+  aggiornaLabelImmagini();
+  console.log('Immagine sostituita:', vecchio, '→', nome);
+}
+
+async function rimuoviImmagineEditor(i){
+  const nome = editorImmagini[i];
+  if(!confirm('Togliere "'+nome+'" da questa domanda?\n\nIl file verrà eliminato dall\'archivio solo se nessun\'altra domanda lo utilizza.')) return;
+  editorImmagini.splice(i,1);
+  await renderImmaginiEditor();
+}
+
+/*
+  Elimina dall'archivio i file che, dopo il salvataggio, non sono più
+  referenziati da nessuna domanda. Evita che l'archivio immagini cresca
+  indefinitamente a ogni sostituzione o rimozione.
+*/
+async function pulisciImmaginiOrfane(candidati){
+  if(!candidati || candidati.length===0) return;
+  const inUso = new Set();
+  DB.forEach(d=>{
+    if(d.immagini) d.immagini.split(',').map(x=>x.trim()).filter(Boolean).forEach(n=>inUso.add(n));
+  });
+  for(const nome of new Set(candidati)){
+    if(!inUso.has(nome)){
+      await deleteImageFromIDB(nome);
+      invalidaCacheImmagine(nome);
+    }
+  }
+  aggiornaLabelImmagini();
+}
+
+
 function apriEditorDomanda(id){
   window._editorDomandaId = id;
   const titolo = document.getElementById('editor-titolo');
@@ -2955,6 +3154,7 @@ function apriEditorDomanda(id){
     if(radio) radio.checked = true;
     const st = getStorage();
     document.getElementById('editor-avviso-segnalata').style.display = st.segnalate.includes(id) ? 'flex' : 'none';
+    editorImmagini = (d.immagini||'').split(',').map(x=>x.trim()).filter(Boolean);
   } else {
     titolo.textContent = 'Nuova domanda';
     btnElimina.style.display = 'none';
@@ -2963,7 +3163,9 @@ function apriEditorDomanda(id){
     document.getElementById('ed-spiegazione').value = '';
     document.getElementById('ed-numero').value = '';
     document.getElementById('editor-avviso-segnalata').style.display = 'none';
+    editorImmagini = [];
   }
+  renderImmaginiEditor();
 
   document.getElementById('gest-layout').classList.add('mostra-editor');
   // Evidenzia nella tabella la riga corrispondente
@@ -3007,26 +3209,41 @@ function salvaDomandaEditor(){
   if(!risposta_corretta){ alert('Seleziona quale opzione è quella corretta.'); return; }
   if(!opzioni[risposta_corretta]){ alert('La risposta corretta selezionata ('+risposta_corretta+') non ha un testo: compilala oppure scegline un\'altra.'); return; }
 
+  const immagini = editorImmagini.join(', ');
   const id = window._editorDomandaId;
+  // Immagini che erano collegate prima della modifica: se non lo sono più
+  // e nessun'altra domanda le usa, verranno eliminate dopo il salvataggio
+  const immaginiPrecedenti = id
+    ? ((DB.find(x=>x.id===id)||{}).immagini||'').split(',').map(x=>x.trim()).filter(Boolean)
+    : [];
+
   if(id){
     const idx = DB.findIndex(x=>x.id===id);
     if(idx===-1){ alert('Questa domanda non esiste più nel database.'); showScreen('gestisci'); return; }
-    const aggiornata = { ...DB[idx], specialita, domanda, ...opzioni, risposta_corretta, spiegazione, numero_domanda };
+    const aggiornata = { ...DB[idx], specialita, domanda, ...opzioni, risposta_corretta, spiegazione, numero_domanda, immagini };
     // Rimuove le opzioni vuote (es. E non compilata) per non lasciare campi fantasma
     ['A','B','C','D','E'].forEach(l=>{ if(!aggiornata[l]) delete aggiornata[l]; });
     if(!spiegazione) delete aggiornata.spiegazione;
     if(!numero_domanda) delete aggiornata.numero_domanda;
+    if(!immagini) delete aggiornata.immagini;
     DB[idx] = aggiornata;
+    applicaTassonomia(); // la specialità può essere cambiata: riclassifica
   } else {
-    const nuova = { id: generaIdDomandaManuale(), specialita, domanda, ...opzioni, risposta_corretta, spiegazione, numero_domanda };
+    const nuova = { id: generaIdDomandaManuale(), specialita, domanda, ...opzioni, risposta_corretta, spiegazione, numero_domanda, immagini };
     ['A','B','C','D','E'].forEach(l=>{ if(!nuova[l]) delete nuova[l]; });
     if(!spiegazione) delete nuova.spiegazione;
     if(!numero_domanda) delete nuova.numero_domanda;
+    if(!immagini) delete nuova.immagini;
     DB.push(nuova);
+    applicaTassonomia(); // classifica la nuova domanda secondo la specialità scelta
   }
+
+  // Le immagini scollegate dalla domanda diventano candidate alla rimozione
+  const candidateOrfane = immaginiPrecedenti.filter(n => !editorImmagini.includes(n));
 
   const idSalvato = id || DB[DB.length-1].id;
   saveDBToIDB(DB).then(()=>{
+    pulisciImmaginiOrfane(candidateOrfane);
     aggiornHome();
     popolaFiltroSpecialita();
     // Resta sulla domanda appena salvata, così in orizzontale si vede subito il risultato
@@ -3088,22 +3305,116 @@ function esportaDBCompleto(){
 }
 
 /* ── Storico ── */
+/*
+  ── Scelta della specialità, su due livelli ──
+  Livello 1: le macroaree della tassonomia (poche voci, leggibili).
+  Livello 2: le specialità canoniche dentro l'area scelta.
+  In qualsiasi momento si può passare alla "vista originale", che elenca
+  le etichette del CSV così come sono, per chi cerca una voce precisa.
+*/
+let specAreaCorrente = null;      // null = elenco macroaree
+let specVistaOriginale = false;   // true = elenco piatto delle etichette del CSV
+
 function mostraSceltaSpec(){
-  const annateLower=ANNATE_SSM.map(a=>a.toLowerCase());
-  const specs=[...new Set(DB.map(d=>d.specialita))].filter(s=>!annateLower.includes(s.trim().toLowerCase())).sort();
-  const list=document.getElementById('spec-list'); list.innerHTML='';
-  if(!specs.length){alert('Nessuna specialità disponibile. Carica prima il CSV.');return;}
-  specs.forEach(s=>{
-    const count=DB.filter(d=>d.specialita===s).length;
-    const div=document.createElement('div');
-    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:8px;transition:background 0.1s;';
-    div.innerHTML='<span style="font-size:15px">'+s+'</span><span style="font-size:13px;color:var(--color-text-secondary)">'+count+' domande</span>';
-    div.onmouseover=()=>div.style.background='var(--color-background-secondary)';
-    div.onmouseout=()=>div.style.background='var(--color-background-primary)';
-    div.onclick=()=>avviaQuiz(s);
-    list.appendChild(div);
-  });
+  if(DB.length===0){alert('Nessuna specialità disponibile. Carica prima il CSV.');return;}
+  specAreaCorrente = null;
+  specVistaOriginale = false;
+  renderSpecList();
   showScreen('spec');
+}
+
+function indietroSpec(){
+  // Dentro un'area si torna all'elenco aree; dal primo livello si esce alla home
+  if(specAreaCorrente !== null && !specVistaOriginale){
+    specAreaCorrente = null;
+    renderSpecList();
+  } else if(specVistaOriginale){
+    specVistaOriginale = false;
+    specAreaCorrente = null;
+    renderSpecList();
+  } else {
+    showScreen('home');
+  }
+}
+
+function toggleVistaSpecialita(){
+  specVistaOriginale = !specVistaOriginale;
+  specAreaCorrente = null;
+  renderSpecList();
+}
+
+/* Crea una riga cliccabile uniforme per tutti e tre i livelli */
+function creaRigaSpec(etichetta, count, onClick, sottotitolo){
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md,8px);cursor:pointer;margin-bottom:8px;transition:background 0.1s;';
+  div.innerHTML = '<span style="font-size:15px;min-width:0">'+escHtml(etichetta)
+    + (sottotitolo ? '<span style="display:block;font-size:12px;color:var(--color-text-secondary);margin-top:2px">'+escHtml(sottotitolo)+'</span>' : '')
+    + '</span><span style="font-size:13px;color:var(--color-text-secondary);flex-shrink:0">'+count+' domande</span>';
+  div.onmouseover = ()=>div.style.background='var(--color-background-secondary)';
+  div.onmouseout  = ()=>div.style.background='var(--color-background-primary)';
+  div.onclick = onClick;
+  return div;
+}
+
+function renderSpecList(){
+  const list = document.getElementById('spec-list');
+  const titolo = document.getElementById('spec-titolo');
+  const sottotitolo = document.getElementById('spec-sottotitolo');
+  const btnVista = document.getElementById('spec-toggle-vista');
+  list.innerHTML = '';
+
+  /* ── Vista piatta: le etichette originali del CSV ── */
+  if(specVistaOriginale){
+    titolo.textContent = 'Specialità originali del CSV';
+    const annateLower = ANNATE_SSM.map(a=>a.toLowerCase());
+    const specs = [...new Set(DB.map(d=>d.specialita))]
+      .filter(sp => sp && !annateLower.includes(sp.trim().toLowerCase())).sort();
+    sottotitolo.textContent = specs.length+' etichette, senza raggruppamento';
+    btnVista.textContent = '🗂 Torna alle aree raggruppate';
+    specs.forEach(sp=>{
+      const count = DB.filter(d=>d.specialita===sp).length;
+      list.appendChild(creaRigaSpec(sp, count, ()=>avviaQuiz(sp)));
+    });
+    return;
+  }
+
+  btnVista.textContent = '📋 Mostra le specialità originali del CSV';
+
+  /* ── Livello 1: macroaree ── */
+  if(specAreaCorrente === null){
+    titolo.textContent = 'Scegli area';
+    const aree = conteggioMacroaree();
+    sottotitolo.textContent = aree.length+' aree disponibili';
+    aree.forEach(a=>{
+      const nSpec = conteggioSpecialita(a.nome).length;
+      list.appendChild(creaRigaSpec(
+        (ICONE_MACRO[a.nome]||'')+' '+a.nome,
+        a.count,
+        ()=>{ specAreaCorrente = a.nome; renderSpecList(); },
+        nSpec+(nSpec===1?' specialità':' specialità')
+      ));
+    });
+    return;
+  }
+
+  /* ── Livello 2: specialità dentro l'area ── */
+  titolo.textContent = (ICONE_MACRO[specAreaCorrente]||'')+' '+specAreaCorrente;
+  const specs = conteggioSpecialita(specAreaCorrente);
+  const totale = specs.reduce((a,b)=>a+b.count,0);
+  sottotitolo.textContent = totale+' domande in totale';
+
+  // Prima voce: tutta l'area insieme
+  if(specs.length > 1){
+    list.appendChild(creaRigaSpec(
+      '▸ Tutta l\'area',
+      totale,
+      ()=>avviaQuiz('macro:'+specAreaCorrente),
+      'Domande da tutte le specialità qui sotto'
+    ));
+  }
+  specs.forEach(sp=>{
+    list.appendChild(creaRigaSpec(sp.nome, sp.count, ()=>avviaQuiz('canon:'+sp.nome)));
+  });
 }
 
 /* ── Annales ── */
@@ -3112,6 +3423,167 @@ const ANNATE_SSM = [
   'SSM 2026','SSM 2025','SSM 2024','SSM 2023','SSM 2022','SSM 2021',
   'SSM 2020','SSM 2019','SSM 2018','SSM 2017','SSM 2016','SSM 2015','SSM 2014',
 ];
+
+/*
+  ── Tassonomia delle specialità ──────────────────────────────────────────
+  Il CSV contiene decine di etichette diverse che indicano la stessa materia
+  ("Cardiologia" e "Malattie dellapparato cardiovascolare") o che derivano da
+  esami diversi ("Chirurgia generale" e "Chirurgia Generale - Abilitazione").
+
+  Questa mappa raggruppa tutto su due livelli — macroarea → specialità
+  canonica — SENZA modificare il campo `specialita` originale delle domande:
+  la classificazione viene calcolata al caricamento e salvata nei campi
+  derivati `__macroarea` e `__canonica`. Essendo prefissati con "__" vengono
+  automaticamente esclusi dall'esportazione CSV, e se si reimporta il file
+  originale la classificazione si riapplica da sola.
+
+  Per aggiungere una nuova etichetta basta inserirla nell'array della
+  specialità canonica corrispondente: qualsiasi voce non prevista finisce
+  in "Da classificare" invece di sparire dai filtri.
+*/
+const TASSONOMIA = {
+  'Medicina generale': {
+    'Medicina generale': ['Generale'],
+  },
+  'Specialità mediche': {
+    'Medicina interna e geriatria': ['Medicina interna','Medicina interna e geriatria','Geriatria','Medicina Interna - Abilitazione'],
+    'Ematologia e oncologia': ['Ematologia','Oncoematologia','Oncologia'],
+    'Gastroenterologia': ['Gastroenterologia'],
+    'Reumatologia, allergologia e immunologia': ['Reumatologia','Allergologia e immunologia clinica','Allergologia, immunologia clinica e reumatologia'],
+    'Cardiologia': ['Cardiologia','Malattie dellapparato cardiovascolare'],
+    'Endocrinologia e metabolismo': ['Endocrinologia e metabolismo','Endocrinologia e malattie del metabolismo'],
+    'Pneumologia': ['Pneumologia','Malattie dellapparato respiratorio'],
+    'Nefrologia': ['Nefrologia','Nefrologia e urologia'],
+    'Medicina fisica, riabilitativa e dello sport': ['Medicina fisica e riabilitativa','Medicina dello sport'],
+    'Malattie infettive': ['Malattie infettive'],
+    'Dermatologia e venereologia': ['Dermatologia e venereologia'],
+    "Scienza dell'alimentazione": ['Scienza dellalimentazione'],
+    'Medicina termale': ['Medicina termale'],
+    'Tossicologia medica': ['Tossicologia medica'],
+    'Medicina specialistica (mista)': ['Medicina Specialistica - Abilitazione'],
+  },
+  'Neuroscienze': {
+    'Neurologia': ['Neurologia'],
+    'Psichiatria': ['Psichiatria'],
+    'Neuropsichiatria infantile': ['Neuropsichiatria infantile'],
+  },
+  'Organi di senso': {
+    'Oftalmologia': ['Oftalmologia'],
+    'Otorinolaringoiatria': ['Otorinolaringoiatria'],
+    'Audiologia e foniatria': ['Audiologia e foniatria'],
+    'Organi di senso (misto)': ['Organi di senso','Organi Di Senso - Abilitazione'],
+  },
+  'Materno-infantile': {
+    'Ginecologia e ostetricia': ['Ginecologia e ostetricia','Ostetricia E Ginecologia - Abilitazione','Organi della riproduzione e senologia'],
+    'Pediatria': ['Pediatria','Pediatria - Abilitazione'],
+  },
+  'Emergenza e area critica': {
+    'Anestesia, rianimazione e terapia intensiva': ['Anestesia e rianimazione e terapia intensiva','Anestesia, medicina d’urgenza e rianimazione'],
+    "Medicina d'emergenza-urgenza": ['Medicina demergenza urgenza'],
+  },
+  'Chirurgia generale': {
+    'Chirurgia generale': ['Chirurgia generale','Chirurgia Generale - Abilitazione'],
+  },
+  'Chirurgia specialistica': {
+    'Ortopedia e traumatologia': ['Ortopedia e traumatologia','Ortopedia e medicina dello sport'],
+    'Cardiochirurgia': ['Cardiochirurgia'],
+    'Chirurgia toracica': ['Chirurgia toracica'],
+    'Chirurgia vascolare': ['Chirurgia vascolare'],
+    'Chirurgia maxillo-facciale': ['Chirurgia maxillo facciale'],
+    'Chirurgia plastica': ['Chirurgia plastica ricostruttiva ed estetica'],
+    'Chirurgia pediatrica': ['Chirurgia pediatrica'],
+    'Neurochirurgia': ['Neurochirurgia'],
+    'Urologia': ['Urologia'],
+    'Chirurgia specialistica (mista)': ['Chirurgia Specialistica - Abilitazione'],
+  },
+  'Radiologia': {
+    'Radiodiagnostica': ['Radiodiagnostica','Diagnostica per immagini','Radiologia E Diagnostica - Abilitazione'],
+    'Radioterapia': ['Radioterapia'],
+    'Medicina nucleare': ['Medicina nucleare'],
+  },
+  'Scienze di base': {
+    'Area pre-clinica': ['Area Pre Clinica - Abilitazione'],
+    'Farmacologia': ['Farmacologia','Farmacologia - Abilitazione'],
+    'Biologia e genetica medica': ['Biologia e genetica medica','Genetica medica'],
+    'Anatomia patologica': ['Anatomia Patologica','Istologia ed anatomia patologica'],
+    'Microbiologia e virologia': ['Microbiologia e virologia'],
+    'Patologia clinica': ['Patologia clinica'],
+    'Biochimica medica': ['Biochimica medica'],
+    'Patologia generale': ['Patologia generale'],
+  },
+  'Sanità pubblica e medicina legale': {
+    'Igiene e sanità pubblica': ['Igiene e medicina preventiva','Medicina legale, del lavoro, igiene e sanità pubblica','Medicina Legale E Sanità Pubblica - Abilitazione'],
+    'Medicina legale': ['Medicina legale'],
+    'Medicina del lavoro': ['Medicina del lavoro'],
+    'Statistica sanitaria e biometria': ['Statistica sanitaria e biometria'],
+  },
+};
+
+const MACRO_NON_CLASSIFICATE = 'Da classificare';
+
+/* Icone per rendere la lista delle macroaree più leggibile a colpo d'occhio */
+const ICONE_MACRO = {
+  'Medicina generale':'🩺','Specialità mediche':'💊','Neuroscienze':'🧠',
+  'Organi di senso':'👁','Materno-infantile':'👶','Emergenza e area critica':'🚑',
+  'Chirurgia generale':'🔪','Chirurgia specialistica':'🔬','Radiologia':'📷',
+  'Scienze di base':'🧪','Sanità pubblica e medicina legale':'⚖️',
+  [MACRO_NON_CLASSIFICATE]:'❓',
+};
+
+/*
+  Normalizza un'etichetta per il confronto: minuscolo, accenti rimossi e
+  via ogni punteggiatura/spazio. Così "Scienza dell'alimentazione",
+  "Scienza dellalimentazione" e "SCIENZA DELL ALIMENTAZIONE" combaciano,
+  rendendo la mappa tollerante alle variazioni di scrittura nel CSV.
+*/
+function normalizzaEtichetta(s){
+  return (s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]/g,'');
+}
+
+/* Indice etichetta-normalizzata → {macroarea, canonica}, costruito una volta sola */
+const INDICE_TASSONOMIA = (() => {
+  const idx = {};
+  for(const [macro, sub] of Object.entries(TASSONOMIA)){
+    for(const [canonica, originali] of Object.entries(sub)){
+      originali.forEach(o => { idx[normalizzaEtichetta(o)] = {macroarea: macro, canonica}; });
+    }
+  }
+  return idx;
+})();
+
+/*
+  Assegna a ogni domanda i campi derivati __macroarea e __canonica.
+  Le annate (SSM 2024, ecc.) non sono specialità: restano fuori dalla
+  tassonomia e continuano a essere gestite dalla sezione "Annales".
+*/
+function applicaTassonomia(){
+  const annate = new Set(ANNATE_SSM.map(a=>normalizzaEtichetta(a)));
+  DB.forEach(d => {
+    const chiave = normalizzaEtichetta(d.specialita);
+    if(annate.has(chiave)){ d.__macroarea = null; d.__canonica = null; return; }
+    const m = INDICE_TASSONOMIA[chiave];
+    d.__macroarea = m ? m.macroarea : MACRO_NON_CLASSIFICATE;
+    d.__canonica  = m ? m.canonica  : (d.specialita || '—');
+  });
+}
+
+/* Conteggio domande per macroarea, nell'ordine in cui è definita la tassonomia */
+function conteggioMacroaree(){
+  const conteggi = {};
+  DB.forEach(d => { if(d.__macroarea) conteggi[d.__macroarea] = (conteggi[d.__macroarea]||0) + 1; });
+  const ordine = [...Object.keys(TASSONOMIA), MACRO_NON_CLASSIFICATE];
+  return ordine.filter(m => conteggi[m]).map(m => ({nome: m, count: conteggi[m]}));
+}
+
+/* Conteggio delle specialità canoniche dentro una macroarea, dalla più ricca */
+function conteggioSpecialita(macro){
+  const conteggi = {};
+  DB.forEach(d => { if(d.__macroarea === macro) conteggi[d.__canonica] = (conteggi[d.__canonica]||0) + 1; });
+  return Object.entries(conteggi).map(([nome,count])=>({nome,count})).sort((a,b)=>b.count-a.count);
+}
+
 
 function mostraAnnales(){
   if(DB.length===0){alert('Carica prima il CSV.');return;}
@@ -3387,7 +3859,7 @@ function esportaDomandeSessioneCorrente(){
 }
 
 function mostraStats(){
-  const st=getStorage(),specs=[...new Set(DB.map(d=>d.specialita))].sort();
+  const st=getStorage();
   const cont=document.getElementById('stats-content');cont.innerHTML='';
   const tot=Object.values(st.risposte).length,g=Object.values(st.risposte).filter(r=>r).length;
   const p=tot>0?Math.round(g/tot*100):0;
@@ -3397,13 +3869,39 @@ function mostraStats(){
   cont.innerHTML='<div class="card"><p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:8px">Statistiche globali</p><p style="font-size:28px;font-weight:500">'+p+'%</p><p style="font-size:13px;color:var(--color-text-secondary)">'+g+' corrette su '+tot+' risposte · 🔖 '+bm+' segnalibri · ❌ '+nSbagliate+' sbagliate · — '+nSaltate+' saltate</p><div class="progress-bar-bg" style="margin-top:10px"><div class="progress-bar-fill" style="width:'+p+'%"></div></div></div>'
     +(nSegnalate>0 ? '<button class="btn" onclick="mostraGestisciSegnalate()" style="color:var(--color-text-danger);border-color:var(--color-border-danger)">🚩 '+nSegnalate+' domand'+(nSegnalate===1?'a segnalata':'e segnalate')+' da correggere</button>' : '')
     +'<div class="section-title">Per specialità</div>';
-  specs.forEach(s=>{
-    const ids=DB.filter(d=>d.specialita===s).map(d=>d.id);
-    const r=ids.map(id=>st.risposte[id]).filter(x=>x!==undefined);
-    const gg=r.filter(x=>x).length,pp=r.length>0?Math.round(gg/r.length*100):null;
-    const div=document.createElement('div');div.className='card';div.style.marginBottom='8px';
-    div.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:14px">'+s+'</span><span style="font-size:14px;font-weight:500">'+(pp!==null?pp+'%':'—')+'</span></div><div class="progress-bar-bg" style="margin:0"><div class="progress-bar-fill" style="width:'+(pp||0)+'%"></div></div><p style="font-size:12px;color:var(--color-text-secondary);margin-top:6px">'+r.length+' / '+ids.length+' domande affrontate</p>';
-    cont.appendChild(div);
+  /*
+    Raggruppa per specialità canonica (non per etichetta grezza del CSV):
+    così "Cardiologia" e "Malattie dellapparato cardiovascolare" danno una
+    sola percentuale invece di due parziali. Le aree sono in ordine di
+    tassonomia, e le specialità dentro ciascuna dalla più debole in giù,
+    per far emergere subito gli argomenti su cui conviene lavorare.
+  */
+  conteggioMacroaree().forEach(area=>{
+    const intestazione=document.createElement('div');
+    intestazione.className='section-title';
+    intestazione.textContent=(ICONE_MACRO[area.nome]||'')+' '+area.nome;
+    cont.appendChild(intestazione);
+
+    const righe=conteggioSpecialita(area.nome).map(sp=>{
+      const ids=DB.filter(d=>d.__canonica===sp.nome).map(d=>d.id);
+      const r=ids.map(id=>st.risposte[id]).filter(x=>x!==undefined);
+      const gg=r.filter(x=>x).length;
+      const pp=r.length>0?Math.round(gg/r.length*100):null;
+      return {nome:sp.nome, tot:ids.length, fatte:r.length, pp};
+    });
+    // Prima le specialità già affrontate, dalla percentuale più bassa
+    righe.sort((a,b)=>{
+      if(a.pp===null&&b.pp===null) return b.tot-a.tot;
+      if(a.pp===null) return 1;
+      if(b.pp===null) return -1;
+      return a.pp-b.pp;
+    });
+
+    righe.forEach(x=>{
+      const div=document.createElement('div');div.className='card';div.style.marginBottom='8px';
+      div.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:6px"><span style="font-size:14px">'+escHtml(x.nome)+'</span><span style="font-size:14px;font-weight:500;flex-shrink:0">'+(x.pp!==null?x.pp+'%':'—')+'</span></div><div class="progress-bar-bg" style="margin:0"><div class="progress-bar-fill" style="width:'+(x.pp||0)+'%"></div></div><p style="font-size:12px;color:var(--color-text-secondary);margin-top:6px">'+x.fatte+' / '+x.tot+' domande affrontate</p>';
+      cont.appendChild(div);
+    });
   });
   showScreen('stats');
 }
@@ -3622,6 +4120,7 @@ fileInput.onchange=e=>{
     const d=caricaCSV(ev.target.result);
     if(d.length===0){alert('Nessuna domanda trovata.');return;}
     DB=d;
+    applicaTassonomia();
     const nGenerati = window._idGeneratiUltimoImport || 0;
     const suffissoAvviso = nGenerati>0
       ? '\n\n⚠ '+nGenerati+' domande avevano un id mancante o duplicato nel CSV: è stato generato automaticamente un id stabile per ciascuna (basato su specialità + numero domanda), così segnalibri e progressi funzionano correttamente.'
@@ -3924,6 +4423,7 @@ if('serviceWorker' in navigator){
     const saved = await loadDBFromIDB();
     if(saved && saved.length > 0){
       DB = saved;
+      applicaTassonomia();
       aggiornHome();
       const srchEl = document.getElementById('search-results');
       if(srchEl) srchEl.innerHTML = '<div class="empty-state">Digita almeno 2 caratteri per cercare</div>';
