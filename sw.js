@@ -4,7 +4,7 @@
    ecg_pack.json e le eventuali immagini vengono salvati offline dopo il primo
    caricamento, senza doverli elencare qui a mano. */
 
-const CACHE_NAME = "studio-medicina-v1";
+const CACHE_NAME = "studio-medicina-v08-08";
 
 const CORE_ASSETS = [
   "./",
